@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "//": "Lead retention purge. 03:00 UTC daily, matching docs/RUNBOOK.md. Vercel sends Authorization: Bearer $CRON_SECRET, which the route verifies in constant time.",
+      "path": "/api/cron/purge-leads",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

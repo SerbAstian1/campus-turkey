@@ -38,6 +38,7 @@ import {
   isAlertable,
 } from "@/server/lib/errors";
 import { enforceRateLimit, type RateLimitPolicy } from "@/server/lib/ratelimit";
+import { reportError } from "@/server/lib/reporting";
 import { resolveSession } from "./session";
 import type { Session } from "./session";
 
@@ -270,6 +271,14 @@ export function route<TBody = undefined, TQuery = undefined, TResult = unknown>(
       const { status, body, headers } = toErrorResponse(error, requestId);
 
       if (isAlertable(error)) {
+        // Error tracking. Only 5xx — a 404 or a rate limit is not an incident, and
+        // reporting them buries the ones that are. Best-effort and non-blocking.
+        reportError(error, {
+          requestId,
+          route: new URL(request.url).pathname,
+          method: request.method,
+        });
+
         log.error("request failed", {
           status,
           durationMs: Date.now() - started,

@@ -40,12 +40,22 @@ that needed one; the error names every variable that is missing.
 | `POST /api/translate` | none | public; 120/min per IP |
 | `GET /api/health` | none | public; no version or stack detail |
 | `/api/auth/*` | none | Better Auth; sign-up disabled |
+| `POST /api/webhooks/payouts` | HMAC | signature over `${timestamp}.${body}`; no session |
+| `GET /api/cron/purge-leads` | bearer | `CRON_SECRET`, compared in constant time |
+| `GET /api/partner/account` | partner | the session's own partner; no id parameter exists |
 | `GET /api/partner/wallet` | partner | scoped to `session.partner.id` |
 | `GET POST /api/partner/students` | partner | scoped to `session.partner.id` |
 | `GET POST /api/partner/withdrawals` | partner | scoped to `session.partner.id` |
 | `GET POST /api/partner/payout-methods` | partner | scoped to `session.partner.id` |
 | `DELETE /api/partner/payout-methods/:id` | partner | scoped; 404 when not yours |
 | `POST /api/partner/payout-methods/setup-token` | partner | scoped |
+| `GET /api/staff/withdrawals` | staff | SUPPORT, FINANCE, ADMIN — read the queue |
+| `POST /api/staff/withdrawals/:id` | staff | **FINANCE or ADMIN** — approve, reject, settle |
+| `GET /api/staff/commissions` | staff | SUPPORT, FINANCE, ADMIN |
+| `POST /api/staff/commissions` | staff | **FINANCE or ADMIN** — records a liability |
+| `POST /api/staff/commissions/:id` | staff | **FINANCE or ADMIN** — confirm or reverse |
+| `PATCH /api/staff/students/:id` | staff | SUPPORT, FINANCE, ADMIN — pipeline stage |
+| `GET /api/staff/leads` | staff | SUPPORT, FINANCE, ADMIN; medical payloads gated |
 
 Every endpoint's full error set is documented in the header comment of its route file.
 
