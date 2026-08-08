@@ -1,0 +1,440 @@
+// Campus Turkey — database schema.
+//
+// Two rules govern everything below.
+//
+//   1. Money is an integer count of minor units. Never a float, never a string.
+//      `Int` is 32-bit: the ceiling is 2,147,483,647 minor units, i.e. $21.4m on a
+//      single row. That is far above any plausible single commission or withdrawal.
+//      Aggregates are computed by Postgres `SUM(integer)`, which returns `bigint`, so
+//      the total cannot overflow even when the parts cannot individually.
+//
+//   2. Impossible states are unrepresentable wherever a constraint can say so. The
+//      CHECK constraints, the composite foreign key on `commission`, and the
+//      append-only trigger on `withdrawal_event` live in `migrations/`, because
+//      Prisma's schema language cannot express them. They are not optional
+//      decoration — see `migrations/0001_init/migration.sql`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Prisma Migrate needs a direct (unpooled) connection; the runtime client uses the
+  // pooled URL above. See Department 20 on serverless connection exhaustion.
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ---------------------------------------------------------------- authentication
+//
+// Managed by Better Auth. The shapes are the library's; do not hand-edit rows.
+// `Partner` hangs off `User` rather than replacing it, so a Campus Turkey staff
+// account and a partner account are the same kind of thing to the auth layer and
+// different things to the domain.
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  name          String?
+  image         String?
+  /// Staff role. Partners have `null` here and reach the domain through `Partner`.
+  staffRole     StaffRole?
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
+
+  sessions     Session[]
+  accounts     Account[]
+  partner      Partner?
+  actedEvents  WithdrawalEvent[] @relation("EventActor")
+
+  @@map("user")
+}
+
+enum StaffRole {
+  /// May read every partner's records. May not approve payouts.
+  SUPPORT
+  /// May approve and reject withdrawals.
+  FINANCE
+  /// Everything, including staff management.
+  ADMIN
+
+  @@map("staff_role")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String   @unique
+  userId    String   @db.Uuid
+  expiresAt DateTime @db.Timestamptz(3)
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Every session lookup is by token; every "sign out everywhere" is by user.
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(uuid()) @db.Uuid
+  userId                String    @db.Uuid
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(3)
+  scope                 String?
+  idToken               String?
+  /// Better Auth writes the hash here. Never a plaintext password.
+  password              String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([identifier])
+  @@index([expiresAt])
+  @@map("verification")
+}
+
+// ---------------------------------------------------------------------- partners
+
+model Partner {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// One partner per login. A person who represents two agencies gets two logins;
+  /// merging them would make "whose commission is this?" unanswerable.
+  userId      String   @unique @db.Uuid
+  org         String
+  person      String
+  role        String
+  territory   String
+  /// Campus Turkey's named contact for this partner. Rendered in the portal.
+  managerName String
+  managerRole String
+  /// Reporting currency. Every commission and withdrawal for this partner is in it;
+  /// mixing currencies inside one balance is how a payout system loses money.
+  currency    String   @db.Char(3)
+  /// Below this, a withdrawal is refused. Stored per partner because it varies by
+  /// payout rail and territory, not globally.
+  minimumMinor Int     @default(20000)
+  status      PartnerStatus @default(ACTIVE)
+  since       DateTime @db.Date
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students       Student[]
+  commissions    Commission[]
+  payoutMethods  PayoutMethod[]
+  withdrawals    Withdrawal[]
+
+  @@index([status])
+  /// The target of the composite foreign keys on `commission` and `withdrawal`.
+  /// Because those reference `(partner_id, currency)` rather than just `partner_id`,
+  /// Postgres refuses any commission or withdrawal denominated in a currency other
+  /// than the partner's — and refuses to change a partner's currency while any exist.
+  /// Summing mixed currencies into one balance is a money bug that no amount of
+  /// careful application code reliably prevents, so it is made unrepresentable here.
+  @@unique([id, currency])
+  @@map("partner")
+}
+
+enum PartnerStatus {
+  ACTIVE
+  /// Can sign in and read, cannot request withdrawals or add students.
+  SUSPENDED
+  CLOSED
+
+  @@map("partner_status")
+}
+
+// ---------------------------------------------------------------------- students
+
+model Student {
+  id             String       @id @default(uuid()) @db.Uuid
+  partnerId      String       @db.Uuid
+  name           String
+  /// Denormalised display strings, matching `PortalStudent` in content/types.ts.
+  /// The university is referenced by slug rather than by foreign key because the
+  /// university catalogue is static content, not a table. If it becomes a table,
+  /// this becomes a relation — that migration is additive.
+  universitySlug String
+  universityName String
+  program        String
+  stage          StudentStage @default(ENQUIRY)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
+
+  partner     Partner      @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+  commissions Commission[]
+
+  /// Serves `GET /api/partner/students` (list, newest first) and the pipeline
+  /// counts, which group by stage within one partner.
+  @@index([partnerId, updatedAt(sort: Desc)])
+  @@index([partnerId, stage])
+  /// The target of `commission`'s composite foreign key. This is what makes the
+  /// denormalised `commission.partnerId` provably equal to the student's partner
+  /// rather than merely intended to be.
+  @@unique([id, partnerId])
+  @@map("student")
+}
+
+enum StudentStage {
+  ENQUIRY
+  DOCUMENTS
+  SUBMITTED
+  OFFER
+  VISA
+  REGISTERED
+
+  @@map("student_stage")
+}
+
+// ------------------------------------------------------------------- commissions
+
+model Commission {
+  id          String          @id @default(uuid()) @db.Uuid
+  studentId   String          @db.Uuid
+  /// Denormalised from `student.partnerId`. Every balance read and every withdrawal
+  /// sums commissions for one partner; carrying the partner here removes a join from
+  /// the hottest financial query in the system. The composite foreign key below makes
+  /// the denormalisation impossible to violate — Postgres rejects a commission whose
+  /// partner does not match its student's.
+  partnerId   String          @db.Uuid
+  amountMinor Int
+  currency    String          @db.Char(3)
+  state       CommissionState @default(PENDING)
+  /// What the money is for, in the partner's language. Shown on the statement.
+  basis       String
+  /// The billing period this belongs to, e.g. "2026-03". Used to build the
+  /// withdrawal's `period` label.
+  period      String          @db.VarChar(7)
+  /// Set exactly when `state` becomes CONFIRMED. A confirmed commission with no
+  /// timestamp is a bug; the CHECK constraint in the migration rejects it.
+  confirmedAt DateTime?       @db.Timestamptz(3)
+  createdAt   DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(3)
+
+  student Student @relation(fields: [studentId, partnerId], references: [id, partnerId], onDelete: Restrict)
+  partner Partner @relation(fields: [partnerId, currency], references: [id, currency], onDelete: Restrict)
+
+  /// The balance query: `WHERE partner_id = $1 AND state = 'CONFIRMED'`. Partial
+  /// indexes for the two states that are summed are declared in the migration —
+  /// Prisma cannot express `WHERE` on an index.
+  @@index([partnerId, state])
+  @@index([studentId])
+  @@map("commission")
+}
+
+enum CommissionState {
+  /// Earned but not yet confirmed by Campus Turkey. Counts toward `pendingMinor`.
+  PENDING
+  /// Confirmed and withdrawable. Counts toward `availableMinor`.
+  CONFIRMED
+  /// Reversed — the registration fell through. Counts toward nothing.
+  REVERSED
+
+  @@map("commission_state")
+}
+
+// --------------------------------------------------------------- payout methods
+
+model PayoutMethod {
+  id            String           @id @default(uuid()) @db.Uuid
+  partnerId     String           @db.Uuid
+  kind          PayoutMethodKind
+  /// Display label, e.g. "GTBank". Never an account number.
+  label         String
+  /// Already masked when it arrives, e.g. "•••• 4417". The only account-shaped
+  /// string this database is permitted to hold. See features/portal/payouts.ts.
+  maskedDetail  String
+  /// The provider's opaque handle for the vaulted instrument. Enough to initiate a
+  /// payout, not enough to be worth stealing on its own. Never leaves the server.
+  providerToken String
+  providerName  String
+  speed         String
+  fee           String
+  isDefault     Boolean          @default(false)
+  /// Soft delete. A withdrawal references the method it paid to; hard-deleting one
+  /// would tear a hole in the audit trail that a dispute needs.
+  archivedAt    DateTime?        @db.Timestamptz(3)
+  createdAt     DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime         @updatedAt @db.Timestamptz(3)
+
+  partner     Partner      @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+  withdrawals Withdrawal[]
+
+  /// Serves the list endpoint, which excludes archived rows.
+  @@index([partnerId, archivedAt])
+  @@map("payout_method")
+}
+
+enum PayoutMethodKind {
+  BANK
+  WISE
+  STABLECOIN
+  MOBILE_MONEY
+
+  @@map("payout_method_kind")
+}
+
+// ------------------------------------------------------------------ withdrawals
+
+model Withdrawal {
+  id             String           @id @default(uuid()) @db.Uuid
+  partnerId      String           @db.Uuid
+  payoutMethodId String           @db.Uuid
+  /// Human-readable, shown to the partner and quoted in support threads.
+  reference      String           @unique
+  amountMinor    Int
+  currency       String           @db.Char(3)
+  status         WithdrawalStatus @default(REQUESTED)
+  /// Snapshot labels, resolved when the request is made. They describe what the
+  /// partner was told they were withdrawing; recomputing them later would rewrite
+  /// history every time the underlying commissions changed.
+  period         String
+  basis          String
+  /// Client-generated, one per form session. Scoped to the partner: a key from one
+  /// partner can never replay another's withdrawal. This single unique constraint
+  /// is what makes a retry safe — see withdrawals.service.ts.
+  idempotencyKey String
+  /// The payout provider's reference, once money has actually moved.
+  providerRef    String?
+  requestedAt    DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @db.Timestamptz(3)
+
+  partner      Partner           @relation(fields: [partnerId, currency], references: [id, currency], onDelete: Restrict)
+  payoutMethod PayoutMethod      @relation(fields: [payoutMethodId], references: [id], onDelete: Restrict)
+  events       WithdrawalEvent[]
+
+  @@unique([partnerId, idempotencyKey])
+  /// Serves the withdrawal list, which is always one partner's, newest first.
+  /// Measured: at 300 withdrawals for one partner the planner uses this with an
+  /// incremental sort. Below roughly 50 it sorts the partition instead, which is
+  /// correct — sorting twenty rows costs less than an ordered index scan.
+  @@index([partnerId, requestedAt(sort: Desc)])
+  //
+  // There was a `@@index([partnerId, status])` here, removed after reading the plan.
+  // It overlapped `withdrawal_balance_committed` in migration 0002, and being the
+  // cheaper of the two to enter, the planner picked it for the balance query — which
+  // then needed a bitmap heap scan, because a plain index cannot answer for
+  // `amountMinor`. With it gone the partial covering index wins and the aggregate
+  // becomes an index-only scan. Nothing else queried `(partnerId, status)`: the list
+  // endpoint orders by `requestedAt`. Two indexes on the same prefix cost write
+  // throughput on every withdrawal for no read that needed them.
+  @@index([payoutMethodId])
+  @@map("withdrawal")
+}
+
+enum WithdrawalStatus {
+  /// Created by the partner. Money has not moved.
+  REQUESTED
+  /// A human at Campus Turkey has approved it. Money has still not moved.
+  APPROVED
+  /// Handed to the payout provider.
+  PROCESSING
+  /// Settled. Terminal.
+  PAID
+  /// Refused, at any point before PAID. Terminal, and the only status that releases
+  /// the amount back into the available balance.
+  REJECTED
+
+  @@map("withdrawal_status")
+}
+
+/// Append-only. Every status change writes one row and no row is ever updated or
+/// deleted — the migration revokes UPDATE and DELETE on this table and installs a
+/// trigger that raises on either. This is the record a payment dispute is settled
+/// from, and a mutable audit trail is not an audit trail.
+model WithdrawalEvent {
+  id           String            @id @default(uuid()) @db.Uuid
+  withdrawalId String            @db.Uuid
+  /// Null on the row that records creation.
+  fromStatus   WithdrawalStatus?
+  toStatus     WithdrawalStatus
+  /// Null when the actor is the system (a provider webhook, a scheduled job).
+  actorUserId  String?           @db.Uuid
+  /// Why, in the actor's words. Required on a rejection, which is the transition a
+  /// partner will ask about.
+  note         String?
+  at           DateTime          @default(now()) @db.Timestamptz(3)
+
+  withdrawal Withdrawal @relation(fields: [withdrawalId], references: [id], onDelete: Restrict)
+  actor      User?      @relation("EventActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([withdrawalId, at])
+  @@index([actorUserId])
+  @@map("withdrawal_event")
+}
+
+// ----------------------------------------------------------------------- leads
+
+/// Every public form posts here: Apply, Contact, Partner registration,
+/// Representative registration. One table discriminated by `kind` rather than four
+/// near-identical tables, because the only thing that differs is the payload shape
+/// and that is validated at the boundary by a per-kind Zod schema.
+model Lead {
+  id             String     @id @default(uuid()) @db.Uuid
+  kind           LeadKind
+  /// Validated against the per-kind schema before it is written. Never rendered as
+  /// HTML anywhere without escaping.
+  payload        Json
+  email          String
+  /// Set when the visitor ticked the consent box. A lead with no consent timestamp
+  /// must not be marketed to; the CHECK constraint requires one.
+  consentAt      DateTime   @db.Timestamptz(3)
+  /// Computed at write time from the retention policy for this `kind`. The purge job
+  /// deletes on this column, so it is indexed. Medical enquiries carry health data
+  /// and get the shortest window — see Department 18.6.
+  retentionUntil DateTime   @db.Timestamptz(3)
+  status         LeadStatus @default(NEW)
+  /// Truncated to /24 (IPv4) or /48 (IPv6) before storage. Enough to investigate
+  /// abuse, not enough to be a location record.
+  ipPrefix       String?
+  createdAt      DateTime   @default(now()) @db.Timestamptz(3)
+
+  /// The purge job: `WHERE retention_until < now()`.
+  @@index([retentionUntil])
+  @@index([kind, createdAt(sort: Desc)])
+  @@map("lead")
+}
+
+enum LeadKind {
+  APPLY
+  CONTACT
+  PARTNER
+  REPRESENTATIVE
+  /// Carries health information. Shortest retention, narrowest access.
+  MEDICAL
+
+  @@map("lead_kind")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  CONVERTED
+  CLOSED
+
+  @@map("lead_status")
+}

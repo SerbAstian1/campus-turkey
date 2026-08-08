@@ -1,0 +1,18 @@
+node_modules/
+.next/
+out/
+dist/
+
+# Never commit a real environment file. `.env.example` is the documented one.
+.env
+.env.*
+!.env.example
+
+*.tsbuildinfo
+next-env.d.ts
+coverage/
+.vercel
+
+# Transient files written by local verification runs
+*.out
+*.log

@@ -1,0 +1,128 @@
+name: CI
+
+# Every step below is blocking. A check that runs but does not block a merge is a
+# status light, not a gate — see Department 22.2.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  # A new push supersedes an in-flight run on the same branch. Without this, a busy
+  # branch queues runs that are already answering a stale question.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  web:
+    name: web — typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # `ci` not `install`: it installs exactly the lockfile and fails if package.json
+      # and the lock have drifted, which is the point of committing a lockfile.
+      - name: Install
+        working-directory: web
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: web
+        run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+          DIRECT_DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+
+      - name: Typecheck
+        working-directory: web
+        run: npx tsc --noEmit
+
+      - name: Test with coverage
+        working-directory: web
+        # The coverage thresholds in vitest.config.ts are part of this gate. The money
+        # path is held at 100%; a dropped branch fails the build rather than a review.
+        run: npm run test:coverage
+
+      - name: Build
+        working-directory: web
+        run: npx next build
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+          DIRECT_DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+          SITE_ORIGIN: https://campusturkey.com
+          SESSION_SECRET: ci-placeholder-secret-at-least-32-chars-long
+          NODE_ENV: production
+          SENTRY_DSN: https://placeholder@o0.ingest.sentry.io/0
+          UPSTASH_REDIS_REST_URL: https://placeholder.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: placeholder
+          CAPTCHA_PROVIDER: turnstile
+          CAPTCHA_SECRET: placeholder
+
+      # Handoff note 14 is explicit that `npm audit fix --force` breaks this build and
+      # that the reported findings are dev-only and unreachable. So this reports and
+      # does not block: an advisory count that fails CI trains people to ignore CI.
+      # `--omit=dev` narrows it to what actually ships.
+      - name: Audit production dependencies (report only)
+        working-directory: web
+        run: npm audit --omit=dev --audit-level=high || true
+
+  prototype:
+    name: app — existing Vite prototype
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      # Kept green during the migration. The Vite app is what is deployed until the
+      # consolidation step in docs/MIGRATION.md completes; letting it rot while the
+      # Next.js app is built means discovering it is broken on cutover day.
+      - name: Setup assets
+        run: npm run setup
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: a secret committed and then removed is still in the history,
+          # and git history is forever. Scanning only the tip finds nothing.
+          fetch-depth: 0
+
+      - name: Scan for committed secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,84 @@
+:root{
+/* Brand — the four supplied brand colors */
+--green-primary:#2EAE6E;
+--green-dark:#1F7A4D;
+--white:#FFFFFF;
+--red-turkish:#E30A17;
+
+/* Green ramp derived from the two brand greens */
+--green-050:#EAF7F0;
+--green-100:#D3EFE1;
+--green-200:#A7DFC3;
+--green-300:#71CEA1;
+--green-400:#2EAE6E;
+--green-500:#26985E;
+--green-600:#1F7A4D;
+--green-700:#175C3A;
+--green-800:#0F3D2A;
+--green-900:#0A2C1E;
+
+/* Neutrals — warm-neutral greys for light surfaces and text */
+--neutral-000:#FFFFFF;
+--neutral-025:#FBFCFB;
+--neutral-050:#F5F7F5;
+--neutral-100:#ECEFEC;
+--neutral-200:#DDE2DE;
+--neutral-300:#C3CAC5;
+--neutral-400:#9BA49E;
+--neutral-500:#6F7A73;
+--neutral-600:#4C554F;
+--neutral-700:#333B36;
+--neutral-800:#1F251F;
+--neutral-900:#121612;
+
+/* Semantic — surfaces */
+--surface-page:var(--neutral-000);
+--surface-subtle:var(--neutral-050);
+--surface-card:var(--neutral-000);
+--surface-card-tinted:var(--green-050);
+--surface-inverse:var(--green-800);
+--surface-brand:var(--green-400);
+--surface-brand-deep:var(--green-600);
+--surface-overlay-hero:rgba(0,0,0,.30);
+--surface-overlay-brand:rgba(31,122,77,.40);
+--surface-glass:rgba(255,255,255,.14);
+
+/* Semantic — text */
+--text-heading:var(--green-900);
+--text-body:var(--neutral-700);
+--text-muted:var(--neutral-500);
+--text-on-brand:var(--white);
+--text-on-inverse:rgba(255,255,255,.86);
+--text-link:var(--green-600);
+--text-link-hover:var(--green-400);
+--text-brand:var(--green-400);
+
+/* Semantic — borders and lines */
+--border-subtle:var(--neutral-200);
+--border-strong:var(--neutral-300);
+--border-brand:var(--green-400);
+--border-on-inverse:rgba(255,255,255,.22);
+--separator-inverse:rgba(255,255,255,.28);
+
+/* Semantic — interactive */
+--action-primary:var(--green-400);
+--action-primary-hover:var(--green-600);
+--action-primary-active:var(--green-700);
+--action-secondary-bg:var(--white);
+--action-secondary-fg:var(--green-800);
+--action-ghost-hover:var(--green-050);
+--focus-ring:rgba(46,174,110,.45);
+
+/* Semantic — status. Turkish red is a flag accent only; status red is a
+   separate, desaturated tone so the flag color is never diluted. */
+--status-success:var(--green-500);
+--status-warning:#C98A11;
+--status-danger:#B3352F;
+--status-info:var(--green-600);
+--accent-flag:var(--red-turkish);
+
+/* Gradients */
+--gradient-brand:linear-gradient(135deg,var(--green-400) 0%,var(--green-600) 100%); /* @kind color */
+--gradient-brand-deep:linear-gradient(180deg,var(--green-600) 0%,var(--green-800) 100%); /* @kind color */
+--gradient-protect-bottom:linear-gradient(180deg,rgba(10,44,30,0) 0%,rgba(10,44,30,.72) 100%); /* @kind color */
+}

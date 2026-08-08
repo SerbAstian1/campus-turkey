@@ -1,0 +1,554 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Campus Turkey — Study in Türkiye</title>
+<meta name="description" content="Campus Turkey is your gateway to Türkiye: university admissions, scholarships, medical tourism, business facilitation, employment, tours and partnerships.">
+<link rel="stylesheet" href="_ds/campus-turkey-design-system-4d33e73a-a51c-417f-a312-f233dbab210a/styles.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="_ds/campus-turkey-design-system-4d33e73a-a51c-417f-a312-f233dbab210a/_ds_bundle.js"></script>
+<script>
+/* Sections animate in on scroll, so anything never scrolled past stays at opacity 0.
+   A full-page screenshot clones that state and loses the middle of the page. This
+   walks the document to fire every observer, then pins the reveals open. */
+window.CT_REVEAL_ALL = function () {
+  return new Promise(function (done) {
+    var H = document.documentElement.scrollHeight, y = 0;
+    (function step() {
+      window.scrollTo(0, y); y += 400;
+      if (y < H) return setTimeout(step, 12);
+      window.scrollTo(0, 0);
+      if (!document.getElementById("__ct-reveal")) {
+        var s = document.createElement("style");
+        s.id = "__ct-reveal";
+        s.textContent = "#root *{opacity:1!important;transform:none!important;visibility:visible!important;clip-path:none!important}";
+        document.head.appendChild(s);
+      }
+      setTimeout(function () { done(document.getElementById("root").scrollHeight); }, 700);
+    })();
+  });
+};
+
+/* The design system's Field renders the required marker but never forwards `required`
+   or any other validation attribute to the control it labels, so no form on the site
+   validated. Mirror them onto the real control, before the JSX screens destructure
+   these components. */
+(function () {
+  const NS = window.CampusTurkeyDesignSystem_4d33e7;
+  if (!NS || NS.__requiredPatched) return;
+  const MIRROR = ["min", "max", "step", "minLength", "maxLength", "pattern", "inputMode", "autoComplete"];
+  const ATTR = { minLength: "minlength", maxLength: "maxlength", inputMode: "inputmode", autoComplete: "autocomplete" };
+  ["Input", "Select", "Checkbox"].forEach((key) => {
+    const Base = NS[key];
+    if (!Base) return;
+    NS[key] = function RequiredAware(props) {
+      const { id, required } = props;
+      React.useEffect(() => {
+        if (!id) return;
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.required = !!required;
+        if (required) el.setAttribute("aria-required", "true");
+        else el.removeAttribute("aria-required");
+        MIRROR.forEach((p) => {
+          if (props[p] === undefined || props[p] === null) return;
+          el.setAttribute(ATTR[p] || p, String(props[p]));
+        });
+      });
+      return React.createElement(Base, props);
+    };
+  });
+  NS.__requiredPatched = true;
+})();
+</script>
+<script src="site/i18n.js"></script>
+<script src="site/data.js"></script>
+<style>
+body{margin:0;background:var(--surface-page)}#root{min-height:100vh}
+a{color:var(--green-700)}a:hover{color:var(--green-800)}
+#ct-loader{position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:var(--gradient-brand-deep);transition:opacity .5s ease}
+#ct-loader.gone{opacity:0;pointer-events:none}
+/* Brand PNGs ship at print resolution (the lockup is 6477px wide). The DS sizes them
+   by height alone, so give them their source ratio: the box is then reserved before
+   decode and the width cannot resolve to zero. */
+#root img[src*="logo-lockup"]{aspect-ratio:6477/2846}
+#root img[src*="mark-"]{aspect-ratio:2178/1714}
+#ct-loader img{height:104px;animation:ctIn .8s cubic-bezier(.16,1,.3,1) both}
+#ct-loader .bar{width:180px;height:2px;background:rgba(255,255,255,.2);overflow:hidden;border-radius:2px}
+#ct-loader .bar i{display:block;height:100%;width:40%;background:#fff;animation:ctSlide 1.1s ease-in-out infinite}
+@keyframes ctIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes ctSlide{0%{transform:translateX(-110%)}100%{transform:translateX(360%)}}
+/* Transform only, deliberately. A fade here means the element's computed opacity is 0
+   at frame 0, so anything that restarts the animation without running it — a
+   backgrounded tab, or the DOM clone a full-page screenshot builds — renders the page
+   invisible. Sliding alone reads as a page transition and has no such failure mode. */
+.ct-page{animation:ctPage .5s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes ctPage{from{transform:translateY(10px)}to{transform:none}}
+.ct-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:200;padding:12px 20px;border-radius:var(--radius-pill);background:var(--green-900);color:#fff;font-family:var(--font-ui);font-size:14px;box-shadow:var(--shadow-float)}
+.ct-translating{display:flex;align-items:center;gap:10px}
+.ct-translating i{width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;animation:ctSpin .7s linear infinite}
+@keyframes ctSpin{to{transform:rotate(360deg)}}
+/* Signature disc hover, reversed: the icon rotates -45deg instead of 45deg.
+   Unscoped: the portal sheets render into document.body, outside #root. */
+span[style*="rotate(45deg)"]{transform:rotate(-45deg)!important}
+.ct-marquee-track{animation:ctMarquee 52s linear infinite}
+.ct-marquee:hover .ct-marquee-track,.ct-marquee:focus-within .ct-marquee-track{animation-play-state:paused}
+/* Two equal groups plus one gap between them, so half the track is half a gap
+   short of one period. The correction removes the seam hop. */
+@keyframes ctMarquee{from{transform:translateX(0)}to{transform:translateX(calc(-50% - var(--space-12) / 2))}}
+.ct-affiliate:hover{opacity:1!important}
+.ct-affiliate:hover{border-color:var(--green-300)!important;transform:translateY(-3px);box-shadow:var(--shadow-md)}@media (prefers-reduced-motion:reduce){.ct-marquee-track{animation:none}}
+/* Mega-menu: the DS measures a ghost panel at max-content, then applies that width
+   to a bordered wrapper. Under the global border-box rule the wrapper's content box
+   ends up 2px narrower, a description line wraps and the panel outgrows its clip.
+   Content-box keeps ghost and rendered layout identical; centring on the header
+   stops a wide panel hanging off-screen. */
+div[style*="transition: width"]{box-sizing:content-box!important}
+/* Map: its own stacking context so Leaflet panes never rise above the navbar. */
+.leaflet-container{isolation:isolate;z-index:0;font-family:var(--font-ui)}
+.ct-pin-wrap{background:none;border:none}
+.ct-pin{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:var(--radius-circle);background:var(--action-primary);color:#fff;border:2px solid #fff;box-shadow:var(--shadow-float);transition:transform var(--dur-base) var(--ease-out),background var(--dur-base) var(--ease-out)}
+.ct-pin:hover{transform:scale(1.14);background:var(--green-700)}
+.ct-pin-on{background:#fff;color:var(--green-800);border-color:var(--action-primary);transform:scale(1.14)}
+@media (max-width:1000px){.ct-split{grid-template-columns:1fr!important}.ct-portal{grid-template-columns:1fr!important}.ct-portal-aside{position:static!important;height:auto!important}.ct-portal-aside nav{flex-direction:row!important;flex-wrap:wrap}}
+@media (max-width:900px){.ct-faq-inner{grid-template-columns:1fr!important;gap:var(--space-8)!important}.ct-faq-inner>div[style*="sticky"],.ct-faq-inner>aside{position:static!important}.ct-detail-grid{grid-template-columns:1fr!important}.ct-detail-grid>div[style*="sticky"],.ct-detail-grid>aside{position:static!important}}
+@media (max-width:760px){form{grid-template-columns:1fr!important}form>*{grid-column:span 1!important}#root section[style*="grid-template-columns: 1.05fr"]{grid-template-columns:1fr!important}}
+/* Grid items default to min-width:auto, so a field's min-content width can push a
+   two-column form past a narrow container. Every form cell is allowed to shrink.
+   A <select> is the sharp case: its min-content width is its longest <option>
+   ("Çanakkale Onsekiz Mart University"), so the guard has to reach the control
+   itself, not just the grid cell two levels above it. */
+form{min-width:0}form>*{min-width:0}
+select,input,textarea{min-width:0}
+form select{width:100%}
+form label,form label>*{min-width:0}
+/* Mega-menu height: the DS clips the panel to a height measured from a ghost laid out
+   at max-content, which is shorter than the real panel whenever text wraps at the
+   actual width. Once open (inline height is not 0), let the wrapper take its content's
+   height so no panel can be clipped in any language. */
+#root nav div[style*="overflow: hidden"]:not([style*="height: 0px"]){height:auto!important}
+/* Navbar under translation: nav labels are sized for English, and longer ones (FR,
+   RU, and most of the 15) grow the links list until it pushes the switcher and the
+   primary CTA outside the container, where body{overflow:clip} hides them. The links
+   list shrinks and scrolls instead; the right-hand group never gives up space. */
+#root nav>ul{flex:1 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x proximity}
+#root nav>ul::-webkit-scrollbar{display:none}
+#root nav>ul>li{flex:0 0 auto;scroll-snap-align:start}
+#root nav>div{flex:0 0 auto}
+/* Fifteen languages need a scrollable dropdown, and the switcher labels must never
+   be swept by the translator. */
+.ct-lang-menu,div[style*="anim-fade-in-down"]{max-height:min(52vh,360px);overflow-y:auto}
+.ct-rail:hover{background:var(--green-050)!important;border-color:var(--border-brand)!important}
+@media (max-width:640px){.ct-sheet{padding:var(--space-6)!important}.ct-sheet form{grid-template-columns:1fr!important}}
+/* The portal sidebar is pinned to the viewport, so on a tall page (or a full-page
+   screenshot) the column below it would render bare. Painting the strip in brand
+   green makes the column continuous; on screen the sidebar covers it exactly. */
+.ct-portal{background:linear-gradient(to right,var(--green-900) 0 264px,var(--surface-subtle) 264px)}
+@media (max-width:1000px){.ct-portal{background:var(--surface-subtle)}}
+/* Between the phone breakpoint and ~1100px the five inline nav labels need about 44px
+   more than the pill offers, while the header gutter is spending 93px. Reclaiming the
+   gutter there keeps the inline desktop nav intact instead of clipping "About". */
+@media (min-width:769px) and (max-width:1100px){
+  .ct-desktop-nav>div{padding-left:16px!important;padding-right:16px!important}
+}
+/* ---- Mobile navigation -------------------------------------------------------
+   Phones only. The desktop pill stays exactly as it is on every larger screen; at
+   768px and below it is replaced by a compact bar and a dropdown panel, since five
+   inline links cannot fit a phone. */
+.ct-mobile-nav{display:none}
+@media (max-width:768px){
+  #root>div>header{display:none!important}
+  .ct-desktop-nav{display:none!important}
+  .ct-mobile-nav{display:block}
+  .ct-mobile-bar{position:fixed;top:0;left:0;right:0;z-index:120;display:flex;align-items:center;gap:var(--space-3);padding:10px var(--gutter);background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-subtle)}
+  .ct-burger{width:48px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border-subtle);border-radius:var(--radius-pill);background:var(--white);cursor:pointer;flex:none}
+  .ct-burger span{display:block;width:18px;height:2px;background:var(--green-900);transition:transform var(--dur-base) var(--ease-out)}
+  .ct-burger span.on:first-child{transform:translateY(4px) rotate(45deg)}
+  .ct-burger span.on:last-child{transform:translateY(-4px) rotate(-45deg)}
+  .ct-mobile-panel{position:fixed;top:68px;left:0;right:0;z-index:119;max-height:calc(100dvh - 76px);overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-5) var(--gutter) var(--space-8);background:var(--white);border-bottom:1px solid var(--border-subtle);box-shadow:var(--shadow-lg);transition:transform var(--dur-base) var(--ease-out),opacity var(--dur-base) var(--ease-out)}
+  .ct-mobile-panel nav{display:flex;flex-direction:column;margin-top:var(--space-2)}
+  .ct-mobile-group{border-top:1px solid var(--border-subtle)}
+  .ct-mobile-group>button{width:100%;min-height:56px;display:flex;align-items:center;gap:var(--space-3);padding:0;border:none;background:transparent;cursor:pointer;font-family:var(--font-ui);font-size:var(--fs-body);font-weight:var(--fw-medium);color:var(--green-900);text-align:start}
+  .ct-mobile-sub{overflow:hidden;transition:max-height var(--dur-slow) var(--ease-out)}
+  .ct-mobile-sub a{min-height:52px;display:flex;align-items:center;gap:var(--space-3);padding-inline-start:var(--space-6);color:var(--text-body);text-decoration:none;font-family:var(--font-ui);font-size:var(--fs-body-sm)}
+  .ct-mobile-scrim{position:fixed;inset:68px 0 0;z-index:118;border:none;background:rgba(10,44,30,.32);cursor:pointer}
+  /* The fixed bar is shorter than the desktop pill, so pages need less top inset. */
+  #root section[style*="padding-top: 150px"],#root div[style*="padding-top: 140px"]{padding-top:96px!important}
+  #root .ct-page>div>section:first-child{padding-top:96px}
+}
+/* No hover on a touch screen, so lift-and-glow states never resolve and can leave an
+   element stuck mid-transform. Anything hover-driven is neutralised there. */
+@media (hover:none){
+  .ct-affiliate:hover,.ct-rail:hover{transform:none!important;box-shadow:none!important}
+  .ct-pin:hover{transform:none}
+  #root a:hover,#root button:hover{transform:none!important}
+  .ct-cta-icon,.ct-wa-label{transition:none!important}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240"><rect width="240" height="240" fill="#0a4d2e"/><g transform="translate(72,74)"><path d="M48 0 L96 26 L48 52 L0 26 Z" fill="#e8c547"/><path d="M12 40 L12 74 Q48 96 84 74 L84 40 L48 62 Z" fill="#ffffff"/></g><text x="120" y="196" font-family="Georgia,serif" font-size="30" fill="#ffffff" text-anchor="middle">Campus</text></svg></template>
+</head><body>
+<div id="ct-loader"><img src="assets/logo-lockup-reversed.png" alt="Campus Turkey" width="237" height="104" decoding="async" fetchpriority="high"><div class="bar"><i></i></div></div>
+<div id="root"></div>
+<script>
+(function () {
+  var DS = window.CampusTurkeyDesignSystem_4d33e7;
+  if (!DS) return;
+
+  // Route-safe reveal: the DS observer can miss subtrees mounted by a route switch,
+  // so reveal immediately when the element is already inside the viewport at mount.
+  DS.ScrollReveal = function (props) {
+    var delay = props.delay || 0, distance = props.distance == null ? 16 : props.distance;
+    var ref = React.useRef(null);
+    var state = React.useState(false), shown = state[0], setShown = state[1];
+    React.useEffect(function () {
+      var el = ref.current; if (!el) return;
+      var t = null, io = null, mounted = true;
+      var reveal = function () { t = window.setTimeout(function () { if (mounted) setShown(true); }, delay); };
+      var start = window.setTimeout(function () {
+        var r = el.getBoundingClientRect();
+        if (r.top < window.innerHeight * 0.98 && r.bottom > 0) { reveal(); return; }
+        io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) { if (en.isIntersecting) { reveal(); if (io) io.disconnect(); } });
+        }, { threshold: props.threshold || 0.12, rootMargin: "0px 0px -8% 0px" });
+        io.observe(el);
+      }, 0);
+      return function () { mounted = false; clearTimeout(start); if (t) clearTimeout(t); if (io) io.disconnect(); };
+    }, [delay]);
+    var style = Object.assign({
+      opacity: shown ? 1 : 0,
+      transform: shown ? "none" : "translateY(" + distance + "px)",
+      transition: "opacity 640ms cubic-bezier(.16,1,.3,1), transform 640ms cubic-bezier(.16,1,.3,1)",
+      willChange: "opacity, transform"
+    }, props.style || {});
+    return React.createElement(props.as || "div", { ref: ref, className: props.className, style: style }, props.children);
+  };
+
+  // Every button carries .ct-btn so the disc rotates -45deg on hover.
+  var BaseButton = DS.Button;
+  DS.Button = function (props) {
+    var next = Object.assign({}, props, { className: "ct-btn" + (props.className ? " " + props.className : "") });
+    return React.createElement(BaseButton, next);
+  };
+
+  /* The switcher defaults to this array, and the navbar and footer do not forward a
+     languages prop, so extending it in place reaches every control at once. */
+  if (DS.LANGUAGES && DS.LANGUAGES.length === 6) {
+    DS.LANGUAGES.push(
+      { code: "ES", label: "Español", flag: "🇪🇸", dir: "ltr" },
+      { code: "PT", label: "Português", flag: "🇧🇷", dir: "ltr" },
+      { code: "FA", label: "فارسی", flag: "🇮🇷", dir: "rtl" },
+      { code: "UR", label: "اردو", flag: "🇵🇰", dir: "rtl" },
+      { code: "HI", label: "हिन्दी", flag: "🇮🇳", dir: "ltr" },
+      { code: "BN", label: "বাংলা", flag: "🇧🇩", dir: "ltr" },
+      { code: "ID", label: "Bahasa Indonesia", flag: "🇮🇩", dir: "ltr" },
+      { code: "ZH", label: "中文", flag: "🇨🇳", dir: "ltr" },
+      { code: "HA", label: "Hausa", flag: "🇳🇬", dir: "ltr" },
+      { code: "YO", label: "Yorùbá", flag: "🇳🇬", dir: "ltr" },
+      { code: "IG", label: "Igbo", flag: "🇳🇬", dir: "ltr" }
+    );
+  }
+})();
+</script>
+<script type="text/babel" src="site/Common.jsx"></script>
+<script type="text/babel" src="site/Errors.jsx"></script>
+<script type="text/babel" src="site/Home.jsx"></script>
+<script type="text/babel" src="site/Directory.jsx"></script>
+<script type="text/babel" src="site/Study.jsx"></script>
+<script type="text/babel" src="site/Pages.jsx"></script>
+<script type="text/babel" src="site/Company.jsx"></script>
+<script type="text/babel" src="site/Apply.jsx"></script>
+<script type="text/babel" src="site/Portal.jsx"></script>
+<script type="text/babel">
+const DSK = window.CampusTurkeyDesignSystem_4d33e7;
+const { Navbar, MegaMenuPanel, Footer, ScrollProgress } = DSK;
+const D = window.CT_DATA;
+const AK = "assets";
+
+window.CT_GO = (route) => { window.location.hash = "#/" + String(route).replace(/^#?\/?/, ""); };
+window.CT_WHATSAPP = () => window.open("https://wa.me/905550000000?text=" + encodeURIComponent("Hello Campus Turkey, I have a question."), "_blank");
+
+/* The design system's navbar and footer ship fixed placeholder hrefs. One delegated
+   listener maps them onto real routes instead of forking the components. */
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("a[href]");
+  if (!a) return;
+  const map = { "#consultation": "portal", "#home": "home", "#apply": "apply", "#whatsapp": "contact" };
+  const to = map[a.getAttribute("href")];
+  if (to) { e.preventDefault(); window.CT_GO(to); }
+});
+
+const MEGA = {
+  services: <MegaMenuPanel style={{ maxWidth: "calc(100vw - 48px)", boxSizing: "border-box", paddingTop: "var(--space-6)", paddingBottom: "var(--space-6)" }}
+    groups={[{ title: "Education", links: [
+      { label: "Study in Türkiye", description: "Admissions and scholarships", icon: "graduation-cap", href: "#/study" },
+      { label: "University directory", description: "Public and private", icon: "landmark", href: "#/universities" },
+      { label: "Educational tours", description: "Campus and study visits", icon: "bus-front", href: "#/service/tours" },
+      { label: "Scholarships", description: "What you can get", icon: "award", href: "#/study" }] },
+      { title: "Other services", links: [
+      { label: "Medical Tourism", description: "Hospitals and travel", icon: "heart-pulse", href: "#/service/medical" },
+      { label: "Business Facilitation", description: "Invitations and B2B", icon: "briefcase", href: "#/service/business" },
+      { label: "Employment", description: "Legal and seasonal work", icon: "hard-hat", href: "#/service/employment" },
+      { label: "Partnerships", description: "Agencies and reps", icon: "handshake", href: "#/partners" }] }]}
+    feature={null}
+    columns={[{ title: "Resources", links: [
+      { label: "Scholarship guide", href: "#/blog/turkiye-burslari-who-gets-it" },
+      { label: "Visa checklist", href: "#/blog/student-visa-documents" },
+      { label: "Cost of living", href: "#/blog/public-university-costs-2026" },
+      { label: "All resources", href: "#/resources" }] }]} />,
+  partners: <MegaMenuPanel style={{ maxWidth: "calc(100vw - 48px)", boxSizing: "border-box", paddingTop: "var(--space-6)", paddingBottom: "var(--space-6)" }}
+    groups={[{ title: "Work with us", links: [
+      { label: "Become a Partner", description: "Agencies and consultants", icon: "handshake", href: "#/partners" },
+      { label: "Become a Representative", description: "Country representatives", icon: "globe", href: "#/representative" },
+      { label: "Partner Login", description: "Existing partners sign in", icon: "log-in", href: "#/portal" }] }]}
+    columns={[{ title: "For institutions", links: [
+      { label: "Universities", href: "#/institutions/universities" },
+      { label: "Hospitals", href: "#/institutions/hospitals" },
+      { label: "Chambers of commerce", href: "#/institutions/chambers" }] }]} />,
+};
+
+/** An unknown address says so rather than silently serving the homepage. */
+function NotFoundScreen() { return <ErrorScreen state="notFound" />; }
+
+/** A failing screen degrades to a recoverable panel instead of blanking the page. */
+class RouteBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { failed: false, detail: null }; }
+  static getDerivedStateFromError(error) { return { failed: true, detail: error && error.message ? error.message : null }; }
+  componentDidCatch(error) { if (window.console) window.console.error("Route failed:", error); }
+  componentDidUpdate(prev) { if (prev.routeKey !== this.props.routeKey && this.state.failed) this.setState({ failed: false, detail: null }); }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return <ErrorScreen state="failed" detail={this.state.detail} />;
+  }
+}
+
+/* Below 900px the desktop pill is hidden and this takes over: a compact bar plus a
+   dropdown panel. Everything the desktop mega menus reach is reachable here, grouped
+   the same way, with tap targets at 48px. */
+function MobileNav({ lang, onLangChange, route }) {
+  const [open, setOpen] = React.useState(false);
+  const [section, setSection] = React.useState(null);
+  const T = window.T;
+
+  React.useEffect(() => { setOpen(false); setSection(null); }, [route]);
+  React.useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [open]);
+
+  const groups = [
+    { key: "education", label: T("footer.education"), icon: "graduation-cap", links: [
+      ["Study in Türkiye", "study", "graduation-cap"],
+      ["University directory", "universities", "landmark"],
+      ["Scholarships", "study", "award"],
+      ["Resources", "resources", "book-open"]] },
+    { key: "services", label: T("footer.services"), icon: "heart-pulse", links: [
+      ["Medical Tourism", "service/medical", "heart-pulse"],
+      ["Business Facilitation", "service/business", "briefcase"],
+      ["Employment", "service/employment", "hard-hat"],
+      ["Educational tours", "service/tours", "bus-front"]] },
+    { key: "partners", label: T("footer.partners"), icon: "handshake", links: [
+      ["Become a Partner", "partners", "handshake"],
+      ["Become a Representative", "representative", "globe"],
+      ["For universities", "institutions/universities", "landmark"],
+      ["For agencies", "institutions/agencies", "users"],
+      ["For hospitals", "institutions/hospitals", "stethoscope"],
+      ["Partner Login", "portal", "log-in"]] },
+    { key: "company", label: T("footer.company"), icon: "info", links: [
+      ["About us", "about", "info"],
+      ["Contact", "contact", "phone"]] },
+  ];
+
+  const go = (r) => { setOpen(false); setSection(null); window.CT_GO(r); };
+
+  return (
+    <div className="ct-mobile-nav">
+      <div className="ct-mobile-bar">
+        <a href="#/home" onClick={(e) => { e.preventDefault(); go("home"); }} style={{ display: "inline-flex", alignItems: "center" }}>
+          <DSK.Logo variant="lockup" theme="onLight" height={34} assetBase={AK} />
+        </a>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginInlineStart: "auto" }}>
+          <DSK.LanguageSwitcher value={lang} onChange={onLangChange} theme="onLight" compact />
+          <button type="button" className="ct-burger" aria-label="Menu" aria-expanded={open}
+            onClick={() => setOpen(!open)}>
+            <span className={open ? "on" : ""}></span>
+            <span className={open ? "on" : ""}></span>
+          </button>
+        </div>
+      </div>
+
+      <div className="ct-mobile-panel" aria-hidden={!open}
+        style={{ transform: open ? "translateY(0)" : "translateY(-8px)", opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none", visibility: open ? "visible" : "hidden" }}>
+        <DSK.Button variant="primary" size="lg" fullWidth onClick={() => go("apply")}>{T("cta.apply")}</DSK.Button>
+        <DSK.Button variant="secondary" size="lg" fullWidth icon="calendar-check" onClick={() => go("contact")}>{T("cta.consult")}</DSK.Button>
+        <nav>
+          {groups.map((g) => {
+            const on = section === g.key;
+            return (
+              <div key={g.key} className="ct-mobile-group">
+                <button type="button" aria-expanded={on} onClick={() => setSection(on ? null : g.key)}>
+                  <DSK.Icon name={g.icon} size={18} color="var(--green-600)" />
+                  <span>{g.label}</span>
+                  <DSK.Icon name="chevron-down" size={16} strokeWidth={2.5}
+                    style={{ marginInlineStart: "auto", transform: on ? "rotate(180deg)" : "none", transition: "transform var(--dur-base) var(--ease-out)" }} />
+                </button>
+                <div className="ct-mobile-sub" style={{ maxHeight: on ? 60 * g.links.length : 0 }}>
+                  {g.links.map(([label, r, icon]) => (
+                    <a key={label + r} href={"#/" + r} onClick={(e) => { e.preventDefault(); go(r); }}>
+                      <DSK.Icon name={icon} size={16} color="var(--neutral-500)" />{label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </nav>
+      </div>
+      {open ? <button type="button" className="ct-mobile-scrim" aria-label="Close menu" onClick={() => setOpen(false)}></button> : null}
+    </div>
+  );
+}
+
+const parseHash = () => {
+  const raw = window.location.hash.replace(/^#\/?/, "").split("?")[0];
+  const parts = raw.split("/").filter(Boolean);
+  return { name: parts[0] || "home", param: parts.slice(1).join("/") || null };
+};
+
+function App() {
+  const [route, setRoute] = React.useState(parseHash);
+  const [lang, setLang] = React.useState(window.CT_I18N.lang);
+  const [toast, setToast] = React.useState(null);
+  const [narrow, setNarrow] = React.useState(() => window.innerWidth < 1180);
+
+  React.useEffect(() => {
+    const onHash = () => { setRoute(parseHash()); window.scrollTo({ top: 0 }); };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  React.useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth < 1180);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  React.useEffect(() => { window.CT_TOAST = (msg) => { setToast(msg); window.setTimeout(() => setToast(null), 3200); }; }, []);
+  React.useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
+
+  /* Machine translation lands asynchronously, so show progress while it does. */
+  const [translating, setTranslating] = React.useState(false);
+  React.useEffect(() => {
+    if (lang === "EN") { setTranslating(false); return; }
+    const id = window.setInterval(() => setTranslating(window.CT_I18N.pending > 0), 300);
+    return () => window.clearInterval(id);
+  }, [lang]);
+
+  /* Re-apply the phrase sweep after every render, since React replaces text nodes. */
+  React.useEffect(() => { window.CT_I18N.sweep(); });
+
+  const setLanguage = (code) => { window.CT_I18N.set(code); setLang(code); };
+
+  /* The portal sidebar carries its own switcher, so follow the shared source of truth. */
+  React.useEffect(() => window.CT_I18N.subscribe(setLang), []);
+
+  /* Menus and cards mount after the render pass, so watch the tree too. */
+  React.useEffect(() => {
+    const root = document.getElementById("root");
+    if (!root || lang === "EN") return;
+    let queued = false;
+    const mo = new MutationObserver(() => {
+      if (queued) return;
+      queued = true;
+      window.requestAnimationFrame(() => { queued = false; window.CT_I18N.sweep(); });
+    });
+    mo.observe(root, { childList: true, subtree: true });
+    return () => mo.disconnect();
+  }, [lang]);
+
+  const { name, param } = route;
+  const activeMap = { study: "Study in Türkiye", universities: "Universities", university: "Universities", service: "Services", partners: "Partners", representative: "Partners", institutions: "Partners", portal: "Partners", about: "About" };
+  const navLabels = { study: T("nav.study"), universities: T("nav.universities"), Services: T("nav.services"), Partners: T("nav.partners"), about: T("nav.about") };
+  const navItems = D.nav.map((n) => ({
+    label: n.route ? (navLabels[n.route] || n.label) : (navLabels[n.label] || n.label),
+    href: n.route ? "#/" + n.route : undefined,
+    children: n.mega ? MEGA[n.mega] : undefined,
+    _route: n.route,
+  }));
+  const chrome = name !== "portal";
+
+  let page = null;
+  if (name === "home") page = <HomeScreen data={D} />;
+  else if (name === "study") page = <StudyScreen data={D} />;
+  else if (name === "universities") page = <UniversitiesScreen data={D} />;
+  else if (name === "university") page = <UniversityDetailScreen data={D} slug={param} />;
+  else if (name === "service") page = <ServiceScreen data={D} slug={param || "medical"} />;
+  else if (name === "partners") page = <PartnersScreen data={D} />;
+  else if (name === "representative") page = <RepresentativeScreen data={D} />;
+  else if (name === "institutions") page = <InstitutionScreen data={D} slug={param || "universities"} />;
+  else if (name === "apply") page = <ApplyScreen onHome={() => window.CT_GO("home")} />;
+  else if (name === "portal") page = param === "dashboard"
+    ? <PortalDashboard data={D} />
+    : <PartnerLoginScreen onHome={() => window.CT_GO("home")} />;
+  else if (name === "about") page = <AboutScreen data={D} />;
+  else if (name === "contact") page = <ContactScreen data={D} />;
+  else if (name === "resources") page = <ResourcesScreen data={D} />;
+  else if (name === "blog") page = <BlogPostScreen data={D} slug={param} />;
+  else if (name === "error") page = <ErrorScreen state={ERROR_STATES[param] ? param : "notFound"} />;
+  else page = <NotFoundScreen />;
+
+  const footerTitles = { Education: T("footer.education"), Services: T("footer.services"), Partners: T("footer.partners"), Company: T("footer.company") };
+
+  return (
+    <div>
+      <ScrollProgress />
+      {chrome ? (
+        <>
+        <MobileNav lang={lang} onLangChange={setLanguage} route={name + (param || "")} />
+        <div className="ct-desktop-nav">
+        <Navbar items={navItems} activeItem={activeMap[name]} lang={lang} onLangChange={setLanguage} assetBase={AK}
+          ctaLabel={T("cta.apply")} ctaHref="#/apply" secondaryLabel={narrow ? "" : "Partner Login"}
+          onSelect={(item, e) => {
+            /* A group trigger has no destination. Without this it falls through to the
+               design system's placeholder href and navigates away, which is the only
+               way into the menu on a touch device. */
+            if (item.children && !item.href) { if (e) e.preventDefault(); return; }
+            if (item.href) { if (e) e.preventDefault(); window.CT_GO(item.href.replace(/^#\//, "")); }
+          }} />
+        </div>
+        </>
+      ) : null}
+
+      <div className="ct-page" key={name + (param || "")}>
+        <OfflineGuard>
+          <RouteBoundary routeKey={name + (param || "")}>{page}</RouteBoundary>
+        </OfflineGuard>
+      </div>
+
+      {chrome ? (
+        <>
+          <Footer columns={D.footerColumns.map((c) => ({ title: footerTitles[c.title] || c.title, links: c.links.map((l) => ({ ...l, href: "#/" + l.route })) }))}
+            contact={D.contact} socials={D.socials} lang={lang} onLangChange={setLanguage} assetBase={AK}
+            legal="© 2026 Campus Turkey. Your guide to study in Turkey." />
+          <window.WhatsAppAction label={T("cta.whatsapp")} fixed />
+        </>
+      ) : null}
+
+      {toast ? <div className="ct-toast">{toast}</div> : null}
+      {translating ? <div className="ct-toast ct-translating"><i></i>Translating this page</div> : null}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+window.setTimeout(() => {
+  const l = document.getElementById("ct-loader");
+  if (l) { l.classList.add("gone"); window.setTimeout(() => l.remove(), 600); }
+}, 900);
+</script></body></html>

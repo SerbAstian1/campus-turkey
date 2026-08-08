@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "preserve",
+    "allowJs": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "noEmit": true,
+    "incremental": true,
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": false,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      // The EDSAI boundary. `app/src/content/types.ts` is the single source of truth for
+      // every shape that crosses between the server and the frontend; the server imports
+      // it rather than restating it, which is the one thing that keeps a two-layer system
+      // from drifting. These are type-only imports, so nothing crosses at runtime.
+      //
+      // When app/src is consolidated into web/src (see docs/MIGRATION.md, step 1), this
+      // alias is the only line that changes.
+      "@contracts/*": ["../app/src/content/*"]
+    },
+
+    "plugins": [{ "name": "next" }]
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", ".next", "dist"]
+}
