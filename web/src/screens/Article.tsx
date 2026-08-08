@@ -8,13 +8,14 @@
  */
 
 import { BrandDivider, Badge, Button, Card, Icon, ScrollReveal } from "@/ds";
+import { useT } from "@/i18n/context";
 import { articles, getArticle } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
-import { T } from "@/i18n/runtime";
 import { go } from "@/app/router";
 import { ErrorScreen } from "./Errors";
 
 export default function Article({ slug }: { slug: string | null }) {
+  const t = useT();
   const post = slug ? getArticle(slug) : undefined;
   if (!post) return <ErrorScreen state="notFound" />;
 
@@ -50,8 +51,8 @@ export default function Article({ slug }: { slug: string | null }) {
             ))}
             <BrandDivider />
             <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)", alignItems: "center" }}>
-              <Button variant="primary" onClick={() => go("apply")}>{T("cta.apply")}</Button>
-              <Button variant="secondary" onClick={() => go("contact")}>{T("cta.consult")}</Button>
+              <Button variant="primary" onClick={() => go("apply")}>{t("Apply Now")}</Button>
+              <Button variant="secondary" onClick={() => go("contact")}>{t("Book a Consultation")}</Button>
             </div>
           </article>
 

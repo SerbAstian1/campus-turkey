@@ -15,7 +15,8 @@
 import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from "react";
 import { Footer, Navbar, ScrollProgress, ASSETS } from "@/ds";
 import { footerColumns, contact, socials, nav } from "@/content";
-import { T, useLanguage, useTranslating, useTranslationSweep } from "@/i18n/runtime";
+import { useT } from "@/i18n/context";
+import { useLocaleSwitch } from "@/i18n/switch";
 import { WhatsAppAction } from "@/components/Common";
 import { ErrorScreen, OfflineGuard } from "@/screens/Errors";
 import { MobileNav } from "./MobileNav";
@@ -104,15 +105,25 @@ const ACTIVE: Record<string, string> = {
 
 export function Shell({ children }: { children: ReactNode }) {
   const route = useRoute();
-  const [lang, setLanguage] = useLanguage();
+  const t = useT();
+  const [lang, setLanguage] = useLocaleSwitch();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [narrow, setNarrow] = useState(false);
 
   // Parks the router so the free `go()` the screens call can reach it.
   useNavigationBridge();
   usePlaceholderLinks();
-  useTranslationSweep(lang);
-  const translating = useTranslating(lang);
+
+  /*
+   * The runtime translation sweep is gone.
+   *
+   * It walked the DOM after every render and machine-translated text nodes in place.
+   * Handoff note 7 called that "a measurable interaction cost" on the directory, note 8
+   * flagged its unbounded cache, and — decisively — it translated the page only *after*
+   * hydration, so every crawler saw English no matter which language the visitor chose.
+   *
+   * Translation now happens on the server, per locale, before the HTML is sent.
+   */
 
   useEffect(() => subscribeToToasts(setToastMessage), []);
 
@@ -136,11 +147,11 @@ export function Shell({ children }: { children: ReactNode }) {
   const key = routeKey(route);
 
   const navLabels: Record<string, string> = {
-    study: T("nav.study"),
-    universities: T("nav.universities"),
-    Services: T("nav.services"),
-    Partners: T("nav.partners"),
-    about: T("nav.about"),
+    study: t("Study in Türkiye"),
+    universities: t("Universities"),
+    Services: t("Services"),
+    Partners: t("Partners"),
+    about: t("About"),
   };
 
   const navItems = nav.map((n) => ({
@@ -151,10 +162,10 @@ export function Shell({ children }: { children: ReactNode }) {
   }));
 
   const footerTitles: Record<string, string> = {
-    Education: T("footer.education"),
-    Services: T("footer.services"),
-    Partners: T("footer.partners"),
-    Company: T("footer.company"),
+    Education: t("Education"),
+    Services: t("Services"),
+    Partners: t("Partners"),
+    Company: t("Company"),
   };
 
   return (
@@ -170,7 +181,7 @@ export function Shell({ children }: { children: ReactNode }) {
           lang={lang}
           onLangChange={setLanguage}
           assetBase={ASSETS}
-          ctaLabel={T("cta.apply")}
+          ctaLabel={t("Apply Now")}
           ctaHref="#/apply"
           /* The design system hardcodes this button's destination to
              `href="#consultation"` and exposes no prop to change it — only the label.
@@ -205,10 +216,11 @@ export function Shell({ children }: { children: ReactNode }) {
         assetBase={ASSETS}
         legal="© 2026 Campus Turkey. Your guide to study in Turkey."
       />
-      <WhatsAppAction label={T("cta.whatsapp")} fixed />
+      <WhatsAppAction label={t("Chat on WhatsApp")} fixed />
 
       {toastMessage ? <div className="ct-toast">{toastMessage}</div> : null}
-      {translating ? <div className="ct-toast ct-translating"><i />Translating this page</div> : null}
+      {/* The "Translating this page" toast is gone with the sweep. Pages now arrive
+          already translated, so there is no in-flight state to announce. */}
     </div>
   );
 }

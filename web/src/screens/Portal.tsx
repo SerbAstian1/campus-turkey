@@ -18,7 +18,7 @@ import {
 import { portal as content, universities, type PayoutMethod, type PortalStudent, type Withdrawal } from "@/content";
 import { formatMinor, newIdempotencyKey, requestWithdrawal } from "@/features/portal/withdrawals";
 import { usePortalData, type PortalData } from "@/features/portal/data";
-import { useLanguage } from "@/i18n/runtime";
+import { useLocaleSwitch } from "@/i18n/switch";
 import { go } from "@/app/router";
 import { toast } from "@/app/toast";
 import { CardGrid } from "@/components/CardGrid";
@@ -472,7 +472,7 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
      withdrawal rather than this screen adjusting a copy. */
   const availableMinor = data.wallet.availableMinor;
   const [methods, setMethods] = useState<PayoutMethod[]>(data.wallet.methods);
-  const [lang, setLanguage] = useLanguage();
+  const [lang, setLanguage] = useLocaleSwitch();
 
   const account = data.account;
   const wallet = { ...data.wallet, availableMinor, methods };

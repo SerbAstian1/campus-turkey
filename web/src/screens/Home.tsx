@@ -9,9 +9,9 @@ import {
 } from "@/ds";
 import { generalFaq, journey, serviceCards, stats, testimonials, universities } from "@/content";
 import { BrandMark, ImagePlaceholder } from "@/components/Common";
-import { T } from "@/i18n/runtime";
 import { go } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
+import { useT } from "@/i18n/context";
 
 /** Counts up when it scrolls into view. Reduced motion gets the final value at once. */
 function Counter({ value }: { value: string }) {
@@ -50,6 +50,7 @@ function Counter({ value }: { value: string }) {
 }
 
 function Hero({ onApply, onExplore }: { onApply: () => void; onExplore: () => void }) {
+  const t = useT();
   return (
     <section style={{ position: "relative", minHeight: "min(94vh,880px)", display: "flex", flexDirection: "column", overflow: "hidden", paddingTop: 160, marginBottom: "calc(var(--overlap) * -1)", background: "var(--gradient-brand-deep)" }}>
       <img src={`${ASSETS}/map-of-turkey.jpg`} alt="" aria-hidden="true"
@@ -60,23 +61,23 @@ function Hero({ onApply, onExplore }: { onApply: () => void; onExplore: () => vo
         Background video placeholder
       </span>
       <div className="ct-container" style={{ position: "relative", zIndex: 2, marginTop: "auto", paddingBottom: "clamp(56px,8vw,110px)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-        <ScrollReveal style={{ display: "flex" }}><Badge tone="onDark" dot>{T("hero.badge")}</Badge></ScrollReveal>
+        <ScrollReveal style={{ display: "flex" }}><Badge tone="onDark" dot>{t("Applications open for the 2026 intake")}</Badge></ScrollReveal>
         <ScrollReveal delay={80}>
           <h1 style={{ color: "var(--white)", fontSize: "var(--fs-display-1)", lineHeight: "var(--lh-display)", letterSpacing: "var(--ls-display)", maxWidth: "15ch", margin: 0 }}>
-            {T("hero.title")}
+            {t("Study in Türkiye")}
           </h1>
         </ScrollReveal>
         <ScrollReveal delay={160}>
           <p style={{ color: "rgba(255,255,255,.9)", fontSize: "var(--fs-lead)", lineHeight: "var(--lh-body)", maxWidth: 560 }}>
-            {T("hero.lead")}
+            {t("Campus Turkey is your gateway to Türkiye. We help students, patients, businesses, workers and partners reach education, healthcare, business and employment opportunities here.")}
           </p>
         </ScrollReveal>
         <ScrollReveal delay={240} style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)", marginTop: "var(--space-2)", alignItems: "center" }}>
-          <Button variant="onDark" size="lg" onClick={onApply}>{T("cta.apply")}</Button>
-          <Button variant="outlineOnDark" size="lg" icon="calendar-check" onClick={() => go("contact")}>{T("cta.consult")}</Button>
+          <Button variant="onDark" size="lg" onClick={onApply}>{t("Apply Now")}</Button>
+          <Button variant="outlineOnDark" size="lg" icon="calendar-check" onClick={() => go("contact")}>{t("Book a Consultation")}</Button>
         </ScrollReveal>
         <button type="button" onClick={onExplore} style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: "var(--space-4)", background: "transparent", border: "none", color: "rgba(255,255,255,.8)", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", cursor: "pointer", width: "fit-content" }}>
-          <Icon name="chevron-down" size={16} /> {T("hero.more")}
+          <Icon name="chevron-down" size={16} /> {t("See how it works")}
         </button>
       </div>
     </section>
@@ -120,18 +121,19 @@ function AffiliateMarquee() {
 }
 
 function AboutSection() {
+  const t = useT();
   return (
     <section id="about" style={{ background: "var(--surface-subtle)", padding: "var(--section-y) 0" }}>
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
         <ScrollReveal className="ct-split" style={{ display: "grid", gridTemplateColumns: "minmax(320px,1fr) minmax(280px,380px)", gap: "var(--space-12)", alignItems: "center" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
             <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-h2)", lineHeight: 1.25, color: "var(--text-heading)", margin: 0 }}>
-              {T("home.aboutLead")}
+              {t("Campus Turkey helps students, patients, businesses, workers and partners worldwide reach opportunities in Türkiye.")}
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)" }}>
-              <Button variant="primary" onClick={() => go("apply")}>{T("cta.apply")}</Button>
-              <Button variant="secondary" onClick={() => go("partners")}>{T("cta.partner")}</Button>
-              <Button variant="ghost" icon="message-circle" onClick={() => go("contact")}>{T("cta.contact")}</Button>
+              <Button variant="primary" onClick={() => go("apply")}>{t("Apply Now")}</Button>
+              <Button variant="secondary" onClick={() => go("partners")}>{t("Become a Partner")}</Button>
+              <Button variant="ghost" icon="message-circle" onClick={() => go("contact")}>{t("Contact us")}</Button>
             </div>
           </div>
           <ImagePlaceholder slot="home-about" label="Campus or student photography, 4:3" ratio="4 / 3" />
@@ -152,11 +154,12 @@ function AboutSection() {
 }
 
 function ServicesSection() {
+  const t = useT();
   return (
     <section id="study" style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-12)" }}>
         <ScrollReveal>
-          <SectionHeading eyebrow={T("home.servicesEyebrow")} title={T("home.servicesTitle")} lead={T("home.servicesLead")} />
+          <SectionHeading eyebrow={t("What we do")} title={t("Education first, and everything around it")} lead={t("Study in Türkiye is our main service. The rest are here when you need them.")} />
         </ScrollReveal>
         {/* Every card occupies one cell, including the featured one.
             It previously carried `gridColumn: span 2`, which is what made this section
@@ -216,13 +219,14 @@ function StoryReel() {
 }
 
 function FeaturedUniversities() {
+  const t = useT();
   return (
     <section id="universities" style={{ background: "var(--surface-subtle)", padding: "var(--section-y) 0" }}>
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
         <ScrollReveal style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", alignItems: "flex-end", justifyContent: "space-between" }}>
-          <SectionHeading eyebrow={T("home.uniEyebrow")} title={T("home.uniTitle")}
+          <SectionHeading eyebrow={t("Featured universities")} title={t("200+ universities, one directory")}
             lead="Filter by city, type, language and scholarships. Every listing shows what it really costs." />
-          <Button variant="secondary" icon="arrow-right" onClick={() => go("universities")}>{T("cta.browse")}</Button>
+          <Button variant="secondary" icon="arrow-right" onClick={() => go("universities")}>{t("Browse the directory")}</Button>
         </ScrollReveal>
         <CardGrid min={260} gap="var(--space-6)">
           {universities.slice(0, 3).map((u, i) => (
@@ -241,12 +245,13 @@ function FeaturedUniversities() {
 }
 
 function JourneySection() {
+  const t = useT();
   return (
     <section style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>
       <div className="ct-container">
         <StickyScrollSection
           aside={
-            <SectionHeading eyebrow={T("home.journeyEyebrow")} title={T("home.journeyTitle")}
+            <SectionHeading eyebrow={t("How it works")} title={t("Five steps from question to campus")}
               lead="No jargon, no hidden stages. You always know what happens next." />
           }
           items={journey.map((s) => ({
@@ -282,6 +287,7 @@ function TestimonialsSection() {
 }
 
 function PartnerStrip() {
+  const t = useT();
   return (
     <section style={{ background: "var(--surface-subtle)", paddingBottom: "var(--section-y)" }}>
       <div className="ct-container">
@@ -293,8 +299,8 @@ function PartnerStrip() {
               <p style={{ color: "var(--text-body)", margin: 0 }}>Agencies, consultants, universities and country representatives get a portal, published commission rates and a named contact.</p>
             </div>
             <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
-              <Button variant="primary" onClick={() => go("partners")}>{T("cta.partner")}</Button>
-              <Button variant="secondary" icon="globe" onClick={() => go("representative")}>{T("cta.rep")}</Button>
+              <Button variant="primary" onClick={() => go("partners")}>{t("Become a Partner")}</Button>
+              <Button variant="secondary" icon="globe" onClick={() => go("representative")}>{t("Become a Representative")}</Button>
             </div>
           </Card>
         </ScrollReveal>
@@ -304,12 +310,13 @@ function PartnerStrip() {
 }
 
 function FaqSection() {
+  const t = useT();
   return (
     <section className="ct-faq-grid" style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>
       <div className="ct-container ct-faq-inner" style={{ display: "grid", gridTemplateColumns: "minmax(280px,360px) 1fr", gap: "var(--space-16)", alignItems: "start" }}>
         <div style={{ position: "sticky", top: 132 }}>
           <ScrollReveal>
-            <SectionHeading eyebrow={T("home.faqEyebrow")} title={T("home.faqTitle")}
+            <SectionHeading eyebrow={t("Questions")} title={t("Answers before you ask")}
               lead="Still unsure? Message us on WhatsApp and a person replies." />
           </ScrollReveal>
         </div>
@@ -320,6 +327,7 @@ function FaqSection() {
 }
 
 export default function Home() {
+  const t = useT();
   return (
     <div>
       <Hero
@@ -343,7 +351,7 @@ export default function Home() {
         <ScrollReveal>
           <CTABanner eyebrow="Ready when you are" title="Start your application for the next intake"
             body="Tell us what you want to study. We come back with real options, real costs and real deadlines."
-            primaryLabel={T("cta.apply")} primaryHref="#/apply" secondaryLabel={T("cta.consult")} secondaryHref="#/contact" assetBase={ASSETS} />
+            primaryLabel={t("Apply Now")} primaryHref="#/apply" secondaryLabel={t("Book a Consultation")} secondaryHref="#/contact" assetBase={ASSETS} />
         </ScrollReveal>
       </div>
     </div>

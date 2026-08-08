@@ -12,6 +12,7 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
+import { DEFAULT_LOCALE, isLocale } from "@/i18n/locales";
 
 /**
  * Content Security Policy.
@@ -113,7 +114,46 @@ export function middleware(request: NextRequest): NextResponse {
 
   const tileHost = process.env["MAP_TILE_HOST"] ?? "";
 
-  const response = NextResponse.next();
+  /*
+   * Locale rewriting.
+   *
+   * Every page lives under `app/[locale]/`, but English is served unprefixed —
+   * `/study`, not `/en/study`. The prototype published those addresses and handoff
+   * note 6 is clear that they are already in circulation, so moving them would break
+   * every shared link to gain nothing.
+   *
+   * A rewrite rather than a redirect: the visitor's URL stays `/study` while Next
+   * resolves `app/[locale]/(site)/study`. A redirect would put `/en/` in the address
+   * bar and undo the whole point.
+   *
+   * Paths that already carry a locale (`/ar/study`) pass through untouched. `/api`,
+   * `/_next` and the static folders never reach here — see the matcher below.
+   */
+  const first = pathname.split("/")[1] ?? "";
+
+  /*
+   * Only *pages* get a locale. Everything else must pass through untouched.
+   *
+   * This guard is not defensive tidying — without it the rewrite prepends `/en` to
+   * `/api/health`, `/sitemap.xml` and `/robots.txt`, none of which exist under a locale.
+   * Measured before it was added: every API route returned 404 and `/sitemap.xml`
+   * served the homepage's HTML. The matcher below cannot express this on its own,
+   * because these paths still need the security headers this middleware sets.
+   */
+  const isPageRequest =
+    !pathname.startsWith("/api") &&
+    pathname !== "/sitemap.xml" &&
+    pathname !== "/robots.txt" &&
+    pathname !== "/manifest.webmanifest";
+
+  const rewritten =
+    isPageRequest && !isLocale(first)
+      ? new URL(`/${DEFAULT_LOCALE}${pathname}`, request.url)
+      : null;
+
+  const response = rewritten
+    ? NextResponse.rewrite(rewritten)
+    : NextResponse.next();
 
   response.headers.set("content-security-policy", contentSecurityPolicy(tileHost));
   // Two years, with preload. Set only once the domain is confirmed https-only —

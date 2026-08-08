@@ -3,9 +3,9 @@
 /** About us. Ported from site/Company.jsx. */
 
 import { Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, StatBlock, TestimonialCard, TimelineTrack, ASSETS } from "@/ds";
+import { useT } from "@/i18n/context";
 import { accreditations, leadership, milestones, offices, stats, testimonials } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
-import { T } from "@/i18n/runtime";
 import { go } from "@/app/router";
 import { IconCard, PageBody, PageHero, splitStyle } from "./shared";
 import { CardGrid } from "@/components/CardGrid";
@@ -17,14 +17,15 @@ const VALUES = [
 ];
 
 export default function About() {
+  const t = useT();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero eyebrow="About us" title="Your gateway to Türkiye"
         lead="Campus Turkey has worked with Turkish universities, hospitals and chambers of commerce since 2014. We help students, patients, businesses, workers and partners reach opportunities here."
         actions={
           <>
-            <Button variant="onDark" size="lg" onClick={() => go("apply")}>{T("cta.apply")}</Button>
-            <Button variant="outlineOnDark" size="lg" icon="calendar-check" onClick={() => go("contact")}>{T("cta.consult")}</Button>
+            <Button variant="onDark" size="lg" onClick={() => go("apply")}>{t("Apply Now")}</Button>
+            <Button variant="outlineOnDark" size="lg" icon="calendar-check" onClick={() => go("contact")}>{t("Book a Consultation")}</Button>
           </>
         } />
 

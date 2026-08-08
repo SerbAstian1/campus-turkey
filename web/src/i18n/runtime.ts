@@ -48,7 +48,16 @@ export function useTranslationSweep(lang: string): void {
   });
 
   useEffect(() => {
-    const root = document.getElementById("root");
+    /**
+     * `document.body`, not `#root`.
+     *
+     * The Vite build mounted into `<div id="root">` from index.html. Next renders
+     * straight into `<body>`, so after the migration this lookup returned null and the
+     * observer was never attached — the sweep then only ran on the render effect above
+     * and missed every menu, sheet and card that mounts afterwards. A silent
+     * regression: the language switcher still changed the label, so it looked fine.
+     */
+    const root = document.body;
     if (!root || lang === "EN") return;
 
     let queued = false;

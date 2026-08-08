@@ -3,9 +3,9 @@
 /** Study in Türkiye. Ported from site/Study.jsx. */
 
 import { Accordion, Badge, BrandDivider, Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, TimelineTrack, ASSETS } from "@/ds";
+import { useT } from "@/i18n/context";
 import { generalFaq, journey, scholarships, studentLife } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
-import { T } from "@/i18n/runtime";
 import { go } from "@/app/router";
 import { IconCard, PageBody, PageHero, FaqLayout } from "./shared";
 import { CardGrid } from "@/components/CardGrid";
@@ -20,17 +20,18 @@ const WHY = [
 ];
 
 export default function Study() {
+  const t = useT();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
-        badge={T("hero.badge")}
+        badge={t("Applications open for the 2026 intake")}
         eyebrow="Our core service"
         title="Study in Türkiye"
         lead="Admission, scholarships, visa and arrival, handled by one team. You get real tuition figures and real deadlines before you decide anything."
         actions={
           <>
-            <Button variant="onDark" size="lg" onClick={() => go("apply")}>{T("cta.apply")}</Button>
-            <Button variant="outlineOnDark" size="lg" icon="landmark" onClick={() => go("universities")}>{T("cta.browse")}</Button>
+            <Button variant="onDark" size="lg" onClick={() => go("apply")}>{t("Apply Now")}</Button>
+            <Button variant="outlineOnDark" size="lg" icon="landmark" onClick={() => go("universities")}>{t("Browse the directory")}</Button>
           </>
         }
       />

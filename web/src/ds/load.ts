@@ -84,7 +84,18 @@ export function loadDesignSystem(): Promise<void> {
        effect, so an icon that mounts before lucide exists renders as an empty span. */
     await loadScript("/ds/lucide.min.js");
     await loadScript("/ds/_ds_bundle.js");
-    await loadScript("/site/i18n.js");
+    /*
+     * `/site/i18n.js` is no longer loaded.
+     *
+     * It carried the phrase book and the DOM sweep that machine-translated text nodes
+     * after every render. Translation now happens on the server, per locale, before the
+     * HTML is sent — so the sweep has nothing to do, and dropping it removes the
+     * per-render cost of handoff note 7 and the unbounded cache of note 8 along with it.
+     *
+     * The file stays in public/ for now as the source of the reviewed phrases that were
+     * already written for AR, FR, TR, RU and SW; `scripts/seed-messages.mjs` reads them
+     * into the message catalogues rather than throwing that work away.
+     */
 
     const ds = window[DS_NAMESPACE];
     if (!ds) throw new Error("The design system bundle loaded but exposed no components.");

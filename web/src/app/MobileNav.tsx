@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from "react";
 import { Button, Icon, LanguageSwitcher, Logo, ASSETS } from "@/ds";
-import { T } from "@/i18n/runtime";
+import { useT } from "@/i18n/context";
 import { go } from "./router";
 
 type Group = { key: string; label: string; icon: string; links: [string, string, string][] };
@@ -22,6 +22,7 @@ export function MobileNav({
   onLangChange: (code: string) => void;
   route: string;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<string | null>(null);
 
@@ -40,24 +41,24 @@ export function MobileNav({
   }, [open]);
 
   const groups: Group[] = [
-    { key: "education", label: T("footer.education"), icon: "graduation-cap", links: [
+    { key: "education", label: t("Education"), icon: "graduation-cap", links: [
       ["Study in Türkiye", "study", "graduation-cap"],
       ["University directory", "universities", "landmark"],
       ["Scholarships", "study", "award"],
       ["Resources", "resources", "book-open"]] },
-    { key: "services", label: T("footer.services"), icon: "heart-pulse", links: [
+    { key: "services", label: t("Services"), icon: "heart-pulse", links: [
       ["Medical Tourism", "service/medical", "heart-pulse"],
       ["Business Facilitation", "service/business", "briefcase"],
       ["Employment", "service/employment", "hard-hat"],
       ["Educational tours", "service/tours", "bus-front"]] },
-    { key: "partners", label: T("footer.partners"), icon: "handshake", links: [
+    { key: "partners", label: t("Partners"), icon: "handshake", links: [
       ["Become a Partner", "partners", "handshake"],
       ["Become a Representative", "representative", "globe"],
       ["For universities", "institutions/universities", "landmark"],
       ["For agencies", "institutions/agencies", "users"],
       ["For hospitals", "institutions/hospitals", "stethoscope"],
       ["Partner Login", "portal", "log-in"]] },
-    { key: "company", label: T("footer.company"), icon: "info", links: [
+    { key: "company", label: t("Company"), icon: "info", links: [
       ["About us", "about", "info"],
       ["Contact", "contact", "phone"]] },
   ];
@@ -88,8 +89,8 @@ export function MobileNav({
           visibility: open ? "visible" : "hidden",
         }}
       >
-        <Button variant="primary" size="lg" fullWidth onClick={() => navigate("apply")}>{T("cta.apply")}</Button>
-        <Button variant="secondary" size="lg" fullWidth icon="calendar-check" onClick={() => navigate("contact")}>{T("cta.consult")}</Button>
+        <Button variant="primary" size="lg" fullWidth onClick={() => navigate("apply")}>{t("Apply Now")}</Button>
+        <Button variant="secondary" size="lg" fullWidth icon="calendar-check" onClick={() => navigate("contact")}>{t("Book a Consultation")}</Button>
 
         <nav>
           {groups.map((g) => {

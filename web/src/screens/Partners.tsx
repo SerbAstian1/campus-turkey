@@ -5,13 +5,14 @@
 import { BrandDivider, Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, ASSETS } from "@/ds";
 import { institutions, partnerBenefits } from "@/content";
 import { scrollToId } from "@/components/Common";
-import { T } from "@/i18n/runtime";
 import { go } from "@/app/router";
 import { IconCard, PageBody, PageHero } from "./shared";
 import { PartnerForm } from "./PartnerForm";
 import { CardGrid } from "@/components/CardGrid";
+import { useT } from "@/i18n/context";
 
 export default function Partners() {
+  const t = useT();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero eyebrow="Partnerships" title="Become a partner"
@@ -19,7 +20,7 @@ export default function Partners() {
         actions={
           <>
             <Button variant="onDark" size="lg" onClick={() => scrollToId("partner-form")}>Register now</Button>
-            <Button variant="outlineOnDark" size="lg" icon="globe" onClick={() => go("representative")}>{T("cta.rep")}</Button>
+            <Button variant="outlineOnDark" size="lg" icon="globe" onClick={() => go("representative")}>{t("Become a Representative")}</Button>
           </>
         } />
 

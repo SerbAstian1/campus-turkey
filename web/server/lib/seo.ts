@@ -12,6 +12,9 @@
 
 import type { Metadata } from "next";
 import type { Article, Service, University } from "@contracts/types";
+import {
+  BCP47, DEFAULT_LOCALE, LOCALES, localePath, type Locale,
+} from "@/i18n/locales";
 
 const ORIGIN = process.env["SITE_ORIGIN"] ?? "https://campusturkey.com";
 
@@ -21,6 +24,35 @@ const DEFAULT_DESCRIPTION =
 
 export function canonical(path: string): string {
   return new URL(path, ORIGIN).toString();
+}
+
+/**
+ * The canonical and `hreflang` set for one page across every locale.
+ *
+ * This is the single most consequential tag on a multilingual site. Without it,
+ * seventeen translations of the same page look to a search engine like seventeen pages
+ * competing for the same queries; with it, each is served to the market that reads its
+ * language.
+ *
+ * `x-default` points at English — it is what a searcher gets when none of the seventeen
+ * matches their browser, and omitting it leaves that choice to a guess.
+ *
+ * `path` is the *unprefixed* path (`/study`, `/universities/bilkent-university`).
+ * `localePath` adds the segment for every locale except English, which stays at the
+ * root so already-published links keep working.
+ */
+export function alternatesFor(path: string, locale: Locale): Metadata["alternates"] {
+  const languages: Record<string, string> = {};
+
+  for (const other of LOCALES) {
+    languages[BCP47[other]] = canonical(localePath(path, other));
+  }
+  languages["x-default"] = canonical(localePath(path, DEFAULT_LOCALE));
+
+  return {
+    canonical: canonical(localePath(path, locale)),
+    languages,
+  };
 }
 
 /**
@@ -56,24 +88,39 @@ export const baseMetadata: Metadata = {
 interface PageMetaInput {
   title: string;
   description: string;
+  /** The unprefixed path. The locale segment is added by `alternatesFor`. */
   path: string;
+  /**
+   * Which language this page is being rendered in. Determines the canonical and the
+   * `og:locale`; the `hreflang` set is the same for every locale of a given page.
+   */
+  locale?: Locale;
   /** Set for the portal and anything else that must never be indexed. */
   noindex?: boolean;
   image?: string;
 }
 
 export function pageMetadata(input: PageMetaInput): Metadata {
-  const url = canonical(input.path);
+  const locale = input.locale ?? DEFAULT_LOCALE;
+  const url = canonical(localePath(input.path, locale));
+
   return {
     title: input.title,
     description: input.description,
-    // The canonical is the single highest-value tag on a site with filterable listings:
-    // it is what stops `/universities?city=Istanbul` competing with `/universities`.
-    alternates: { canonical: url },
+    /*
+     * Canonical plus the full `hreflang` set.
+     *
+     * The canonical alone was enough when the site was one language — it stops
+     * `/universities?city=Istanbul` competing with `/universities`. With seventeen
+     * translations it is not: without `hreflang`, each translation looks like a
+     * duplicate rather than the version for a particular market.
+     */
+    alternates: alternatesFor(input.path, locale),
     openGraph: {
       title: input.title,
       description: input.description,
       url,
+      locale: BCP47[locale],
       ...(input.image ? { images: [{ url: input.image }] } : {}),
     },
     ...(input.noindex ? { robots: { index: false, follow: false } } : {}),
