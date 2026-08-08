@@ -17,10 +17,12 @@ import {
 } from "@/ds";
 import { portal as content, universities, type PayoutMethod, type PortalStudent, type Withdrawal } from "@/content";
 import { formatMinor, newIdempotencyKey, requestWithdrawal } from "@/features/portal/withdrawals";
+import { usePortalData, type PortalData } from "@/features/portal/data";
 import { useLanguage } from "@/i18n/runtime";
 import { go } from "@/app/router";
 import { toast } from "@/app/toast";
 import { CardGrid } from "@/components/CardGrid";
+import { ErrorScreen } from "./Errors";
 
 const STAGE_TONE: Record<PortalStudent["stage"], "brand" | "neutral" | "warning"> = {
   Registered: "brand", Visa: "brand", Offer: "neutral", Submitted: "neutral", Documents: "warning", Enquiry: "neutral",
@@ -418,17 +420,62 @@ const NAV: [View, string, string][] = [
   ["account", "Account", "user"],
 ];
 
+/**
+ * Shown while the four dashboard requests are in flight.
+ *
+ * Deliberately quiet — no skeleton of fake rows. A placeholder shaped like a balance is
+ * a number the eye reads before it is told not to.
+ */
+function PortalLoading() {
+  return (
+    <div
+      aria-busy="true"
+      aria-live="polite"
+      style={{
+        minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center",
+        background: "var(--surface-subtle)", color: "var(--text-body)",
+        fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)",
+      }}
+    >
+      Loading your portal…
+    </div>
+  );
+}
+
 export default function PortalDashboard() {
+  const portal = usePortalData();
+
+  if (portal.status === "loading") return <PortalLoading />;
+  if (portal.status === "failed") {
+    // A stale session is a different problem from an unreachable server, and the
+    // designed screens say different things about each — one offers a sign-in, the
+    // other offers a retry.
+    return <ErrorScreen state={portal.message === "session" ? "sessionExpired" : "failed"} />;
+  }
+
+  return <PortalView data={portal.data} onReload={portal.reload} />;
+}
+
+/**
+ * The dashboard proper, mounted only once the data is in hand.
+ *
+ * Split from the component above so that every `useState` below can be initialised from
+ * real values. Initialising from placeholders and then overwriting them in an effect is
+ * how a portal briefly renders somebody else's balance.
+ */
+function PortalView({ data, onReload }: { data: PortalData; onReload: () => void }) {
   const [view, setView] = useState<View>("overview");
   const [sheet, setSheet] = useState<"student" | "withdraw" | "method" | null>(null);
-  const [students, setStudents] = useState<PortalStudent[]>(content.students);
-  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>(content.withdrawals);
-  const [availableMinor, setAvailableMinor] = useState(content.wallet.availableMinor);
-  const [methods, setMethods] = useState<PayoutMethod[]>(content.wallet.methods);
+  const [students, setStudents] = useState<PortalStudent[]>(data.students);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>(data.withdrawals);
+  /* No setter: the balance is the server's to change. `onReload` re-reads it after a
+     withdrawal rather than this screen adjusting a copy. */
+  const availableMinor = data.wallet.availableMinor;
+  const [methods, setMethods] = useState<PayoutMethod[]>(data.wallet.methods);
   const [lang, setLanguage] = useLanguage();
 
-  const account = content.account;
-  const wallet = { ...content.wallet, availableMinor, methods };
+  const account = data.account;
+  const wallet = { ...data.wallet, availableMinor, methods };
 
   const addMethod = (m: PayoutMethod, makeDefault: boolean) =>
     setMethods((list) => {
@@ -437,31 +484,36 @@ export default function PortalDashboard() {
       return makeDefault ? [added, ...cleared] : [...cleared, added];
     });
 
-  /** The server is authoritative: this asks, it does not decide. */
+  /**
+   * The server is authoritative: this asks, it does not decide.
+   *
+   * The development fallback that used to live here — invent a withdrawal locally when
+   * the request failed — is gone. It existed because there was no server; there is one
+   * now, and a UI that fabricates a payout when the API is unreachable is the single
+   * most misleading thing this screen could do.
+   *
+   * On success the balance is re-read from the server rather than decremented locally.
+   * The client's arithmetic and the server's would agree today and drift the first time
+   * a fee, a minimum or a reversal enters the picture, and the server's is the one that
+   * decides what the partner can withdraw next.
+   */
   const withdraw = async (amountMinor: number, method: PayoutMethod): Promise<string | null> => {
     const result = await requestWithdrawal({
       amountMinor, currency: CURRENCY, payoutMethodId: method.id, idempotencyKey: newIdempotencyKey(),
     }).catch(() => null);
 
-    if (result?.ok) {
-      setWithdrawals((l) => [result.withdrawal, ...l]);
-      setAvailableMinor((v) => v - amountMinor);
-      toast(`${money(amountMinor)} is on its way by ${method.label.toLowerCase()}.`);
-      return null;
+    if (!result) {
+      return "We could not reach the server. Nothing has been taken from your balance.";
+    }
+    if (!result.ok) {
+      // `reason` distinguishes a stale balance from an invalid method from a limit;
+      // the message is already written for a partner to read.
+      return result.message;
     }
 
-    /* No server yet. In production the failure is surfaced and the balance left alone. */
-    if (process.env.NODE_ENV === "production") {
-      return result?.ok === false ? result.message : "We could not process that. Nothing has been taken from your balance.";
-    }
-
-    setWithdrawals((l) => [{
-      id: `wd-${Date.now()}`, reference: `WD-${1000 + l.length + 1}`, period: "Today",
-      basis: `Withdrawal · ${method.label}`, amountMinor, currency: CURRENCY,
-      status: "Processing", requestedAt: new Date().toISOString().slice(0, 10),
-    }, ...l]);
-    setAvailableMinor((v) => v - amountMinor);
+    setWithdrawals((list) => [result.withdrawal, ...list]);
     toast(`${money(amountMinor)} is on its way by ${method.label.toLowerCase()}.`);
+    onReload();
     return null;
   };
 

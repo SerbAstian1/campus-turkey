@@ -38,3 +38,6 @@ Thumbs.db
 *.out
 *.log
 !CHANGELOG.log
+
+# Local PGlite database (scripts/dev-db.mjs)
+web/.pglite/

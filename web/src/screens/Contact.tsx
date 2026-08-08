@@ -14,11 +14,21 @@ import { Badge, BrandDivider, Button, Card, Checkbox, Icon, Input, Select } from
 import { contact } from "@/content";
 import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
+import { useLeadSubmit } from "@/features/leads/submit";
 import { PageBody, PageHero } from "./shared";
 
 export default function Contact() {
-  const [sent, setSent] = useState(false);
+  /**
+   * "Medical treatment" is routed as a MEDICAL lead rather than a CONTACT one.
+   *
+   * That is not cosmetic: medical enquiries carry health information, and the server
+   * gives that kind a 90-day retention window instead of two years
+   * (`RETENTION_DAYS` in server/modules/leads/leads.service.ts). Handoff note 13.
+   */
   const [form, setForm] = useState({ name: "", email: "", phone: "", topic: "", when: "", message: "", consent: true });
+  const kind = form.topic === "Medical treatment" ? "MEDICAL" : "CONTACT";
+  const { state, submit } = useLeadSubmit(kind);
+  const sent = state.status === "sent";
 
   const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -56,7 +66,25 @@ export default function Contact() {
                 </div>
               </div>
             ) : (
-              <form onSubmit={(e: FormEvent) => { e.preventDefault(); setSent(true); }}
+              <form
+                onSubmit={(e: FormEvent) => {
+                  e.preventDefault();
+                  void submit(
+                    {
+                      name: form.name,
+                      email: form.email,
+                      phone: form.phone,
+                      subject: form.topic,
+                      // The call-time preference is part of the enquiry, not a separate
+                      // field the server models — it belongs in the message a human reads.
+                      message: [form.message, form.when && `Best time to call: ${form.when}`]
+                        .filter(Boolean)
+                        .join("\n\n"),
+                      ...(kind === "MEDICAL" ? { treatment: form.message } : {}),
+                    },
+                    form.consent,
+                  );
+                }}
                 style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-5)" }}>
                 <Input id="c-name" label="Full name" icon="user" placeholder="Amina Yusuf" required value={form.name} onChange={set("name")} />
                 <Input id="c-email" label="Email address" type="email" icon="mail" placeholder="you@example.com" required value={form.email} onChange={set("email")} />
@@ -70,7 +98,18 @@ export default function Contact() {
                   <textarea id="c-msg" rows={4} value={form.message} onChange={set("message")} placeholder="Your grades, your treatment, your sector. Whatever is relevant."
                     style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-subtle)", background: "var(--white)", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", color: "var(--green-900)", resize: "vertical" }} />
                   <Checkbox id="c-consent" label="Contact me on WhatsApp" description="We reply within one working day. No marketing messages." checked={form.consent} onChange={set("consent")} />
-                  <Button variant="primary" size="lg" type="submit">Request my consultation</Button>
+
+                  {/* The failure path. Without this the form can only ever appear to
+                      succeed, which is the specific thing worse than having no form. */}
+                  {state.status === "failed" ? (
+                    <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
+                      <Icon name="alert-circle" size={16} />{state.message}
+                    </span>
+                  ) : null}
+
+                  <Button variant="primary" size="lg" type="submit" disabled={state.status === "sending"}>
+                    {state.status === "sending" ? "Sending…" : "Request my consultation"}
+                  </Button>
                 </div>
               </form>
             )}

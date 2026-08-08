@@ -8,12 +8,36 @@
  * is missing. Until then the portal is a demo of the surface, not a protected area.
  */
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { BrandDivider, Button, Checkbox, Icon, Input, Logo, Select, ASSETS } from "@/ds";
 import { go } from "@/app/router";
+import { signInWithPassword } from "@/features/auth/client";
 
 export default function PartnerLogin() {
   const [tab, setTab] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const signIn = async (e: FormEvent) => {
+    e.preventDefault();
+    setSigningIn(true);
+    setError(null);
+
+    const result = await signInWithPassword(email, password);
+
+    if (result.ok) {
+      // The dashboard checks the session server-side before it renders, so this is a
+      // navigation rather than a promise that the session is good — if it were not,
+      // that route would send the visitor straight back here.
+      go("portal/dashboard");
+      return;
+    }
+
+    setError(result.message);
+    setSigningIn(false);
+  };
 
   return (
     <div style={{ minHeight: "100dvh", display: "grid", gridTemplateColumns: "1.05fr 1fr" }}>
@@ -47,13 +71,30 @@ export default function PartnerLogin() {
           {tab === "login" ? (
             <>
               <h3 style={{ fontSize: "var(--fs-h2)" }}>Welcome back</h3>
-              <Input id="p-email" label="Email address" type="email" icon="mail" placeholder="agency@example.com" />
-              <Input id="p-pass" label="Password" type="password" icon="lock" placeholder="••••••••" />
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)" }}>
-                <Checkbox id="p-remember" label="Keep me signed in" checked onChange={() => {}} />
-                <a href="#/contact" style={{ fontSize: "var(--fs-body-sm)" }}>Forgot password</a>
-              </div>
-              <Button variant="primary" size="lg" fullWidth onClick={() => go("portal/dashboard")}>Sign in</Button>
+              {/* A real form, so Enter submits and password managers recognise it —
+                  both of which a pair of inputs beside a button does not give you. */}
+              <form onSubmit={signIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+                <Input id="p-email" label="Email address" type="email" icon="mail" placeholder="agency@example.com"
+                  required autoComplete="username" value={email}
+                  onChange={(e) => setEmail(e.target.value)} />
+                <Input id="p-pass" label="Password" type="password" icon="lock" placeholder="••••••••"
+                  required autoComplete="current-password" value={password}
+                  onChange={(e) => setPassword(e.target.value)} />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)" }}>
+                  <Checkbox id="p-remember" label="Keep me signed in" checked onChange={() => {}} />
+                  <a href="#/contact" style={{ fontSize: "var(--fs-body-sm)" }}>Forgot password</a>
+                </div>
+
+                {error ? (
+                  <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
+                    <Icon name="alert-circle" size={16} />{error}
+                  </span>
+                ) : null}
+
+                <Button variant="primary" size="lg" fullWidth type="submit" disabled={signingIn}>
+                  {signingIn ? "Signing in…" : "Sign in"}
+                </Button>
+              </form>
             </>
           ) : (
             <>

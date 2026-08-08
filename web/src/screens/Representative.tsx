@@ -58,7 +58,7 @@ export default function Representative() {
             <BrandDivider />
             <span style={{ fontSize: "var(--fs-body-sm)", color: "var(--text-body)" }}>Currently open: Nigeria, Ghana, Kenya, Tanzania, Morocco, Egypt, Pakistan, Bangladesh and Indonesia.</span>
           </div>
-          <PartnerForm kinds={["Education agency", "Independent consultant", "Travel agency", "Migration consultancy"]}
+          <PartnerForm leadKind="REPRESENTATIVE" kinds={["Education agency", "Independent consultant", "Travel agency", "Migration consultancy"]}
             submitLabel="Apply for a territory"
             intro="One representative per territory. If your country is already taken we will tell you straight away rather than leave you waiting." />
         </div>

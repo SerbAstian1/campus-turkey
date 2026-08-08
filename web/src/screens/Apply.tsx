@@ -11,14 +11,31 @@ import { useState, type FormEvent } from "react";
 import { Badge, BrandDivider, Button, Card, Checkbox, Icon, Input, Select, StepIndicator, ScrollReveal } from "@/ds";
 import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
+import { useLeadSubmit } from "@/features/leads/submit";
 
 const STEPS = ["You", "Study plan", "Documents", "Done"];
+
+/**
+ * The study levels the form offers, mapped onto the enum the API accepts.
+ *
+ * The screen's labels are the reader's; the schema's values are the database's. Sending
+ * "Bachelor's degree" where `bachelor` is expected fails validation on a field the
+ * applicant filled in correctly.
+ */
+const LEVEL_FOR: Record<string, "foundation" | "bachelor" | "master" | "phd" | undefined> = {
+  "Foundation or language year": "foundation",
+  "Bachelor's degree": "bachelor",
+  "Master's degree": "master",
+  "PhD": "phd",
+};
 
 export default function Apply() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     name: "", email: "", phone: "", country: "", level: "", field: "", city: "", intake: "", consent: true,
   });
+
+  const { state, submit } = useLeadSubmit("APPLY");
 
   const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -41,7 +58,38 @@ export default function Apply() {
         </ScrollReveal>
 
         <Card padding="var(--space-10)" elevation="md" radius="var(--radius-xl)">
-          <form onSubmit={(e: FormEvent) => { e.preventDefault(); setStep(step + 1); }}>
+          {/*
+            Steps 0 and 1 only advance the wizard. Step 2 is the one that submits, and
+            the wizard moves to "Done" only once the server confirms — advancing first
+            and posting afterwards would show someone a completed application that was
+            never received.
+          */}
+          <form
+            onSubmit={async (e: FormEvent) => {
+              e.preventDefault();
+
+              if (step < 2) {
+                setStep(step + 1);
+                return;
+              }
+
+              const ok = await submit(
+                {
+                  name: form.name,
+                  email: form.email,
+                  phone: form.phone,
+                  country: form.country,
+                  level: LEVEL_FOR[form.level] ?? undefined,
+                  program: form.field,
+                  intake: form.intake,
+                  message: form.city ? `Preferred city: ${form.city}` : "",
+                },
+                form.consent,
+              );
+
+              if (ok) setStep(3);
+            }}
+          >
             <StepIndicator steps={STEPS} current={step} style={{ marginBottom: "var(--space-10)" }} />
 
             {step === 0 ? (
@@ -100,10 +148,21 @@ export default function Apply() {
               </div>
             ) : null}
 
+            {/* Placed above the buttons rather than beside them: on a phone the button
+                row is at the bottom of a long form, and an error rendered inline with it
+                scrolls out of view exactly when it is needed. */}
+            {state.status === "failed" ? (
+              <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginTop: "var(--space-6)", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
+                <Icon name="alert-circle" size={16} />{state.message}
+              </span>
+            ) : null}
+
             {step < 3 ? (
               <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)", marginTop: "var(--space-10)", paddingTop: "var(--space-6)", borderTop: "1px solid var(--border-subtle)" }}>
                 <Button variant="ghost" icon="arrow-left" type="button" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>Back</Button>
-                <Button variant="primary" size="lg" type="submit">{step === 2 ? "Submit application" : "Continue"}</Button>
+                <Button variant="primary" size="lg" type="submit" disabled={state.status === "sending"}>
+                  {state.status === "sending" ? "Sending…" : step === 2 ? "Submit application" : "Continue"}
+                </Button>
               </div>
             ) : null}
           </form>

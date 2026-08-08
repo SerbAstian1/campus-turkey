@@ -3,26 +3,36 @@
 /**
  * Partner and representative registration. Ported from site/Pages.jsx.
  *
- * No backend: submitting swaps to the confirmation panel unconditionally. Wire it to
- * your partners endpoint and handle the failure path before launch.
+ * Posts to `/api/leads` through `useLeadSubmit`. The confirmation panel appears only
+ * after the server has stored the lead — it used to appear unconditionally, which meant
+ * a registration could be lost while the applicant was told it had arrived.
  */
 
 import { useState, type FormEvent } from "react";
-import { Badge, BrandDivider, Button, Card, Checkbox, Input, Select } from "@/ds";
+import { Badge, BrandDivider, Button, Card, Checkbox, Icon, Input, Select } from "@/ds";
 import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
+import { useLeadSubmit } from "@/features/leads/submit";
 
 export function PartnerForm({
-  kinds, submitLabel = "Submit registration", intro,
+  kinds, submitLabel = "Submit registration", intro, leadKind = "PARTNER",
 }: {
   kinds: string[];
   submitLabel?: string;
   intro?: string;
+  /**
+   * Which kind of lead this is. The Representative page renders the same form with
+   * different copy, and the two get different retention windows and land in different
+   * queues — so the distinction has to survive the shared component.
+   */
+  leadKind?: "PARTNER" | "REPRESENTATIVE";
 }) {
-  const [sent, setSent] = useState(false);
   const [form, setForm] = useState({
     org: "", kind: "", country: "", name: "", email: "", phone: "", volume: "", terms: true,
   });
+
+  const { state, submit, reset } = useLeadSubmit(leadKind);
+  const sent = state.status === "sent";
 
   const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -44,11 +54,28 @@ export function PartnerForm({
           <p style={{ maxWidth: 460, color: "var(--text-body)" }}>Your agreement and portal login are on the way. Expect a call from your named contact within one working day.</p>
           <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap", justifyContent: "center" }}>
             <Button variant="primary" icon="log-in" onClick={() => go("portal")}>Go to the portal</Button>
-            <Button variant="secondary" onClick={() => setSent(false)}>Register another office</Button>
+            <Button variant="secondary" onClick={reset}>Register another office</Button>
           </div>
         </div>
       ) : (
-        <form onSubmit={(e: FormEvent) => { e.preventDefault(); setSent(true); }}
+        <form
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault();
+            void submit(
+              {
+                org: form.org,
+                name: form.name,
+                email: form.email,
+                phone: form.phone,
+                territory: form.country,
+                volume: form.volume,
+                // "You are a" is a classification the reviewer needs; the schema has no
+                // field for it, so it travels in the message a human reads.
+                message: form.kind ? `Organisation type: ${form.kind}` : "",
+              },
+              form.terms,
+            );
+          }}
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-5)" }}>
           {intro ? <p style={{ gridColumn: "span 2", margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>{intro}</p> : null}
           <Input id="p-org" label="Organisation name" icon="building-2" placeholder="Bright Futures Education" required value={form.org} onChange={set("org")} style={{ gridColumn: "span 2" }} />
@@ -61,7 +88,15 @@ export function PartnerForm({
           <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
             <Checkbox id="p-terms" label="I agree to the partner terms and commission schedule"
               description="You can read both before signing. Nothing is binding until you do." checked={form.terms} onChange={set("terms")} />
-            <Button variant="primary" size="lg" type="submit">{submitLabel}</Button>
+            {state.status === "failed" ? (
+              <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
+                <Icon name="alert-circle" size={16} />{state.message}
+              </span>
+            ) : null}
+
+            <Button variant="primary" size="lg" type="submit" disabled={state.status === "sending"}>
+              {state.status === "sending" ? "Sending…" : submitLabel}
+            </Button>
           </div>
         </form>
       )}

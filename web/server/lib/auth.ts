@@ -61,6 +61,18 @@ export const auth = betterAuth({
 
   advanced: {
     /**
+     * Better Auth mints its own short random ids by default. The auth tables here are
+     * declared `@db.Uuid`, matching every other id in the schema, so Postgres rejects
+     * those on insert — a sign-in fails with `Error creating UUID, invalid character
+     * ... found 'p' at 1`, which is the library's id arriving in a uuid column.
+     *
+     * Overriding the generator rather than widening the columns to `text`: uuid columns
+     * are 16 bytes against ~30, index better, and keep one id shape across the whole
+     * database instead of two.
+     */
+    database: { generateId: "uuid" },
+
+    /**
      * `SameSite=Lax` rather than `Strict`: Strict would drop the session cookie on a
      * link followed from an email, which is how partners actually arrive at the portal
      * after an "approved" notification. The origin check in `server/http/handler.ts`
