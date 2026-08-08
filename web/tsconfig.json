@@ -21,16 +21,37 @@
     "exactOptionalPropertyTypes": false,
 
     "baseUrl": ".",
+    /**
+     * Two trees share one `@/` prefix, deliberately.
+     *
+     * `src/` is EDSAI's and its imports are left exactly as written — `@/ds`,
+     * `@/content`, `@/screens/Home`. Rewriting fifty files to say `@/src/...` would be
+     * churn in someone else's territory for no benefit.
+     *
+     * `server/` is this layer's. TypeScript resolves the longest matching prefix, not
+     * the first, so the specific entries below win over the `@/*` catch-all regardless
+     * of order.
+     *
+     * `@/app/*` maps into `src/app/`, not the Next.js `app/` directory. Nothing ever
+     * imports a route file, so there is no collision — but it is the one line here that
+     * looks wrong at a glance and isn't.
+     */
     "paths": {
-      "@/*": ["./*"],
-      // The EDSAI boundary. `app/src/content/types.ts` is the single source of truth for
-      // every shape that crosses between the server and the frontend; the server imports
-      // it rather than restating it, which is the one thing that keeps a two-layer system
-      // from drifting. These are type-only imports, so nothing crosses at runtime.
-      //
-      // When app/src is consolidated into web/src (see docs/MIGRATION.md, step 1), this
-      // alias is the only line that changes.
-      "@contracts/*": ["../app/src/content/*"]
+      "@/server/*": ["./server/*"],
+      "@/app/*": ["./src/app/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/content": ["./src/content/index.ts"],
+      "@/content/*": ["./src/content/*"],
+      "@/ds": ["./src/ds/index.ts"],
+      "@/ds/*": ["./src/ds/*"],
+      "@/features/*": ["./src/features/*"],
+      "@/i18n/*": ["./src/i18n/*"],
+      "@/motion/*": ["./src/motion/*"],
+      "@/screens/*": ["./src/screens/*"],
+      "@/styles/*": ["./src/styles/*"],
+      // The server/frontend contract. Now a sibling rather than a reach into ../app.
+      "@contracts/*": ["./src/content/*"],
+      "@/*": ["./*"]
     },
 
     "plugins": [{ "name": "next" }]

@@ -29,25 +29,36 @@ if (!ds) {
   process.exit(1);
 }
 
-const jobs = [
-  [join(ds, "tokens"), join(root, "app/public/ds/tokens")],
+/**
+ * Both public directories are populated during the migration.
+ *
+ * `app/` is the Vite frontend being retired; `web/` is the Next.js application taking
+ * over. Keeping both fed means the old one still runs while the new one is built, so a
+ * problem in the migration is never a site that cannot be served at all. Drop `app` from
+ * this list once `app/` is deleted.
+ */
+const targets = ["app", "web"].filter((dir) => existsSync(join(root, dir)));
+
+const jobs = targets.flatMap((target) => [
+  [join(ds, "tokens"), join(root, target, "public/ds/tokens")],
   // The design system's own assets, kept as a sibling of tokens/ because fonts.css
   // reaches them with `url("../assets/fonts/...")`. Copying tokens/ without this
   // leaves every @font-face pointing at a 404 and the brand type silently falls
   // back to system fonts. Distinct from the root assets/ below, which is artwork.
-  [join(ds, "assets"), join(root, "app/public/ds/assets")],
-  [join(root, "assets"), join(root, "app/public/assets")],
+  [join(ds, "assets"), join(root, target, "public/ds/assets")],
+  [join(root, "assets"), join(root, target, "public/assets")],
   // The component bundle itself. It is a classic script that reads a global `React`
   // and assigns to `window.CampusTurkeyDesignSystem_4d33e7`, so it is served from
   // public/ and loaded by a <script> tag rather than imported — see src/ds/load.ts.
-  [join(ds, "_ds_bundle.js"), join(root, "app/public/ds/_ds_bundle.js")],
+  [join(ds, "_ds_bundle.js"), join(root, target, "public/ds/_ds_bundle.js")],
   // Lucide, pinned to the version the prototype loads from unpkg. The design system's
   // Icon component calls window.lucide.createElement, so it needs the UMD build and
   // not lucide-react. 0.454.0 still ships the brand marks (Instagram, Facebook,
   // LinkedIn, YouTube) that later versions removed and the footer uses.
-  [join(root, "node_modules/lucide/dist/umd/lucide.min.js"), join(root, "app/public/ds/lucide.min.js")],
-];
+  [join(root, "node_modules/lucide/dist/umd/lucide.min.js"), join(root, target, "public/ds/lucide.min.js")],
+]);
 
+let copied = 0;
 for (const [from, to] of jobs) {
   if (!existsSync(from)) {
     console.warn(`Skipped, not found: ${from}`);
@@ -55,7 +66,7 @@ for (const [from, to] of jobs) {
   }
   await mkdir(dirname(to), { recursive: true });
   await cp(from, to, { recursive: true });
-  console.log(`Copied ${from.replace(root + "/", "")} -> ${to.replace(root + "/", "")}`);
+  copied++;
 }
 
-console.log("\nSetup done. Now: npm install && npm run dev");
+console.log(`Setup done — ${copied} copies into ${targets.join(", ")}.`);

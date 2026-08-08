@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Campus Turkey — Study in Türkiye</title>
+<meta name="description" content="Campus Turkey is your gateway to Türkiye: university admissions, scholarships, medical tourism, business facilitation, employment, tours and partnerships.">
+<link rel="icon" href="/favicon.png">
+<!-- Tokens before the first paint. Importing them from the stylesheet alone leaves the
+     boot screen below unstyled for a frame, because it renders before the module runs. -->
+<link rel="stylesheet" href="/ds/tokens/fonts.css">
+<link rel="stylesheet" href="/ds/tokens/colors.css">
+<link rel="stylesheet" href="/ds/tokens/typography.css">
+<link rel="stylesheet" href="/ds/tokens/spacing.css">
+<link rel="stylesheet" href="/ds/tokens/radius.css">
+<link rel="stylesheet" href="/ds/tokens/elevation.css">
+<link rel="stylesheet" href="/ds/tokens/motion.css">
+<link rel="stylesheet" href="/ds/tokens/base.css">
+</head>
+<body>
+<!-- Boot screen. The design system bundle, lucide and the translation runtime are
+     classic scripts loaded before the first render; this covers that window and is
+     removed by main.tsx once React has mounted. -->
+<div id="ct-loader">
+  <img src="/assets/logo-lockup-reversed.png" alt="Campus Turkey" width="237" height="104" decoding="async" fetchpriority="high">
+  <div class="bar"><i></i></div>
+</div>
+<div id="root"></div>
+<script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

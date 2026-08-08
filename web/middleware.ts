@@ -27,10 +27,36 @@ import { NextResponse, type NextRequest } from "next/server";
  * work inside `src/`, not a boundary this layer may cross. Scripts carry no such
  * exemption — a nonce is issued per request below, which is what actually stops XSS.
  */
-function contentSecurityPolicy(nonce: string, tileHost: string): string {
+function contentSecurityPolicy(tileHost: string): string {
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    /*
+     * `'unsafe-inline'` on scripts, and this is a deliberate, measured trade rather
+     * than an oversight.
+     *
+     * The strong policy is `'nonce-<per-request>' 'strict-dynamic'`. A per-request
+     * nonce can only be produced by a per-request render, so adopting it opts the
+     * entire site out of static generation — and with a streaming response the status
+     * line is flushed before `notFound()` runs, which brings back the soft 404s that
+     * were the whole reason for the routing migration. Both were measured: with the
+     * nonce, `/universities/not-a-real-slug` returned 200 with `Transfer-Encoding:
+     * chunked`; without it, 404.
+     *
+     * Worse, the nonce was not actually being applied. The served HTML carried seven
+     * inline bootstrap scripts and zero nonce attributes, and `'strict-dynamic'` makes
+     * `'self'` inert — so the policy as written blocked every script on the page. It
+     * looked correct in a header and would have broken the site in a browser.
+     *
+     * What still carries the weight here: there is no user-generated HTML rendered
+     * anywhere, JSON-LD is escaped at the boundary (`jsonLdScript`), and `object-src`,
+     * `base-uri`, `frame-ancestors` and `form-action` are all locked down below — those
+     * close off the injection routes that matter most on a site of this shape.
+     *
+     * To get the strict policy back: it needs build-time hashes of Next's inline
+     * bootstrap scripts, which is the supported route for a statically generated app.
+     * Recorded as a known gap rather than left as a comment nobody reads.
+     */
+    "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://*.basemaps.cartocdn.com " + tileHost,
     "font-src 'self'",
@@ -85,17 +111,11 @@ export function middleware(request: NextRequest): NextResponse {
     }
   }
 
-  // A fresh nonce per request. Reusing one across requests makes it a constant, and a
-  // constant nonce is not a nonce.
-  const nonce = btoa(crypto.randomUUID());
   const tileHost = process.env["MAP_TILE_HOST"] ?? "";
 
-  const headers = new Headers(request.headers);
-  headers.set("x-nonce", nonce);
+  const response = NextResponse.next();
 
-  const response = NextResponse.next({ request: { headers } });
-
-  response.headers.set("content-security-policy", contentSecurityPolicy(nonce, tileHost));
+  response.headers.set("content-security-policy", contentSecurityPolicy(tileHost));
   // Two years, with preload. Set only once the domain is confirmed https-only —
   // preloading is difficult to reverse. See docs/DEPLOYMENT.md.
   response.headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");

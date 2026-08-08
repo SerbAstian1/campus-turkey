@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+
 /**
  * Next.js configuration.
  *
@@ -37,11 +39,11 @@ const nextConfig = {
   },
 
   /**
-   * `app/src` is EDSAI's territory and currently lives in the sibling `app/` workspace.
-   * Until the consolidation step in docs/MIGRATION.md moves it here, Next has to be
-   * told it may compile files from outside its own root.
+   * `web/` is self-contained and has its own lockfile. Without this, Next walks up,
+   * finds the root workspace lockfile too, and guesses — which it warns about on every
+   * build and which would trace the wrong files into a deployment bundle.
    */
-  outputFileTracingRoot: new URL("../", import.meta.url).pathname,
+  outputFileTracingRoot: fileURLToPath(new URL(".", import.meta.url)),
 
   experimental: {
     // The design system bundle is a classic script that reads a global `React`. Keeping
