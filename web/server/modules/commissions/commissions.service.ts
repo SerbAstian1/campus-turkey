@@ -62,6 +62,25 @@ export async function createCommission(
     });
     if (!student) throw new NotFoundError("We could not find that student.");
 
+    /**
+     * Only a partner-referred student can carry a commission.
+     *
+     * Since representatives were introduced, `student.partnerId` is nullable: a student
+     * is referred by a partner *or* a representative, never both, and representatives are
+     * not paid through the payout system. The database already makes this impossible —
+     * `commission.partnerId` is NOT NULL and reaches the student through a composite
+     * foreign key, so an insert would be refused — but it would be refused as a foreign
+     * key violation, which surfaces to staff as an unexplained 500.
+     *
+     * Refused here instead, in terms the person recording it can act on.
+     */
+    if (!student.partnerId || !student.partner) {
+      throw new UnprocessableError(
+        "student_has_no_partner",
+        "That student was referred by a representative, not a partner. Commissions are only paid on partner referrals.",
+      );
+    }
+
     if (student.partner.status === "CLOSED") {
       throw new UnprocessableError(
         "partner_closed",

@@ -60,11 +60,13 @@ model User {
   createdAt     DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
 
-  sessions     Session[]
-  accounts     Account[]
-  partner      Partner?
-  staffProfile StaffProfile?
-  actedEvents  WithdrawalEvent[] @relation("EventActor")
+  sessions       Session[]
+  accounts       Account[]
+  partner        Partner?
+  representative RepresentativeProfile?
+  staffProfile   StaffProfile?
+  actedEvents    WithdrawalEvent[] @relation("EventActor")
+  reviewedRepresentativeApplications RepresentativeApplication[] @relation("RepresentativeApplicationReviewer")
 
   @@index([role])
   @@index([status])
@@ -262,6 +264,106 @@ model Partner {
   @@map("partner")
 }
 
+/// Brief §12. An individual or country-level Campus Turkey representative.
+///
+/// **Why this is a separate table rather than a flag on `Partner`.** §4 is explicit that
+/// the two are different relationships: a partner is an organisation with a commercial
+/// agreement, a representative is a person or a territory. They currently do the same
+/// work, which is the argument people use for merging them, and it is exactly why
+/// merging them now would be expensive later — telling them apart again would mean a
+/// migration of live referral attribution.
+///
+/// The fields diverge from `Partner` where the difference is real: `fullName` rather than
+/// `org` plus `person`, because a representative is a person; `organizationName` optional,
+/// because they may or may not have one; `territory` rather than `currency` and
+/// `minimumMinor`, because representatives are not paid through the payout system.
+///
+/// A representative earns nothing through `Commission` today. If that changes, this model
+/// gains the same `@@unique([id, currency])` composite key `Partner` carries, for the same
+/// reason.
+model RepresentativeProfile {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @unique @db.Uuid
+  fullName         String
+  organizationName String?
+  country          String
+  email            String
+  phone            String?
+  address          String?
+  /// The market they cover. Free text rather than an enum: territories are commercial
+  /// arrangements ("West Africa", "Kano State", "Lagos and Ogun"), not a fixed taxonomy.
+  territory        String?
+  status           RepresentativeStatus @default(PENDING)
+  since            DateTime @db.Date
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students Student[]
+
+  @@index([status])
+  @@index([country])
+  @@map("representative_profile")
+}
+
+/// Mirrors `PartnerStatus` in shape but not in values: a representative is approved
+/// individually, so the lifecycle has an explicit approval step that a partner record
+/// (created only after approval) does not need.
+enum RepresentativeStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  CLOSED
+
+  @@map("representative_status")
+}
+
+/// Brief §23. An application to become a representative, before any account exists.
+///
+/// Kept distinct from `Lead` for the reason §22 gives about partners: onboarding is a
+/// process with a reviewer and an outcome, not an enquiry someone replies to. A lead is
+/// closed; an application is approved or rejected, and the difference is the account it
+/// creates.
+model RepresentativeApplication {
+  id               String   @id @default(uuid()) @db.Uuid
+  fullName         String
+  organizationName String?
+  country          String
+  territory        String?
+  email            String
+  phone            String?
+  address          String?
+  message          String?
+  status           ApplicationReviewStatus @default(PENDING)
+  reviewedByUserId String?  @db.Uuid
+  reviewedAt       DateTime? @db.Timestamptz(3)
+  /// Why it was rejected. Shown to nobody automatically; recorded so a decision can be
+  /// explained months later when the applicant asks.
+  reviewNote       String?
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+
+  reviewedBy User? @relation("RepresentativeApplicationReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  /// One live application per address. A rejected applicant may apply again, which is why
+  /// this is partial rather than a plain unique on `email` — expressed in the migration,
+  /// since Prisma cannot describe a partial index.
+  @@index([status, createdAt(sort: Desc)])
+  @@index([email])
+  @@map("representative_application")
+}
+
+/// Shared by the partner and representative application flows. A review has three
+/// outcomes and no others; "CONVERTED" belongs on the lead, not here.
+enum ApplicationReviewStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+
+  @@map("application_review_status")
+}
+
 enum PartnerStatus {
   ACTIVE
   /// Can sign in and read, cannot request withdrawals or add students.
@@ -275,7 +377,21 @@ enum PartnerStatus {
 
 model Student {
   id             String       @id @default(uuid()) @db.Uuid
-  partnerId      String       @db.Uuid
+
+  /**
+   * Who referred this student. Exactly one of these is set, enforced by a CHECK
+   * constraint in the migration because Prisma cannot express an exclusive-or.
+   *
+   * `partnerId` became nullable here, which is the load-bearing change. `Commission`
+   * still references `(studentId, partnerId)` through a composite foreign key, and that
+   * relation is unaffected: `Commission.partnerId` is NOT NULL, so a commission can only
+   * ever resolve to a student who has a partner. A representative-referred student
+   * therefore cannot carry a commission, which is correct — representatives are not paid
+   * through the payout system.
+   */
+  partnerId        String?    @db.Uuid
+  representativeId String?    @db.Uuid
+
   name           String
   /// Denormalised display strings, matching `PortalStudent` in content/types.ts.
   /// The university is referenced by slug rather than by foreign key because the
@@ -288,13 +404,18 @@ model Student {
   createdAt      DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
 
-  partner     Partner      @relation(fields: [partnerId], references: [id], onDelete: Restrict)
-  commissions Commission[]
+  partner        Partner?               @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+  representative RepresentativeProfile? @relation(fields: [representativeId], references: [id], onDelete: Restrict)
+  commissions    Commission[]
 
   /// Serves `GET /api/partner/students` (list, newest first) and the pipeline
   /// counts, which group by stage within one partner.
   @@index([partnerId, updatedAt(sort: Desc)])
   @@index([partnerId, stage])
+  /// The representative portal's list query, mirroring the partner ones above so the
+  /// two roles perform identically rather than one being quietly slower.
+  @@index([representativeId, updatedAt(sort: Desc)])
+  @@index([representativeId, stage])
   /// The target of `commission`'s composite foreign key. This is what makes the
   /// denormalised `commission.partnerId` provably equal to the student's partner
   /// rather than merely intended to be.
