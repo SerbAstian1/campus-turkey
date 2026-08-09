@@ -67,6 +67,7 @@ model User {
   staffProfile   StaffProfile?
   actedEvents    WithdrawalEvent[] @relation("EventActor")
   reviewedRepresentativeApplications RepresentativeApplication[] @relation("RepresentativeApplicationReviewer")
+  applicationStatusChanges           ApplicationStatusHistory[]  @relation("ApplicationStatusActor")
 
   @@index([role])
   @@index([status])
@@ -250,6 +251,7 @@ model Partner {
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   students       Student[]
   commissions    Commission[]
+  applications   Application[]
   payoutMethods  PayoutMethod[]
   withdrawals    Withdrawal[]
 
@@ -298,8 +300,9 @@ model RepresentativeProfile {
   createdAt        DateTime @default(now()) @db.Timestamptz(3)
   updatedAt        DateTime @updatedAt @db.Timestamptz(3)
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  students Student[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students     Student[]
+  applications Application[]
 
   @@index([status])
   @@index([country])
@@ -412,6 +415,7 @@ model University {
   updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
 
   programs      Program[]
+  applications  Application[]
 
   /// §84's named indexes. `city` and `type` are the directory's two hard filters;
   /// the composite carries the common case of both at once with the published filter.
@@ -459,7 +463,8 @@ model Program {
   createdAt     DateTime      @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
 
-  university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  university   University    @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  applications Application[]
 
   /// Unique per university, not globally: "Medicine" exists at forty institutions.
   @@unique([universityId, slug])
@@ -522,6 +527,7 @@ model Student {
   partner        Partner?               @relation(fields: [partnerId], references: [id], onDelete: Restrict)
   representative RepresentativeProfile? @relation(fields: [representativeId], references: [id], onDelete: Restrict)
   commissions    Commission[]
+  applications   Application[]
 
   /// Serves `GET /api/partner/students` (list, newest first) and the pipeline
   /// counts, which group by stage within one partner.
@@ -583,6 +589,107 @@ model Commission {
   @@index([partnerId, state])
   @@index([studentId])
   @@map("commission")
+}
+
+/// Brief §16. The central workflow object.
+///
+/// An application is what staff actually operate on: it carries the status, the referral
+/// attribution, the university and programme, and the history of every decision made
+/// about it. A `Student` is a person; an `Application` is what is being done for them.
+///
+/// **Referral attribution lives here, not on `Student`.** §16 puts `partnerId` and
+/// `representativeId` on the application, and it is right: a student referred by one
+/// partner for a bachelor's could later apply through a different route for a master's,
+/// and attribution belongs to the attempt rather than the person. `Student` keeps its own
+/// referral columns for the portals that list "my students", and the two agree because
+/// the application copies the student's referrer at creation.
+model Application {
+  id                String            @id @default(uuid()) @db.Uuid
+  /// Human-readable, quoted in emails and on the phone. Generated from a sequence, so
+  /// it is unique without a round trip to check.
+  applicationNumber String            @unique
+  studentId         String            @db.Uuid
+
+  /// Exactly one of these, or neither. A CHECK constraint enforces it; §16 requires it.
+  partnerId         String?           @db.Uuid
+  representativeId  String?           @db.Uuid
+
+  universityId      String?           @db.Uuid
+  programId         String?           @db.Uuid
+
+  status            ApplicationStatus @default(DRAFT)
+
+  submittedAt       DateTime?         @db.Timestamptz(3)
+  reviewedAt        DateTime?         @db.Timestamptz(3)
+  approvedAt        DateTime?         @db.Timestamptz(3)
+  rejectedAt        DateTime?         @db.Timestamptz(3)
+  createdAt         DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime          @updatedAt @db.Timestamptz(3)
+
+  student        Student                @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  partner        Partner?               @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+  representative RepresentativeProfile? @relation(fields: [representativeId], references: [id], onDelete: Restrict)
+  university     University?            @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  program        Program?               @relation(fields: [programId], references: [id], onDelete: Restrict)
+
+  history ApplicationStatusHistory[]
+
+  /// §84 names most of these. The composite pairs are the queries the portals and the
+  /// staff console actually run: "my applications, newest first" and "everything in this
+  /// status".
+  @@index([studentId])
+  @@index([partnerId, updatedAt(sort: Desc)])
+  @@index([representativeId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+  @@index([universityId])
+  @@index([createdAt])
+  @@map("application")
+}
+
+/// Brief §8. Fifteen states, and the transitions between them are the server's decision
+/// alone — see `application.state.ts`.
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  DOCUMENTS_REQUIRED
+  DOCUMENTS_REVIEW
+  APPLICATION_PROCESSING
+  UNIVERSITY_SUBMITTED
+  ADMISSION_PENDING
+  ADMITTED
+  ADMISSION_REJECTED
+  VISA_PROCESS
+  VISA_APPROVED
+  VISA_REJECTED
+  READY_FOR_TRAVEL
+  COMPLETED
+  CANCELLED
+
+  @@map("application_status")
+}
+
+/// Brief §17. Every important transition, recorded.
+///
+/// Append-only, enforced by a trigger, exactly as `withdrawal_event` is. This is the
+/// record that answers "who moved this application to rejected, and when" months later,
+/// and a mutable audit trail cannot answer it.
+model ApplicationStatusHistory {
+  id              String             @id @default(uuid()) @db.Uuid
+  applicationId   String             @db.Uuid
+  previousStatus  ApplicationStatus?
+  newStatus       ApplicationStatus
+  /// Null for a system transition. Nullable rather than absent so the column can say
+  /// "nobody" distinctly from "we did not record it".
+  changedByUserId String?            @db.Uuid
+  note            String?
+  createdAt       DateTime           @default(now()) @db.Timestamptz(3)
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  changedBy   User?       @relation("ApplicationStatusActor", fields: [changedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, createdAt(sort: Desc)])
+  @@map("application_status_history")
 }
 
 enum CommissionState {
