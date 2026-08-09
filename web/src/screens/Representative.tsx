@@ -6,7 +6,7 @@ import { Accordion, BrandDivider, Button, CTABanner, Card, Icon, SectionHeading,
 import { representative, representativeSteps } from "@/content";
 import { ImagePlaceholder, scrollToId } from "@/components/Common";
 import { IconCard, PageBody, PageHero, PriceTable, FaqLayout, splitStyle } from "./shared";
-import { PartnerForm } from "./PartnerForm";
+import { RepresentativeForm } from "./RepresentativeForm";
 import { CardGrid } from "@/components/CardGrid";
 
 export default function Representative() {
@@ -58,9 +58,7 @@ export default function Representative() {
             <BrandDivider />
             <span style={{ fontSize: "var(--fs-body-sm)", color: "var(--text-body)" }}>Currently open: Nigeria, Ghana, Kenya, Tanzania, Morocco, Egypt, Pakistan, Bangladesh and Indonesia.</span>
           </div>
-          <PartnerForm leadKind="REPRESENTATIVE" kinds={["Education agency", "Independent consultant", "Travel agency", "Migration consultancy"]}
-            submitLabel="Apply for a territory"
-            intro="One representative per territory. If your country is already taken we will tell you straight away rather than leave you waiting." />
+          <RepresentativeForm />
         </div>
 
         <FaqLayout heading={<ScrollReveal><SectionHeading eyebrow="Questions" title="Representative FAQs" /></ScrollReveal>}>
