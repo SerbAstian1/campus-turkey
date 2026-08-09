@@ -65,6 +65,7 @@ model User {
   partner        Partner?
   representative RepresentativeProfile?
   staffProfile   StaffProfile?
+  studentProfile StudentProfile?
   actedEvents    WithdrawalEvent[] @relation("EventActor")
   reviewedRepresentativeApplications RepresentativeApplication[] @relation("RepresentativeApplicationReviewer")
   applicationStatusChanges           ApplicationStatusHistory[]  @relation("ApplicationStatusActor")
@@ -512,6 +513,18 @@ model Student {
   partnerId        String?    @db.Uuid
   representativeId String?    @db.Uuid
 
+  /// The account that claimed this referred record, once somebody has.
+  ///
+  /// Null until then, which is the normal state for most rows: a referral is created by
+  /// an agency and may never be claimed at all. This is what keeps "a partner filled in
+  /// a form" distinguishable from "a student signed up".
+  profileId      String?    @db.Uuid
+
+  /// A single-use code the referrer passes to the student so they can claim this record.
+  /// Consumed on claim and never reissued for the same row, which is why it is nullable
+  /// rather than permanent.
+  claimCode      String?    @unique
+
   name           String
   /// Denormalised display strings, matching `PortalStudent` in content/types.ts.
   /// The university is referenced by slug rather than by foreign key because the
@@ -528,6 +541,7 @@ model Student {
   representative RepresentativeProfile? @relation(fields: [representativeId], references: [id], onDelete: Restrict)
   commissions    Commission[]
   applications   Application[]
+  profile        StudentProfile?        @relation(fields: [profileId], references: [id], onDelete: SetNull)
 
   /// Serves `GET /api/partner/students` (list, newest first) and the pipeline
   /// counts, which group by stage within one partner.
@@ -537,11 +551,54 @@ model Student {
   /// two roles perform identically rather than one being quietly slower.
   @@index([representativeId, updatedAt(sort: Desc)])
   @@index([representativeId, stage])
+  @@index([profileId])
   /// The target of `commission`'s composite foreign key. This is what makes the
   /// denormalised `commission.partnerId` provably equal to the student's partner
   /// rather than merely intended to be.
   @@unique([id, partnerId])
   @@map("student")
+}
+
+/// Brief §10. A student's own account.
+///
+/// **This is not `Student`, and the difference is the audit's third Blocker.** `Student`
+/// is a record a partner or representative created about somebody they referred: a name,
+/// a university, a stage. It has no login, no email and no password, and it exists
+/// whether or not that person ever hears about Campus Turkey's portal.
+///
+/// `StudentProfile` is the person. It hangs off `User`, so they can sign in, and it
+/// points back at the referred record they claimed. A referral becomes an account when
+/// the student claims it, not before — which is why `Student.profileId` is nullable and
+/// why nothing here is created by the referral flow.
+///
+/// The alternative, bolting `email` and `passwordHash` onto `Student`, would give every
+/// referred person a dormant half-account they never asked for, and would make "has this
+/// student signed up" indistinguishable from "did the partner fill the form in".
+model StudentProfile {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @db.Uuid
+  firstName          String
+  lastName           String
+  phone              String?
+  dateOfBirth        DateTime? @db.Date
+  nationality        String
+  countryOfResidence String
+  /// §10 says do not collect unnecessary sensitive information. A passport number is
+  /// needed for a visa application and for nothing before it, so it is nullable and
+  /// requested at the visa stage rather than at signup.
+  passportNumber     String?
+  address            String?
+  profilePhoto       String?
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(3)
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// The referred records this person has claimed. Usually one; more than one happens
+  /// when two agencies referred the same person before either reached them.
+  claimedStudents Student[]
+
+  @@index([nationality])
+  @@map("student_profile")
 }
 
 enum StudentStage {

@@ -59,6 +59,9 @@ export const PERMISSIONS = [
   "UPLOAD_OWN_DOCUMENTS",
   "READ_OWN_NOTIFICATIONS",
   "READ_OWN_MESSAGES",
+  /** Joining a referred record to this account. Held by STUDENT alone: it is the one
+   *  act that changes who owns an application. */
+  "CLAIM_STUDENT_RECORD",
 
   // ── Partner, §28 ────────────────────────────────────────────────────────────
   "PARTNER_CREATE_STUDENT_REFERRAL",
@@ -67,6 +70,7 @@ export const PERMISSIONS = [
   "PARTNER_READ_RELEVANT_APPLICATION_STATUS",
   "PARTNER_READ_OWN_WALLET",
   "PARTNER_REQUEST_WITHDRAWAL",
+  "PARTNER_ISSUE_CLAIM_CODE",
 
   // ── Representative, §29 ─────────────────────────────────────────────────────
   // Identical in effect to the partner block above, deliberately not shared.
@@ -74,6 +78,7 @@ export const PERMISSIONS = [
   "REPRESENTATIVE_READ_OWN_REFERRALS",
   "REPRESENTATIVE_READ_OWN_REFERRED_STUDENTS",
   "REPRESENTATIVE_READ_RELEVANT_APPLICATION_STATUS",
+  "REPRESENTATIVE_ISSUE_CLAIM_CODE",
 
   // ── Staff, §30 ──────────────────────────────────────────────────────────────
   "READ_APPLICATIONS",
@@ -126,6 +131,7 @@ const STUDENT: Permission[] = [
   "UPLOAD_OWN_DOCUMENTS",
   "READ_OWN_NOTIFICATIONS",
   "READ_OWN_MESSAGES",
+  "CLAIM_STUDENT_RECORD",
 ];
 
 const PARTNER: Permission[] = [
@@ -138,6 +144,7 @@ const PARTNER: Permission[] = [
   "PARTNER_READ_RELEVANT_APPLICATION_STATUS",
   "PARTNER_READ_OWN_WALLET",
   "PARTNER_REQUEST_WITHDRAWAL",
+  "PARTNER_ISSUE_CLAIM_CODE",
 ];
 
 const REPRESENTATIVE: Permission[] = [
@@ -148,6 +155,7 @@ const REPRESENTATIVE: Permission[] = [
   "REPRESENTATIVE_READ_OWN_REFERRALS",
   "REPRESENTATIVE_READ_OWN_REFERRED_STUDENTS",
   "REPRESENTATIVE_READ_RELEVANT_APPLICATION_STATUS",
+  "REPRESENTATIVE_ISSUE_CLAIM_CODE",
 ];
 
 const STAFF: Permission[] = [

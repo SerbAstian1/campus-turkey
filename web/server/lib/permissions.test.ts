@@ -98,11 +98,25 @@ describe("§89 — staff do not automatically gain admin", () => {
 describe("students are confined to their own records", () => {
   const student = permissionsFor(principal("STUDENT"));
 
-  it("holds only OWN-scoped or self-service permissions", () => {
-    // Every student permission must name its scope. An unscoped verb like
-    // READ_APPLICATIONS in this set would read every applicant's file.
+  /**
+   * Every student permission must be scoped to them, and the two that are not named
+   * `*_OWN_*` are listed here rather than waved through by a looser rule.
+   *
+   *   CREATE_APPLICATION creates a record that does not exist yet, so there is nothing
+   *   to be scoped to.
+   *
+   *   CLAIM_STUDENT_RECORD is scoped by a single-use code the student physically holds,
+   *   not by an id they could substitute. It reaches exactly the one record that code
+   *   belongs to.
+   *
+   * Anything else appearing here is an unscoped verb in a student's hands, which is how
+   * READ_APPLICATIONS ends up reading every applicant's file.
+   */
+  const SELF_SERVICE: Permission[] = ["CREATE_APPLICATION", "CLAIM_STUDENT_RECORD"];
+
+  it("holds only OWN-scoped or explicitly self-service permissions", () => {
     const unscoped = [...student].filter(
-      (p) => !p.includes("OWN") && p !== "CREATE_APPLICATION",
+      (p) => !p.includes("OWN") && !SELF_SERVICE.includes(p),
     );
     expect(unscoped).toEqual([]);
   });
