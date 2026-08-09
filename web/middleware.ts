@@ -186,11 +186,23 @@ export function middleware(request: NextRequest): NextResponse {
    * It never grants anything. A forged or expired cookie sails past here and meets the
    * real check on the page, which is where authorization actually lives.
    */
+  /*
+   * Stated as an allowlist rather than a list of guarded paths, so that a portal route
+   * added next month is protected by default instead of by somebody remembering to come
+   * back here. The failure modes are not symmetrical: forgetting to add a path to a
+   * denylist silently exposes it, while forgetting to add one to this allowlist produces
+   * an immediately visible redirect loop that cannot ship unnoticed.
+   */
+  const PUBLIC_PORTAL_PATHS = new Set([
+    "/portal",               // the sign-in page itself
+    "/portal/set-password",  // reached by people who have an account but no password
+  ]);
+
   const isGuardedPage =
     isPageRequest &&
     (pathname === "/staff" ||
       pathname.startsWith("/staff/") ||
-      pathname.startsWith("/portal/dashboard"));
+      (pathname.startsWith("/portal") && !PUBLIC_PORTAL_PATHS.has(pathname)));
 
   if (isGuardedPage && !hasSessionCookie(request)) {
     const signIn = new URL("/portal", request.url);

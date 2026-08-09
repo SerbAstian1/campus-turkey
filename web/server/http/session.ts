@@ -44,12 +44,25 @@ export interface SessionPartner {
   status: "ACTIVE" | "SUSPENDED" | "CLOSED";
 }
 
+/**
+ * The representative a user acts as, loaded for the same reason `partner` is: so a
+ * handler physically cannot operate on a `representativeId` that arrived in a request
+ * body. Every representative-scoped query takes `session.representative.id`.
+ */
+export interface SessionRepresentative {
+  id: string;
+  fullName: string;
+  territory: string | null;
+  status: "PENDING" | "ACTIVE" | "SUSPENDED" | "CLOSED";
+}
+
 export interface Session {
   user: SessionUser | null;
   partner: SessionPartner | null;
+  representative: SessionRepresentative | null;
 }
 
-const ANONYMOUS: Session = { user: null, partner: null };
+const ANONYMOUS: Session = { user: null, partner: null, representative: null };
 
 export async function resolveSession(request: NextRequest): Promise<Session> {
   const result = await auth.api.getSession({ headers: request.headers });
@@ -76,6 +89,7 @@ export async function resolveSession(request: NextRequest): Promise<Session> {
       staffRole: true,
       staffProfile: { select: { department: true } },
       partner: { select: { id: true, org: true, currency: true, status: true } },
+      representative: { select: { id: true, fullName: true, territory: true, status: true } },
     },
   });
 
@@ -93,7 +107,24 @@ export async function resolveSession(request: NextRequest): Promise<Session> {
     staffRole: account.staffRole,
   };
 
-  return { user, partner: account.partner };
+  return { user, partner: account.partner, representative: account.representative };
+}
+
+/**
+ * Narrow a session to one that definitely has a representative.
+ *
+ * The mirror of `requirePartner`, and deliberately a second function rather than a
+ * shared "requireReferrer": the whole point of §29 is that the two roles do not share
+ * an authorization path, and a single helper returning either would be exactly that
+ * path.
+ */
+export function requireRepresentative(session: Session): SessionRepresentative {
+  if (!session.representative) {
+    throw new Error(
+      "requireRepresentative called on a session with no representative — the route's access rule should have prevented this",
+    );
+  }
+  return session.representative;
 }
 
 /**

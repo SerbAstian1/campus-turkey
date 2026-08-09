@@ -218,7 +218,7 @@ export function route<TBody = undefined, TQuery = undefined, TResult = unknown>(
        */
       const session: Session =
         config.access.kind === "public"
-          ? { user: null, partner: null }
+          ? { user: null, partner: null, representative: null }
           : await resolveSession(request);
 
       // ---- authorization. Enforced here, before the handler runs.
