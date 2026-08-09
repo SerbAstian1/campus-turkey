@@ -123,6 +123,15 @@ function crossCheck(env: Env): string[] {
     if (env.CAPTCHA_PROVIDER === "disabled") {
       problems.push("CAPTCHA_PROVIDER must be configured in production — see handoff note 13");
     }
+    if (env.MAIL_PROVIDER === "disabled") {
+      // `auth.ts` requires email verification only when a provider exists, so that
+      // development is not locked out by a verification nobody can send. Production must
+      // not inherit that relaxation: without mail there is no verification, no password
+      // reset, and no way to tell a partner their account is ready.
+      problems.push(
+        "MAIL_PROVIDER must be configured in production — email verification and password reset both depend on it",
+      );
+    }
     if (!env.SITE_ORIGIN.startsWith("https://")) {
       problems.push("SITE_ORIGIN must be https in production — cookies are Secure-only");
     }

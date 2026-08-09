@@ -12,6 +12,7 @@ import { useState, type FormEvent } from "react";
 import { BrandDivider, Button, Checkbox, Icon, Input, Logo, Select, ASSETS } from "@/ds";
 import { go } from "@/app/router";
 import { signInWithPassword } from "@/features/auth/client";
+import { useLeadSubmit } from "@/features/leads/submit";
 
 export default function PartnerLogin() {
   const [tab, setTab] = useState<"login" | "register">("login");
@@ -19,6 +20,38 @@ export default function PartnerLogin() {
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * The registration tab.
+   *
+   * It posts a PARTNER lead through the same path every other public form uses. Before
+   * this it posted nothing at all: the fields were uncontrolled, there was no form and
+   * no handler, and "Create partner account" called `go("partners")` — so it navigated,
+   * an applicant read that as success, and nothing was ever stored. Server-side
+   * sign-up is disabled by design (`disableSignUp`), so the button could not have
+   * created an account even if it had tried.
+   */
+  const [reg, setRegState] = useState({
+    org: "", name: "", email: "", volume: "", terms: true,
+  });
+  const { state: registered, submit: submitRegistration } = useLeadSubmit("PARTNER");
+
+  const setReg = (key: keyof typeof reg) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setRegState((f) => ({
+        ...f,
+        [key]: (e.target as HTMLInputElement).type === "checkbox"
+          ? (e.target as HTMLInputElement).checked
+          : e.target.value,
+      }));
+
+  const register = async (e: FormEvent) => {
+    e.preventDefault();
+    await submitRegistration(
+      { org: reg.org, name: reg.name, email: reg.email, volume: reg.volume },
+      reg.terms,
+    );
+  };
 
   const signIn = async (e: FormEvent) => {
     e.preventDefault();
@@ -98,12 +131,62 @@ export default function PartnerLogin() {
             </>
           ) : (
             <>
-              <h3 style={{ fontSize: "var(--fs-h2)" }}>Become a partner</h3>
-              <Input id="r-org" label="Organisation name" icon="building-2" placeholder="Bright Futures Education" required />
-              <Select id="r-kind" label="You are a" options={["Education agency", "Consultant", "University", "Country representative"]} required />
-              <Input id="r-email" label="Work email" type="email" icon="mail" placeholder="you@agency.com" required />
-              <Checkbox id="r-terms" label="I agree to the partner terms" checked onChange={() => {}} />
-              <Button variant="primary" size="lg" fullWidth onClick={() => go("partners")}>Create partner account</Button>
+              {registered.status === "sent" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+                  <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Application received</h3>
+                  <p style={{ margin: 0, color: "var(--text-body)" }}>
+                    We have your details. Someone reviews every application by hand, and your
+                    named contact will call within one working day.
+                  </p>
+                  <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "var(--fs-body-sm)" }}>
+                    Your login is created after that call — you cannot sign in yet, and this
+                    form has not made you a password.
+                  </p>
+                  <Button variant="secondary" size="lg" fullWidth onClick={() => setTab("login")}>
+                    Back to sign in
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={register} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+                  <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Become a partner</h3>
+                  {/* Says what this does before anything is typed. The previous version
+                      was headed "Create partner account" above a button that only
+                      navigated — so an applicant reasonably believed they had an account,
+                      and then could not sign in. */}
+                  <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
+                    This sends an application. Campus Turkey reviews it and creates your
+                    login — accounts are not opened automatically.
+                  </p>
+
+                  <Input id="r-org" label="Organisation name" icon="building-2"
+                    placeholder="Bright Futures Education" required
+                    value={reg.org} onChange={setReg("org")} />
+                  <Input id="r-name" label="Your full name" icon="user"
+                    placeholder="Amina Yusuf" required autoComplete="name"
+                    value={reg.name} onChange={setReg("name")} />
+                  <Select id="r-kind" label="You are a"
+                    options={["Education agency", "Consultant", "University", "Country representative"]}
+                    required value={reg.volume} onChange={setReg("volume")} />
+                  <Input id="r-email" label="Work email" type="email" icon="mail"
+                    placeholder="you@agency.com" required autoComplete="email"
+                    value={reg.email} onChange={setReg("email")} />
+
+                  <Checkbox id="r-terms" label="I agree to the partner terms"
+                    checked={reg.terms}
+                    onChange={(e) => setReg("terms")(e as never)} />
+
+                  {registered.status === "failed" ? (
+                    <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
+                      <Icon name="alert-circle" size={16} />{registered.message}
+                    </span>
+                  ) : null}
+
+                  <Button variant="primary" size="lg" fullWidth type="submit"
+                    disabled={registered.status === "sending"}>
+                    {registered.status === "sending" ? "Sending…" : "Send application"}
+                  </Button>
+                </form>
+              )}
             </>
           )}
 

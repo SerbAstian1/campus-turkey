@@ -156,6 +156,39 @@ function limiterFor(key: string, limit: number, windowSeconds: number): Ratelimi
   return created;
 }
 
+/**
+ * How long the limiter gets to answer before the request proceeds without it.
+ *
+ * Failing open is the right call (see `enforceRateLimit`), but failing open *slowly* is
+ * not failing open — it is an outage with extra steps. Observed with an unreachable
+ * Redis host: every request paid the full ~5s DNS/connect timeout before proceeding,
+ * producing 13s responses and exhausting the database connection pool, because requests
+ * held their connections while waiting on a limiter that was never going to answer. A
+ * Redis blip became a site-wide latency incident.
+ *
+ * 200ms is generously above a healthy Upstash round trip from the same region (single
+ * digit ms) and far below anything a user would notice. Exceeding it means Redis is
+ * unhealthy, and the decision to proceed unthrottled has already been made — this only
+ * governs how fast that decision is reached.
+ */
+const LIMITER_BUDGET_MS = 200;
+
+/** Reject if `work` has not settled within the budget. The rejection is caught by the
+ *  fail-open handler, so a timeout and an outage take the same path. */
+function withBudget<T>(work: Promise<T>): Promise<T> {
+  return Promise.race([
+    work,
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`rate limiter exceeded its ${LIMITER_BUDGET_MS}ms budget`)),
+        LIMITER_BUDGET_MS,
+      // `unref` so a pending timer cannot hold the process open — it would keep a
+      // serverless invocation billable after the response was already sent.
+      ).unref(),
+    ),
+  ]);
+}
+
 export interface EnforceOptions {
   request: Request;
   scope: "ip" | "user";
@@ -197,7 +230,7 @@ export async function enforceRateLimit(
   if (!limiter) return;
 
   try {
-    const result = await limiter.limit(identifier);
+    const result = await withBudget(limiter.limit(identifier));
     if (!result.success) {
       const retryAfter = Math.max(1, Math.ceil((result.reset - Date.now()) / 1000));
       throw new RateLimitedError(retryAfter);

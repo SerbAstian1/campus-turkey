@@ -28,6 +28,24 @@ import { DEFAULT_LOCALE, isLocale } from "@/i18n/locales";
  * work inside `src/`, not a boundary this layer may cross. Scripts carry no such
  * exemption — a nonce is issued per request below, which is what actually stops XSS.
  */
+/**
+ * Is a Better Auth session cookie present at all?
+ *
+ * Matched by suffix rather than by exact name because the library prefixes the cookie
+ * with `__Secure-` when `useSecureCookies` is on — so the name differs between local
+ * development and production, and hardcoding either one makes this guard silently
+ * inert in the other environment. Inert in production would be the bad direction.
+ *
+ * Presence only. This deliberately does not verify the signature: that needs the
+ * database, which the edge runtime has no Prisma client for. See the call site for why
+ * a presence check is sound here — it can only deny, never grant.
+ */
+function hasSessionCookie(request: NextRequest): boolean {
+  return request.cookies
+    .getAll()
+    .some((cookie) => cookie.name.endsWith("better-auth.session_token") && cookie.value !== "");
+}
+
 function contentSecurityPolicy(tileHost: string): string {
   return [
     "default-src 'self'",
@@ -145,6 +163,41 @@ export function middleware(request: NextRequest): NextResponse {
     pathname !== "/sitemap.xml" &&
     pathname !== "/robots.txt" &&
     pathname !== "/manifest.webmanifest";
+
+  /*
+   * Turn away the definitely-anonymous here, at the edge, with a real 307.
+   *
+   * The guarded pages already refuse correctly — `app/[locale]/staff/page.tsx` resolves
+   * the session and calls `redirect()`. But `app/providers.tsx` renders the boot screen
+   * synchronously while the page's session lookup is still in flight, so the response
+   * has already begun streaming by the time `redirect()` runs and Next can no longer set
+   * a status. The result is HTTP **200** carrying a client-side redirect instruction.
+   * Verified against a production build, not just dev.
+   *
+   * Nothing leaks — no console markup or queue data is ever rendered for an
+   * unauthorized viewer, and every staff endpoint refuses independently. But a 200 on a
+   * guarded URL is wrong for anything that reads status codes rather than executing
+   * JavaScript: crawlers, uptime monitors, link checkers, and any security review that
+   * greps for them.
+   *
+   * This checks only for the *presence* of a session cookie, which is all the edge can
+   * do cheaply — validating it needs the database. That asymmetry is deliberate and
+   * safe: a missing cookie proves the caller is anonymous, so this can only ever *deny*.
+   * It never grants anything. A forged or expired cookie sails past here and meets the
+   * real check on the page, which is where authorization actually lives.
+   */
+  const isGuardedPage =
+    isPageRequest &&
+    (pathname === "/staff" ||
+      pathname.startsWith("/staff/") ||
+      pathname.startsWith("/portal/dashboard"));
+
+  if (isGuardedPage && !hasSessionCookie(request)) {
+    const signIn = new URL("/portal", request.url);
+    const redirected = NextResponse.redirect(signIn, 307);
+    redirected.headers.set("x-robots-tag", "noindex, nofollow");
+    return redirected;
+  }
 
   const rewritten =
     isPageRequest && !isLocale(first)

@@ -38,7 +38,21 @@ export const auth = betterAuth({
     // through the partner application form, which creates a lead a human reviews.
     // Leaving open signup on would let anyone mint a portal account.
     disableSignUp: true,
-    requireEmailVerification: true,
+    /**
+     * Required only when there is a way to actually send the verification.
+     *
+     * Hardcoded `true` with `MAIL_PROVIDER=disabled` is a guaranteed lockout, and it was
+     * one: an account created exactly as staff would create it is refused at sign-in with
+     * 403 `EMAIL_NOT_VERIFIED`, and no email can ever arrive to clear it. Verified by
+     * creating such an account and attempting sign-in. It went unnoticed because
+     * `seed.mjs` and `create-staff.mjs` both set `emailVerified: true` directly, so every
+     * account anyone had tested with was pre-verified.
+     *
+     * Tying it to the mail provider means the rule is enforced exactly when it is
+     * enforceable. Production cannot quietly opt out: `config.ts` refuses to boot with
+     * `MAIL_PROVIDER=disabled` in production, so a deployed system always has both.
+     */
+    requireEmailVerification: env.MAIL_PROVIDER !== "disabled",
     minPasswordLength: 12,
     // Better Auth uses scrypt by default. Left as the library's choice deliberately:
     // overriding a password KDF is a decision that needs a reason, and there isn't one.
