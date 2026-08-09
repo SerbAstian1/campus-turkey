@@ -32,7 +32,7 @@ export const dynamic = "force-dynamic";
 const idParam = z.string().uuid();
 
 export const POST = route({
-  access: { kind: "staff", roles: ["FINANCE", "ADMIN"] },
+  access: { kind: "permission", require: ["CONFIRM_COMMISSIONS"] },
   rateLimit: RATE_LIMITS.partnerWrite,
   body: transitionCommissionBody,
   handler: async ({ body, params, session, log }) => {
@@ -45,7 +45,10 @@ export const POST = route({
 
     return transitionCommission(
       { commissionId: parsed.data, to: body.to, note: body.note ?? null },
-      { id: user.id, role: user.staffRole === "ADMIN" ? "ADMIN" : "FINANCE" },
+      /* Derived from the declared role now that `staffRole` is gone. Anyone reaching
+         this endpoint already holds CONFIRM_COMMISSIONS, so the only distinction left
+         for the service is whether they are an administrator. */
+      { id: user.id, role: user.role === "ADMIN" || user.role === "SUPER_ADMIN" ? "ADMIN" : "FINANCE" },
       log,
     );
   },

@@ -54,7 +54,7 @@ const approveBody = z.object({
 });
 
 export const POST = route({
-  access: { kind: "staff", roles: ["ADMIN"] },
+  access: { kind: "permission", require: ["APPROVE_PARTNER_APPLICATION"] },
   rateLimit: RATE_LIMITS.partnerWrite,
   body: approveBody,
   handler: async ({ body, params, session, log }) => {

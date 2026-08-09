@@ -174,6 +174,16 @@ const STAFF: Permission[] = [
   "UPDATE_INQUIRIES",
   "SEND_MESSAGES",
   "READ_AUDIT_LOGS",
+  /**
+   * Reading the payout queue, but not acting on it.
+   *
+   * The old `SUPPORT` role's documented power was "may read every partner's records, may
+   * not approve payouts", and that distinction is preserved here rather than lost in the
+   * move to permissions: every staff member can see what is owed, and only Finance and
+   * admins can move it. Granting this by department instead would have quietly taken
+   * the payout queue away from support staff who use it to answer partner questions.
+   */
+  "READ_ALL_WALLETS",
 ];
 
 /** §31: admin is staff plus management. Composed rather than restated, so a permission
@@ -215,7 +225,8 @@ const BY_ROLE: Record<UserRole, readonly Permission[]> = {
  * distorting it.
  */
 const MONEY_PERMISSIONS: readonly Permission[] = [
-  "READ_ALL_WALLETS",
+  // Only the two that *move* money. Reading the queue is a base staff permission — see
+  // the note on `READ_ALL_WALLETS` in the STAFF list.
   "CONFIRM_COMMISSIONS",
   "MANAGE_PAYOUTS",
 ];

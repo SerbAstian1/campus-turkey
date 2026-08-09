@@ -56,20 +56,18 @@ const MAX_BODY_BYTES = 64 * 1024;
 export type Access =
   | { kind: "public" }
   | { kind: "partner" }
-  | { kind: "staff"; roles: ReadonlyArray<"SUPPORT" | "FINANCE" | "ADMIN"> }
   /**
-   * Permission-based access — brief §33, and where all of these are heading.
+   * Permission-based access — brief §33.
    *
-   * The three kinds above name *who* may call an endpoint; this one names *what the
-   * caller must be able to do*, which is the question authorization is actually about.
-   * The difference shows the moment a role changes: `{ kind: "staff", roles: [...] }`
-   * has to be found and edited at every call site, while a permission grant moves in
-   * `permissions.ts` alone.
+   * The two kinds above name *who* may call an endpoint; this one names *what the caller
+   * must be able to do*, which is the question authorization is actually about. The
+   * difference shows the moment a role changes: a list of role names has to be found and
+   * edited at every call site, while a permission grant moves in `permissions.ts` alone.
    *
-   * Both forms are live at once on purpose. Converting twenty-one endpoints in the same
-   * change that introduces the mechanism would mean the mechanism and every use of it
-   * are unverified together — so the mechanism lands first with its own tests, and
-   * endpoints move across one at a time behind them.
+   * There used to be a third kind, `{ kind: "staff", roles: [...] }`. It is gone: every
+   * endpoint now states a capability, and the role-name lists it carried have moved into
+   * the grants. The mechanism landed first with its own tests, endpoints moved across
+   * behind it, and this removal is the last step of that.
    *
    * This only answers "may this kind of user do this kind of thing". Whether the record
    * in question belongs to the caller is the service's job, every time.
@@ -229,23 +227,6 @@ export function route<TBody = undefined, TQuery = undefined, TResult = unknown>(
         }
         // A second, per-user limit. Without it one authenticated account can exhaust
         // the shared IP budget for everyone behind the same NAT.
-        await enforceRateLimit(config.rateLimit, {
-          request,
-          scope: "user",
-          identifier: session.user.id,
-        });
-      }
-
-      if (config.access.kind === "staff") {
-        if (!session.user) throw new UnauthenticatedError();
-        const role = session.user.staffRole;
-        if (!role || !config.access.roles.includes(role)) {
-          log.warn("staff authorization refused", {
-            userId: session.user.id,
-            required: config.access.roles,
-          });
-          throw new ForbiddenError("You do not have access to that.");
-        }
         await enforceRateLimit(config.rateLimit, {
           request,
           scope: "user",

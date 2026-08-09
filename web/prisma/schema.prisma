@@ -52,11 +52,6 @@ model User {
   /// Whether the account may be used, independent of what it may do.
   status        UserStatus @default(ACTIVE)
 
-  /// Staff capability within the money path. **Being retired** — see the note on
-  /// `StaffRole`. Kept alongside `role` only until `StaffProfile.department` carries
-  /// it, and dropped in a later migration rather than renamed in place.
-  staffRole     StaffRole?
-
   createdAt     DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
 
@@ -155,25 +150,6 @@ enum StaffDepartment {
   FINANCE
 
   @@map("staff_department")
-}
-
-/// **Being retired.** Superseded by `UserRole` plus `StaffProfile.department`.
-///
-/// Retained through one migration so that the backfill has a source to read and any
-/// endpoint not yet moved to the permission layer keeps working. Dropping it in the
-/// same migration that adds `UserRole` would mean a deploy where the old code is still
-/// running against the new schema, which is an outage rather than a refactor.
-///
-/// Removal is a later migration, once no code reads it.
-enum StaffRole {
-  /// May read every partner's records. May not approve payouts.
-  SUPPORT
-  /// May approve and reject withdrawals.
-  FINANCE
-  /// Everything, including staff management.
-  ADMIN
-
-  @@map("staff_role")
 }
 
 model Session {

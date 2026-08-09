@@ -76,22 +76,25 @@ export const auth = betterAuth({
 
   user: {
     /**
-     * `staffRole` lives on the `user` table but is not part of Better Auth's own schema,
-     * and the library returns **only** the fields it knows about on `session.user`.
-     * Without this declaration `session.user.staffRole` is `undefined` for everybody —
-     * including ADMIN — so `handler.ts` refuses every `{ kind: "staff" }` route and the
-     * entire staff API answers 403 to the people it exists for. The role was correct in
-     * the database the whole time; it just never reached the session.
+     * `role` and `status` live on the `user` table but are not part of Better Auth's own
+     * schema, and the library returns **only** the fields it knows about on
+     * `session.user`. Declaring them here keeps the library's own view of a user honest.
      *
-     * `input: false` is the load-bearing half of this. It stops the field being writable
+     * **`input: false` is the load-bearing half.** It stops either field being writable
      * through the library's sign-up and update-user endpoints. Declared without it, an
-     * authenticated partner could POST their own `staffRole` and promote themselves to
-     * FINANCE — turning a read fix into privilege escalation. The role is granted only
-     * by `scripts/create-staff.mjs` or by SQL, both of which require access nobody has
-     * over HTTP.
+     * authenticated partner could POST their own `role` and promote themselves to ADMIN,
+     * or set their `status` back to ACTIVE after being suspended. Roles are granted only
+     * by `scripts/create-staff.mjs`, by an approval flow, or by SQL — none of which is
+     * reachable over HTTP.
+     *
+     * `resolveSession` reads both from the database rather than from here, so a
+     * revocation takes effect on the next request instead of when the signed cookie
+     * expires. These declarations exist so the library does not strip them, not so
+     * authorization can trust them.
      */
     additionalFields: {
-      staffRole: { type: "string", required: false, input: false },
+      role: { type: "string", required: false, input: false },
+      status: { type: "string", required: false, input: false },
     },
   },
 

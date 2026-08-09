@@ -26,7 +26,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = route({
-  access: { kind: "staff", roles: ["SUPPORT", "FINANCE", "ADMIN"] },
+  /* Reading the payout queue and acting on it are different capabilities. Support could
+     always read it; only Finance and admins could decide. That distinction survives the
+     move intact, and is now visible in the access line rather than implied by which
+     roles happen to be listed. */
+  access: { kind: "permission", require: ["READ_ALL_WALLETS"] },
   rateLimit: RATE_LIMITS.partnerRead,
   query: withdrawalQueueQuery,
   handler: async ({ query }) => {

@@ -29,7 +29,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = route({
-  access: { kind: "staff", roles: ["SUPPORT", "FINANCE", "ADMIN"] },
+  access: { kind: "permission", require: ["READ_LEADS"] },
   rateLimit: RATE_LIMITS.partnerRead,
   query: leadQueueQuery,
   handler: async ({ query, log }) => {

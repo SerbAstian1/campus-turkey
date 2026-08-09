@@ -41,7 +41,11 @@ export const dynamic = "force-dynamic";
 const idParam = z.string().uuid();
 
 export const POST = route({
-  access: { kind: "staff", roles: ["FINANCE", "ADMIN"] },
+  /* Was `roles: ["FINANCE", "ADMIN"]`. The same people, now stated as the capability
+     rather than the job title: staff in the Finance department hold this by department,
+     admins by role. Moving somebody between departments no longer means finding every
+     endpoint that named their old one. */
+  access: { kind: "permission", require: ["MANAGE_PAYOUTS"] },
   rateLimit: RATE_LIMITS.partnerWrite,
   body: transitionWithdrawalBody,
   handler: async ({ body, params, session, log }) => {

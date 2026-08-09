@@ -36,7 +36,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = route({
-  access: { kind: "staff", roles: ["SUPPORT", "FINANCE", "ADMIN"] },
+  // Any staff member may read what partners have earned; only Finance may record or
+  // confirm it. Same split as the payout queue.
+  access: { kind: "permission", require: ["READ_ALL_WALLETS"] },
   rateLimit: RATE_LIMITS.partnerRead,
   query: commissionQueueQuery,
   handler: async ({ query }) =>
@@ -51,7 +53,7 @@ export const GET = route({
 });
 
 export const POST = route({
-  access: { kind: "staff", roles: ["FINANCE", "ADMIN"] },
+  access: { kind: "permission", require: ["CONFIRM_COMMISSIONS"] },
   rateLimit: RATE_LIMITS.partnerWrite,
   body: createCommissionBody,
   handler: async ({ body, session, log }) => {
@@ -66,7 +68,7 @@ export const POST = route({
         period: body.period,
         confirmed: body.confirmed,
       },
-      { id: user.id, role: user.staffRole === "ADMIN" ? "ADMIN" : "FINANCE" },
+      { id: user.id, role: user.role === "ADMIN" || user.role === "SUPER_ADMIN" ? "ADMIN" : "FINANCE" },
       log,
     );
   },

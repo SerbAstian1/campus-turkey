@@ -61,8 +61,23 @@ try {
       // mail provider guaranteed to be configured. Marking it verified here is what
       // makes the account usable immediately; partners still go through verification.
       emailVerified: true,
-      staffRole: role,
       role: role === "ADMIN" ? "ADMIN" : "STAFF",
+    },
+  });
+
+  /**
+   * The profile carries the department, and the department is what grants the money
+   * permissions. Without it a FINANCE hire is created as a staff member who cannot
+   * approve a payout — which reads as a permissions bug and is actually a missing row.
+   */
+  await db.staffProfile.create({
+    data: {
+      id: randomUUID(),
+      userId: id,
+      firstName: name?.split(" ")[0] ?? "Staff",
+      lastName: name?.split(" ").slice(1).join(" ") ?? "",
+      department:
+        role === "FINANCE" ? "FINANCE" : role === "ADMIN" ? "MANAGEMENT" : "OPERATIONS",
     },
   });
 

@@ -32,7 +32,7 @@ export const dynamic = "force-dynamic";
 const idParam = z.string().uuid();
 
 export const PATCH = route({
-  access: { kind: "staff", roles: ["SUPPORT", "FINANCE", "ADMIN"] },
+  access: { kind: "permission", require: ["READ_STUDENTS"] },
   rateLimit: RATE_LIMITS.partnerWrite,
   body: updateStudentBody,
   handler: async ({ body, params, session, log }) => {

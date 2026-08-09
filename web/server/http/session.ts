@@ -30,11 +30,6 @@ export interface SessionUser {
    * `server/lib/permissions.ts`.
    */
   department: StaffDepartment | null;
-  /**
-   * **Being retired.** Superseded by `role` plus `department`; kept only while endpoints
-   * still declare `access: { kind: "staff", roles: [...] }`.
-   */
-  staffRole: "SUPPORT" | "FINANCE" | "ADMIN" | null;
 }
 
 export interface SessionPartner {
@@ -86,7 +81,6 @@ export async function resolveSession(request: NextRequest): Promise<Session> {
     select: {
       role: true,
       status: true,
-      staffRole: true,
       staffProfile: { select: { department: true } },
       partner: { select: { id: true, org: true, currency: true, status: true } },
       representative: { select: { id: true, fullName: true, territory: true, status: true } },
@@ -104,7 +98,6 @@ export async function resolveSession(request: NextRequest): Promise<Session> {
     role: account.role,
     status: account.status,
     department: account.staffProfile?.department ?? null,
-    staffRole: account.staffRole,
   };
 
   return { user, partner: account.partner, representative: account.representative };

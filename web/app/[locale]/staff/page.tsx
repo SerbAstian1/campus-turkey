@@ -27,16 +27,40 @@ export default async function Page() {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { staffRole: true, name: true, email: true },
+    select: {
+      role: true, name: true, email: true,
+      staffProfile: { select: { department: true } },
+    },
   });
 
-  // Signed in, but a partner rather than staff. Sent to their own portal rather than
-  // shown a refusal — they are not doing anything wrong, they are in the wrong place.
-  if (!user?.staffRole) redirect("/portal/dashboard");
+  // Signed in, but not staff. Sent to their own area rather than shown a refusal — none
+  // of them is doing anything wrong, they are in the wrong place.
+  if (user?.role === "PARTNER") redirect("/portal/dashboard");
+  if (user?.role === "REPRESENTATIVE") redirect("/portal/representative");
+  if (user?.role === "STUDENT") redirect("/portal/student");
+  if (!user || (user.role !== "STAFF" && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) {
+    redirect("/portal");
+  }
+
+  /**
+   * The console's own vocabulary, derived from role and department.
+   *
+   * It still speaks in SUPPORT / FINANCE / ADMIN because that is what the three queues
+   * mean to a reviewer — who may read, who may move money, who may approve an
+   * application. What changed underneath is where those answers come from: the role
+   * column and the Finance department, rather than a `staffRole` enum that duplicated
+   * both.
+   */
+  const consoleRole: StaffRole =
+    user.role === "ADMIN" || user.role === "SUPER_ADMIN"
+      ? "ADMIN"
+      : user.staffProfile?.department === "FINANCE"
+        ? "FINANCE"
+        : "SUPPORT";
 
   return (
     <StaffConsole
-      role={user.staffRole as StaffRole}
+      role={consoleRole}
       person={user.name ?? user.email}
     />
   );
