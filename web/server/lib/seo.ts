@@ -11,7 +11,7 @@
  */
 
 import type { Metadata } from "next";
-import type { Article, Service, University } from "@contracts/types";
+import type { Article, Service } from "@contracts/types";
 import {
   BCP47, DEFAULT_LOCALE, LOCALES, localePath, type Locale,
 } from "@/i18n/locales";
@@ -145,24 +145,48 @@ export function organizationJsonLd(): object {
   };
 }
 
-export function universityJsonLd(university: University): object {
+/**
+ * The seven fields structured data actually needs.
+ *
+ * Declared structurally rather than as the content module's `University`, because the
+ * directory now comes from the database and the two shapes differ in fields this
+ * function never touches. Demanding the whole record forced a caller to fetch ten
+ * columns to emit four.
+ */
+export interface UniversityForJsonLd {
+  slug: string;
+  name: string;
+  city: string;
+  description: string;
+  founded: number | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export function universityJsonLd(university: UniversityForJsonLd): object {
   return {
     "@context": "https://schema.org",
     "@type": "CollegeOrUniversity",
     name: university.name,
     url: canonical(`/universities/${university.slug}`),
-    description: university.about,
-    foundingDate: String(university.founded),
+    description: university.description,
+    // Omitted rather than emitted as "null". A structured-data field with a placeholder
+    // value is a claim that the value is unknown-but-stated, which is worse than absent.
+    ...(university.founded ? { foundingDate: String(university.founded) } : {}),
     address: {
       "@type": "PostalAddress",
       addressLocality: university.city,
       addressCountry: "TR",
     },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: university.lat,
-      longitude: university.lng,
-    },
+    ...(university.latitude !== null && university.longitude !== null
+      ? {
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: university.latitude,
+            longitude: university.longitude,
+          },
+        }
+      : {}),
     // `tuition` is a display string ("$4,000–$8,000 / year"), not a number. It is not
     // mapped to a price field: emitting a malformed price is worse than emitting none,
     // because a wrong rich result is a wrong promise about money.

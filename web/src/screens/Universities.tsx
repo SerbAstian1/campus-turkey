@@ -6,7 +6,10 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Button, CTABanner, Card, DirectoryToolbar, Icon, ScrollReveal, Tag, UniversityCard, ASSETS } from "@/ds";
-import { universities as ALL, type University } from "@/content";
+import {
+  useDirectory, useFacets, useFilters,
+  type UniversityPin,
+} from "@/features/universities/data";
 import { go } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 
@@ -20,7 +23,10 @@ import { CardGrid } from "@/components/CardGrid";
 function TurkeyMap({
   universities, active, onSelect,
 }: {
-  universities: University[];
+  /* Pins, not cards. The map needs five fields and drawing it from the card payload
+     would tie the two together, so a change to the card shape would silently change
+     what the map can render. */
+  universities: UniversityPin[];
   active: string | null;
   onSelect: (slug: string | null) => void;
 }) {
@@ -53,14 +59,19 @@ function TurkeyMap({
     if (!map.current || !layer.current) return;
     layer.current.clearLayers();
     universities.forEach((u) => {
+      // The API only returns pins that have coordinates, but the type still allows null
+      // and a marker at [null, null] silently lands at the origin, off the coast of
+      // Ghana, where it looks like a real university nobody can explain.
+      if (u.latitude === null || u.longitude === null) return;
+
       const on = active === u.slug;
       const html = `<span class="ct-pin${on ? " ct-pin-on" : ""}" title="${u.name}">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M6 21V8l6-4 6 4v13"/><path d="M10 21v-5h4v5"/><path d="M10 11h.01"/><path d="M14 11h.01"/></svg></span>`;
-      const marker = L.marker([u.lat, u.lng], {
+      const marker = L.marker([u.latitude, u.longitude], {
         icon: L.divIcon({ html, className: "ct-pin-wrap", iconSize: [34, 34], iconAnchor: [17, 17] }),
         title: u.name, riseOnHover: true,
       });
-      marker.bindTooltip(`${u.name}<br><b>${u.city}</b> · ${u.type} · ${u.tuition}`, { direction: "top", offset: [0, -14] });
+      marker.bindTooltip(`${u.name}<br><b>${u.city}</b>`, { direction: "top", offset: [0, -14] });
       marker.on("click", (e) => { L.DomEvent.stopPropagation(e); onSelect(u.slug); });
       marker.addTo(layer.current!);
     });
@@ -77,36 +88,37 @@ function TurkeyMap({
   );
 }
 
-const money = (t: string) => parseInt(String(t).replace(/[^0-9]/g, ""), 10) || 0;
+/**
+ * The directory now queries the database rather than filtering an imported array.
+ *
+ * What changed and why: §44 requires server-side filtering and §78 forbids shipping the
+ * whole catalogue to the browser. Every filter below sets state, the hook debounces and
+ * fetches, and the result arrives paged. The visible behaviour is deliberately the same
+ * — the same tags, the same toolbar, the same empty state — because the point was to
+ * change where the work happens, not what the page looks like.
+ *
+ * Sort options are now the three the API can actually order by. "Most popular" and
+ * "Lowest tuition" are gone: the first was `programs` descending under a label that
+ * claimed something the data does not know, and the second parsed digits out of a
+ * display string like "$400 – $1,500 / year", which sorts on 400 and silently ignores
+ * the range. Real tuition sorting arrives with `Program.tuitionMinor`.
+ */
+
+const SORTS = [
+  { value: "name", label: "Name A to Z" },
+  { value: "city", label: "City A to Z" },
+  { value: "founded", label: "Oldest first" },
+] as const;
 
 export default function Universities() {
-  const [city, setCity] = useState<string | null>(null);
-  const [type, setType] = useState<string | null>(null);
-  const [scholarship, setScholarship] = useState(false);
-  const [lang, setLang] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  const { filters, update, reset } = useFilters();
+  const facets = useFacets();
+  const directory = useDirectory(filters);
+
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [sort, setSort] = useState("Most popular");
-  const [shown, setShown] = useState(9);
   const [pin, setPin] = useState<string | null>(null);
 
-  const cities = [...new Set(ALL.map((u) => u.city))]
-    .map((c) => ({ name: c, count: ALL.filter((u) => u.city === c).length }))
-    .sort((a, b) => b.count - a.count);
-
-  const filtered = ALL.filter((u) =>
-    (!city || u.city === city) && (!type || u.type === type) &&
-    (!scholarship || u.scholarship) &&
-    (!lang || u.languages.includes(lang)) &&
-    (!query || u.name.toLowerCase().includes(query.toLowerCase()) || u.city.toLowerCase().includes(query.toLowerCase())));
-
-  const sorted = [...filtered].sort((a, b) =>
-    sort === "Name A to Z" ? a.name.localeCompare(b.name)
-      : sort === "Lowest tuition" ? money(a.tuition) - money(b.tuition)
-        : b.programs - a.programs);
-
-  const list = sorted.slice(0, shown);
-  const clear = () => { setCity(null); setType(null); setScholarship(false); setLang(null); setQuery(""); setPin(null); };
+  const clear = () => { reset(); setPin(null); };
 
   const onPin = (slug: string | null) => {
     setPin(slug);
@@ -120,51 +132,80 @@ export default function Universities() {
           <span className="ct-eyebrow">University directory</span>
           <h1 style={{ fontSize: "var(--fs-display-2)", lineHeight: "var(--lh-display)", letterSpacing: "var(--ls-display)", color: "var(--text-heading)", margin: 0, maxWidth: "20ch" }}>Find your university in Türkiye</h1>
           <p style={{ fontSize: "var(--fs-lead)", lineHeight: "var(--lh-body)", color: "var(--text-body)", margin: 0, maxWidth: 620 }}>
-            {`${ALL.length} universities in the directory today, out of 200+ we hold agreements with. Filter by city, type, language of instruction and scholarships.`}
+            Filter by city, type, language of instruction and scholarships.
           </p>
         </ScrollReveal>
 
-        <ScrollReveal delay={80}><TurkeyMap universities={filtered} active={pin} onSelect={onPin} /></ScrollReveal>
+        {/* Pins for every match, not just the visible page. A map that pages would drop
+            and restore pins as somebody clicks through, which reads as broken. */}
+        <ScrollReveal delay={80}><TurkeyMap universities={directory.pins} active={pin} onSelect={onPin} /></ScrollReveal>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)", alignItems: "center", whiteSpace: "nowrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", height: 44, padding: "0 16px", background: "var(--white)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-pill)", minWidth: 260 }}>
             <Icon name="search" size={17} color="var(--neutral-500)" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by university or city" aria-label="Search universities"
+            <input value={filters.search} onChange={(e) => update({ search: e.target.value })}
+              placeholder="Search by university or city" aria-label="Search universities"
               style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", color: "var(--green-900)" }} />
           </div>
-          {["Public", "Private"].map((t) => (
-            <Tag key={t} selected={type === t} onClick={() => setType(type === t ? null : t)}
-              count={ALL.filter((u) => u.type === t).length}>{t}</Tag>
+          {/* Counts are gone from the tags. They were computed from the full array, which
+              no longer exists here; showing a per-filter count would mean a query per tag
+              on every keystroke to display a number nobody acts on. The total is in the
+              toolbar, where it answers the question people actually have. */}
+          {facets.types.map((t) => (
+            <Tag key={t} selected={filters.type === t}
+              onClick={() => update({ type: filters.type === t ? null : t })}>
+              {t === "PUBLIC" ? "Public" : "Private"}
+            </Tag>
           ))}
-          <Tag selected={scholarship} onClick={() => setScholarship(!scholarship)}
-            count={ALL.filter((u) => u.scholarship).length}>Scholarship</Tag>
-          <Tag selected={lang === "English"} onClick={() => setLang(lang === "English" ? null : "English")}
-            count={ALL.filter((u) => u.languages.includes("English")).length}>English-taught</Tag>
+          <Tag selected={filters.scholarship} onClick={() => update({ scholarship: !filters.scholarship })}>
+            Scholarship
+          </Tag>
+          {facets.languages.includes("English") ? (
+            <Tag selected={filters.language === "English"}
+              onClick={() => update({ language: filters.language === "English" ? null : "English" })}>
+              English-taught
+            </Tag>
+          ) : null}
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", alignItems: "center" }}>
           <span className="ct-eyebrow" style={{ marginInlineEnd: "var(--space-2)" }}>City</span>
-          {cities.slice(0, 10).map((c) => (
-            <Tag key={c.name} selected={city === c.name} count={c.count}
-              onClick={() => setCity(city === c.name ? null : c.name)}
-              onRemove={city === c.name ? () => setCity(null) : undefined}>{c.name}</Tag>
+          {facets.cities.slice(0, 10).map((c) => (
+            <Tag key={c} selected={filters.city === c}
+              onClick={() => update({ city: filters.city === c ? null : c })}
+              onRemove={filters.city === c ? () => update({ city: null }) : undefined}>{c}</Tag>
           ))}
         </div>
 
-        <DirectoryToolbar total={ALL.length} shown={list.length} view={view} onViewChange={setView} onClear={clear}
-          sort={sort} sortOptions={["Most popular", "Name A to Z", "Lowest tuition"]} onSortChange={(e) => setSort(e.target.value)} />
+        <DirectoryToolbar total={directory.total} shown={directory.items.length} view={view}
+          onViewChange={setView} onClear={clear}
+          sort={SORTS.find((s) => s.value === filters.sort)?.label ?? SORTS[0].label}
+          sortOptions={SORTS.map((s) => s.label)}
+          onSortChange={(e) => {
+            const chosen = SORTS.find((s) => s.label === e.target.value);
+            if (chosen) update({ sort: chosen.value });
+          }} />
 
-        {list.length ? (
+        {directory.error ? (
+          <Card style={{ textAlign: "center", padding: "var(--space-16)" }}>
+            <Icon name="alert-circle" size={26} color="var(--status-danger)" />
+            <h3 style={{ margin: "var(--space-4) 0 var(--space-2)", fontSize: "var(--fs-h3)" }}>{directory.error}</h3>
+            <p style={{ color: "var(--text-muted)", marginBottom: "var(--space-5)" }}>This is usually temporary. Try again in a moment.</p>
+          </Card>
+        ) : directory.items.length ? (
           /* Grid and list are different layouts, not one layout with a different
              column count — the list is a single flowing column of row-shaped cards and
              has no rows to balance. Rendering the cards once and choosing the container
              keeps the two in step. */
           (() => {
-            const cards = list.map((u, i) => (
+            const cards = directory.items.map((u, i) => (
               <ScrollReveal key={u.slug} delay={(i % 3) * 80} style={{ display: "flex" }}>
                 <UniversityCard
-                  name={u.name} city={u.city} type={u.type} languages={u.languages} tuition={u.tuition}
-                  scholarship={u.scholarship} programs={u.programs}
+                  name={u.name} city={u.city}
+                  /* The API returns the enum; the card renders the word. */
+                  type={u.type === "PUBLIC" ? "Public" : "Private"}
+                  languages={u.languages} tuition={u.tuitionDisplay}
+                  scholarship={u.scholarship} programs={u.programCount}
                   href={`#/university/${u.slug}`} layout={view === "grid" ? "grid" : "row"} style={{ width: "100%" }}
                 />
               </ScrollReveal>
@@ -185,10 +226,25 @@ export default function Universities() {
           </Card>
         )}
 
-        {shown < filtered.length ? (
-          <Button variant="secondary" size="lg" icon="chevron-down" onClick={() => setShown(shown + 9)} style={{ marginInline: "auto" }}>
-            Load more universities
-          </Button>
+        {/* Numbered pages rather than "load more". The directory is something people
+            scan and come back to, and "page 3 of 4" is a position you can return to
+            while "I pressed load more twice" is not. */}
+        {directory.pageCount > 1 ? (
+          <nav aria-label="Directory pages" style={{ display: "flex", gap: "var(--space-3)", alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
+            <Button variant="secondary" size="md" icon="chevron-left"
+              disabled={directory.page <= 1 || directory.loading}
+              onClick={() => update({ page: directory.page - 1 })}>
+              Previous
+            </Button>
+            <span aria-live="polite" style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", color: "var(--text-body)", fontVariantNumeric: "tabular-nums" }}>
+              Page {directory.page} of {directory.pageCount}
+            </span>
+            <Button variant="secondary" size="md" icon="chevron-right"
+              disabled={directory.page >= directory.pageCount || directory.loading}
+              onClick={() => update({ page: directory.page + 1 })}>
+              Next
+            </Button>
+          </nav>
         ) : null}
 
         <ScrollReveal>

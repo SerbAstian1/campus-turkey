@@ -9,20 +9,61 @@
  */
 
 import { BrandDivider, Badge, Button, Card, Icon, ScrollReveal, Tag, UniversityCard } from "@/ds";
-import { getUniversity, universities } from "@/content";
+
 import { ImagePlaceholder } from "@/components/Common";
 import { go } from "@/app/router";
 import { Facts } from "./shared";
 import { ErrorScreen } from "./Errors";
 import { CardGrid } from "@/components/CardGrid";
 
-export default function UniversityDetail({ slug }: { slug: string | null }) {
-  const u = slug ? getUniversity(slug) : undefined;
-  if (!u) return <ErrorScreen state="notFound" />;
+/**
+ * The record and its neighbours, both fetched by the server page.
+ *
+ * Passed in rather than fetched here. The page is statically generated with ISR, so the
+ * data already exists when the HTML is built; re-fetching in the browser would turn a
+ * static page into one that flashes empty and then fills, for information that has not
+ * changed since the build.
+ */
+export interface UniversityDetailData {
+  slug: string;
+  name: string;
+  city: string;
+  type: "PUBLIC" | "PRIVATE";
+  about: string;
+  languages: string[];
+  tuition: string;
+  programs: number;
+  scholarship: boolean;
+  founded: number | null;
+  students: string | null;
+  ranking: string | null;
+  faculties: string[];
+  deadlines: [string, string][];
+}
 
-  const similar = universities
-    .filter((x) => x.slug !== u.slug && (x.city === u.city || x.type === u.type))
-    .slice(0, 3);
+export interface SimilarUniversity {
+  slug: string;
+  name: string;
+  city: string;
+  type: "PUBLIC" | "PRIVATE";
+  languages: string[];
+  tuition: string;
+  programs: number;
+  scholarship: boolean;
+}
+
+/** The enum the database stores; the word the card shows. */
+const typeLabel = (t: "PUBLIC" | "PRIVATE") => (t === "PUBLIC" ? "Public" : "Private");
+
+export default function UniversityDetail({
+  university,
+  similar,
+}: {
+  university: UniversityDetailData | null;
+  similar: SimilarUniversity[];
+}) {
+  const u = university;
+  if (!u) return <ErrorScreen state="notFound" />;
 
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -54,7 +95,15 @@ export default function UniversityDetail({ slug }: { slug: string | null }) {
               <h2 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>About the university</h2>
               <p style={{ fontSize: "var(--fs-lead)", lineHeight: "var(--lh-body)", color: "var(--text-body)", margin: 0 }}>{u.about}</p>
               <BrandDivider />
-              <Facts items={[["Founded", u.founded], ["Students", u.students], ["Programs", u.programs], ["Tuition", u.tuition]]} />
+              {/* Rows with no value are dropped rather than shown empty. A fact panel with
+                  "Founded —" reads as missing data on the university's part rather than
+                  on ours. */}
+              <Facts items={[
+                ...(u.founded ? [["Founded", u.founded] as [string, string | number]] : []),
+                ...(u.students ? [["Students", u.students] as [string, string | number]] : []),
+                ["Programs", u.programs] as [string, string | number],
+                ["Tuition", u.tuition] as [string, string | number],
+              ]} />
             </ScrollReveal>
 
             <ScrollReveal delay={80} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
@@ -80,7 +129,7 @@ export default function UniversityDetail({ slug }: { slug: string | null }) {
               <h2 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Similar universities</h2>
               <CardGrid min={220} gap="var(--space-5)">
                 {similar.map((s) => (
-                  <UniversityCard key={s.slug} name={s.name} city={s.city} type={s.type} languages={s.languages}
+                  <UniversityCard key={s.slug} name={s.name} city={s.city} type={typeLabel(s.type)} languages={s.languages}
                     tuition={s.tuition} scholarship={s.scholarship} programs={s.programs}
                     href={`#/university/${s.slug}`} style={{ width: "100%" }} />
                 ))}

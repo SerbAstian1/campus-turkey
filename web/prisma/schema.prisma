@@ -364,6 +364,121 @@ enum ApplicationReviewStatus {
   @@map("application_review_status")
 }
 
+/// Brief §14. A university, as a record rather than a content file.
+///
+/// The directory has lived in `src/content/universities.ts` since the prototype. Moving
+/// it here is what §44's server-side filtering and §49's admin CRUD both require — you
+/// cannot page, filter or edit a TypeScript array from an admin screen.
+///
+/// **`tuition` stays a display string.** §15 puts a numeric tuition on `Program`, which
+/// is right for filtering, but the directory card shows "$400 – $1,500 / year" and a
+/// number cannot say that. Both exist: `tuitionDisplay` for the card, and the numeric
+/// range on `Program` for the filter. Collapsing them would either break the card or
+/// make the filter lie.
+///
+/// `slug` keeps the prototype's flawed rule, which mangles Turkish letters
+/// (`Boğaziçi` becomes `bo-azi-i`). Those are the addresses already published; fixing
+/// the rule means transliterating and redirecting, not swapping.
+model University {
+  id            String         @id @default(uuid()) @db.Uuid
+  slug          String         @unique
+  name          String
+  city          String
+  region        String?
+  type          UniversityType
+  description   String
+  logo          String?
+  coverImage    String?
+  website       String?
+  latitude      Float?
+  longitude     Float?
+  status        PublishStatus  @default(PUBLISHED)
+
+  /// Directory facts. Display strings where the reader needs a unit or a range, and
+  /// integers where something filters or sorts on them.
+  languages     String[]
+  tuitionDisplay String
+  programCount  Int            @default(0)
+  scholarship   Boolean        @default(false)
+  founded       Int?
+  studentsDisplay String?
+  ranking       String?
+  faculties     String[]
+  /// [label, value] intake dates, flattened to two parallel arrays would lose their
+  /// pairing, so this is JSON. It is display copy, never queried.
+  deadlines     Json?
+
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+
+  programs      Program[]
+
+  /// §84's named indexes. `city` and `type` are the directory's two hard filters;
+  /// the composite carries the common case of both at once with the published filter.
+  @@index([status, city])
+  @@index([status, type])
+  @@index([city, type])
+  @@map("university")
+}
+
+enum UniversityType {
+  PUBLIC
+  PRIVATE
+
+  @@map("university_type")
+}
+
+/// Whether a record is visible to the public. Separate from deletion: a university that
+/// is being edited, or one Campus Turkey no longer works with, should leave the
+/// directory without taking its applications' foreign keys with it.
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+
+  @@map("publish_status")
+}
+
+/// Brief §15. A programme within a university.
+model Program {
+  id            String        @id @default(uuid()) @db.Uuid
+  universityId  String        @db.Uuid
+  name          String
+  slug          String
+  degreeLevel   DegreeLevel
+  language      String
+  /// Display string: "4 years", "2 semesters". Duration is quoted, not computed.
+  duration      String?
+  /// Minor units, like every other money value in this schema. Nullable because a
+  /// programme with no published fee is common and zero would be a lie.
+  tuitionMinor  Int?
+  currency      String?       @db.Char(3)
+  scholarshipAvailable Boolean @default(false)
+  description   String?
+  status        PublishStatus @default(PUBLISHED)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
+
+  university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  /// Unique per university, not globally: "Medicine" exists at forty institutions.
+  @@unique([universityId, slug])
+  @@index([universityId])
+  @@index([status, degreeLevel])
+  @@index([status, language])
+  @@index([tuitionMinor])
+  @@map("program")
+}
+
+enum DegreeLevel {
+  FOUNDATION
+  BACHELOR
+  MASTER
+  PHD
+
+  @@map("degree_level")
+}
+
 enum PartnerStatus {
   ACTIVE
   /// Can sign in and read, cannot request withdrawals or add students.

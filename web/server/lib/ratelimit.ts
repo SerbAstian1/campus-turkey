@@ -62,6 +62,21 @@ export const RATE_LIMITS = {
     perUser: null,
   },
 
+  /**
+   * Public catalogue reads: the university directory and its filter options.
+   *
+   * Generous, because browsing the directory legitimately produces a burst — a visitor
+   * changing three filters fires three requests in a second, and paging through results
+   * fires more. Capped anyway, because these endpoints are unauthenticated and hit the
+   * database on every miss; the edge cache absorbs the repeat traffic, and this limits
+   * what reaches the origin when somebody iterates the query string.
+   */
+  publicRead: {
+    name: "public-read",
+    perIp: { limit: 240, windowSeconds: 60 },
+    perUser: null,
+  },
+
   /** Authenticated reads: portal dashboards, lists. */
   partnerRead: {
     name: "partner-read",
