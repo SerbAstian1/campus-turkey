@@ -131,8 +131,33 @@ function crossCheck(env: Env): string[] {
   return problems;
 }
 
+/**
+ * An optional variable left blank is unset, not invalid.
+ *
+ * `.env.example` ships every optional key with an empty value, so that the file
+ * documents what exists. Copying it and filling in only what you need is the intended
+ * workflow — but `SENTRY_DSN=` arrives as `""`, and `z.string().url().optional()`
+ * rejects an empty string rather than skipping it. The result was a refusal to boot
+ * over four variables that had been deliberately left out, which turned the honest
+ * "don't start misconfigured" guarantee into a false alarm on a correct config.
+ *
+ * Dropping blanks makes "present but empty" and "absent" the same thing, which is what
+ * everyone editing a `.env` already assumes. Required variables are unaffected: a blank
+ * one is still absent and still fails, now reporting "Required" rather than "Invalid
+ * url", which is the more accurate complaint.
+ */
+export function withoutBlanks(
+  source: Record<string, string | undefined>,
+): Record<string, string> {
+  const kept: Record<string, string> = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (value !== undefined && value.trim() !== "") kept[key] = value;
+  }
+  return kept;
+}
+
 function load(): Env {
-  const parsed = schema.safeParse(process.env);
+  const parsed = schema.safeParse(withoutBlanks(process.env));
 
   if (!parsed.success) {
     // Names only. Printing the values would put secrets in the boot log, which is

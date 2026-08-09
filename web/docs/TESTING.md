@@ -10,20 +10,53 @@
 | Rate-limit keying (`lib/ratelimit.ts`) | — | 58% lines, 86% branches | pure rules fully covered |
 | **Schema constraints and triggers** | all enforced | **30 assertions, all passing** | met — executed, not asserted |
 | **Query plans** | 3 heaviest | **3 observed + FK index audit** | met |
-| **Services, repositories, route handlers** | **≥80%** | **0%** | **NOT MET — QA issue #1** |
+| **Withdrawal service — concurrency, idempotency, state machine** | executed | **14 assertions against real Postgres** | met |
+| **Other services, repositories, route handlers** | **≥80%** | **0%** | **NOT MET — QA issue #1** |
 | Overall statement coverage | ≥80% | ~17% lines | not met |
 
-208 tests pass across nine files.
+**311 unit tests across 17 files, plus 14 integration tests against a real Postgres.**
+
+The integration suite closed the gap that every previous pass had to leave open. PGlite is
+single-connection, so the write skew that SERIALIZABLE exists to prevent could not be
+*created* under it, let alone observed — the concurrency claim rested entirely on reading
+the code. It has now been run: two simultaneous requests for the whole of a $400 balance
+produce exactly one withdrawal, and the loser is refused with a `ConflictError` rather than
+escaping as a 500.
+
+Run it with `npm run test:integration` against a branch database. It is deliberately not
+part of `npm test` or the CI gate — a suite needing a live database would fail the gate for
+reasons unrelated to the commit — and `vitest.config.ts` excludes `tests/integration/**`
+so the unit run cannot pick it up and fail on the fake `DATABASE_URL` it injects.
 
 Two of those rows changed from "not measured" by running the migrations against
 **PGlite** — Postgres compiled to WebAssembly, so a real planner and real constraint
 enforcement with no Docker and no service to start. That closes the two gaps that
 previously rested entirely on reading SQL.
 
-The number that still matters is the one in bold: **no service, repository or route
-handler has a test.** Those need Prisma against a real server, and PGlite is
-single-connection so it cannot exercise the SERIALIZABLE concurrency behaviour either.
-That remains the largest open gap and it is why the Production Audit cannot return PASS.
+The withdrawal service — the one that decides about money — is now covered end to end by
+`tests/integration/withdrawals.test.ts`. What remains untested is every *other* service,
+repository and route handler: leads, commissions, payout methods, the webhook receiver.
+That is still the largest open gap and it is still why the Production Audit cannot return
+PASS.
+
+## What a real database found that reading could not
+
+Four defects surfaced only once the app was pointed at a live Postgres and driven with
+real sessions. Each had been read past repeatedly:
+
+1. **Every staff endpoint returned 403 to every role.** `staffRole` is not part of Better
+   Auth's own schema, and the library returns only the fields it knows about on
+   `session.user` — so the role was correct in the database and `undefined` in the
+   session. Fixed by declaring it in `user.additionalFields` with `input: false`, which
+   is what stops it also becoming a self-promotion endpoint.
+2. **The app refused to boot on a correct `.env`.** Optional variables left blank arrive
+   as `""`, which `z.string().url().optional()` rejects rather than skips.
+3. **Scripts run under plain `node` never loaded `.env` at all.**
+4. **`pgbouncer=true` cost 6.5x on every query** against Neon's pooler, which has not
+   needed that flag since 2024.
+
+None of these are visible to a type checker, a unit test, or a careful reading. They are
+the argument for this suite existing.
 
 ## What PGlite already verifies
 

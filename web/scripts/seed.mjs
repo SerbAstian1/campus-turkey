@@ -16,6 +16,7 @@
  * Safe to re-run: everything is upserted on a stable key.
  */
 
+import "./load-env.mjs";
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "better-auth/crypto";
 

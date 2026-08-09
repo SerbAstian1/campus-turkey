@@ -12,6 +12,7 @@
  * Writes src/i18n/messages/<locale>.json, keyed by the English string.
  */
 
+import "./load-env.mjs";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

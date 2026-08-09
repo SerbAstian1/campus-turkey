@@ -75,6 +75,15 @@ export default defineConfig({
     ],
 
     /**
+     * `tests/integration/` needs a live Postgres and runs under
+     * `vitest.integration.config.ts`. The `tests/**` glob above would otherwise sweep it
+     * into `npm test`, where the deliberately fake `DATABASE_URL` set below means every
+     * one of those tests fails on connection — turning a green suite red for a reason
+     * that has nothing to do with the code under test, on any machine without a database.
+     */
+    exclude: ["**/node_modules/**", "**/dist/**", "tests/integration/**"],
+
+    /**
      * `server/lib/config.ts` validates the environment at module load and throws if it
      * is incomplete — which is what we want in production, and what makes every module
      * importing it unimportable in a test without these.

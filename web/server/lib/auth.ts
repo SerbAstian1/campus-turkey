@@ -44,6 +44,27 @@ export const auth = betterAuth({
     // overriding a password KDF is a decision that needs a reason, and there isn't one.
   },
 
+  user: {
+    /**
+     * `staffRole` lives on the `user` table but is not part of Better Auth's own schema,
+     * and the library returns **only** the fields it knows about on `session.user`.
+     * Without this declaration `session.user.staffRole` is `undefined` for everybody —
+     * including ADMIN — so `handler.ts` refuses every `{ kind: "staff" }` route and the
+     * entire staff API answers 403 to the people it exists for. The role was correct in
+     * the database the whole time; it just never reached the session.
+     *
+     * `input: false` is the load-bearing half of this. It stops the field being writable
+     * through the library's sign-up and update-user endpoints. Declared without it, an
+     * authenticated partner could POST their own `staffRole` and promote themselves to
+     * FINANCE — turning a read fix into privilege escalation. The role is granted only
+     * by `scripts/create-staff.mjs` or by SQL, both of which require access nobody has
+     * over HTTP.
+     */
+    additionalFields: {
+      staffRole: { type: "string", required: false, input: false },
+    },
+  },
+
   session: {
     /**
      * Seven days absolute, refreshed once a day of activity. Long enough that an agency

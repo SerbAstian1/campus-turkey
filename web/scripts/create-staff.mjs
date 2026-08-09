@@ -19,6 +19,7 @@
  * the holder change it. Prompting for one instead would put it in a shell history.
  */
 
+import "./load-env.mjs";
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "better-auth/crypto";
 import { randomBytes, randomUUID } from "node:crypto";
