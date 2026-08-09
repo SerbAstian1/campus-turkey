@@ -71,6 +71,10 @@ model User {
   applicationStatusChanges           ApplicationStatusHistory[]  @relation("ApplicationStatusActor")
   uploadedDocuments                  Document[]                  @relation("DocumentUploader")
   reviewedDocuments                  Document[]                  @relation("DocumentReviewer")
+  notifications                      Notification[]
+  conversations                      ConversationParticipant[]
+  sentMessages                       Message[]
+  auditEntries                       AuditLog[]                  @relation("AuditActor")
 
   @@index([role])
   @@index([status])
@@ -691,8 +695,9 @@ model Application {
   university     University?            @relation(fields: [universityId], references: [id], onDelete: Restrict)
   program        Program?               @relation(fields: [programId], references: [id], onDelete: Restrict)
 
-  history   ApplicationStatusHistory[]
-  documents Document[]
+  history       ApplicationStatusHistory[]
+  documents     Document[]
+  conversations Conversation[]
 
   /// §84 names most of these. The composite pairs are the queries the portals and the
   /// staff console actually run: "my applications, newest first" and "everything in this
@@ -817,6 +822,137 @@ enum DocumentStatus {
   REQUIRES_REUPLOAD
 
   @@map("document_status")
+}
+
+/// Brief §24. Something that happened, addressed to one person.
+///
+/// Written in the same transaction as the thing it describes — see §51. A notification
+/// sent for a status change that then rolled back is worse than none, because it tells
+/// somebody their application moved when it did not.
+///
+/// `title` and `body` are stored rather than derived from `type` at read time. A
+/// notification is a record of what somebody was told, and re-deriving the wording later
+/// means the archive silently changes whenever the copy does.
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  type      NotificationType
+  title     String
+  body      String
+  /// Where it points. A relative path, never an absolute URL: an absolute one would
+  /// carry whatever origin was configured when it was written.
+  href      String?
+  readAt    DateTime?        @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// The unread badge and the list are the same query with and without a filter, so one
+  /// composite index serves both.
+  @@index([userId, readAt, createdAt(sort: Desc)])
+  @@map("notification")
+}
+
+enum NotificationType {
+  APPLICATION_STATUS
+  DOCUMENT_REQUESTED
+  DOCUMENT_REVIEWED
+  MESSAGE_RECEIVED
+  ACCOUNT
+  PAYOUT
+
+  @@map("notification_type")
+}
+
+/// Brief §25. A thread about an application.
+///
+/// **`internal` is the load-bearing field.** §25 says students must not have
+/// unrestricted access to internal staff conversations, and the way that is guaranteed
+/// here is that an internal thread may only have staff participants — enforced by a
+/// database trigger, not by a filter each query has to remember.
+///
+/// The alternative, one thread with a per-message visibility flag, puts the applicant's
+/// messages and staff's private notes in the same list and makes every read a filtering
+/// problem. One missed filter then exposes an internal note about somebody to that
+/// person.
+model Conversation {
+  id            String   @id @default(uuid()) @db.Uuid
+  applicationId String?  @db.Uuid
+  subject       String?
+  /// True for staff-only notes (§61's "Internal Notes"). False for a thread the
+  /// applicant or their referrer can read.
+  internal      Boolean  @default(false)
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+
+  application  Application?              @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([applicationId, internal, updatedAt(sort: Desc)])
+  @@map("conversation")
+}
+
+model ConversationParticipant {
+  conversationId String   @db.Uuid
+  userId         String   @db.Uuid
+  /// How far this person has read. Per participant, because "read" is a fact about a
+  /// reader and not about a message.
+  lastReadAt     DateTime? @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_participant")
+}
+
+model Message {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @db.Uuid
+  senderId       String   @db.Uuid
+  body           String
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@map("message")
+}
+
+/// Brief §26. Who did what, to which record, and when.
+///
+/// Append-only, like `withdrawal_event` and `application_status_history`. This is the
+/// table an incident review reads, and one that can be edited afterwards answers nothing.
+///
+/// **What must never appear in `metadata`:** passwords, session tokens, reset tokens,
+/// claim codes, API keys. §26 says so and `logger.redact` already enforces the same list
+/// on the way to the log; the service that writes here applies it too, because an audit
+/// trail is the most durable place a leaked secret can land.
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// Null for a system action. Nullable rather than absent so "nobody" is distinct from
+  /// "we failed to record it".
+  actorUserId String?  @db.Uuid
+  action      String
+  entityType  String
+  entityId    String?
+  /// Redacted before it is written. See `audit.service.ts`.
+  metadata    Json?
+  /// Truncated to a /24 or /48 by `ipPrefix`, matching what leads store. Enough to
+  /// correlate a session, not enough to be a location record.
+  ipPrefix    String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_log")
 }
 
 enum CommissionState {

@@ -9,16 +9,19 @@
  *   validate authorization -> validate the transition -> update the application
  *   -> record history -> write an audit entry -> notify
  *
- * The first two happen before any write. The middle two happen inside one transaction,
- * because an application whose status moved without a history row is an application whose
- * history lies. Audit and notification arrive with P08; the transition function is where
- * they attach, and the comment at that point says so rather than leaving a silent gap.
+ * The first two happen before any write. **The remaining four happen inside one
+ * transaction**, and all four roll back together. An application whose status moved
+ * without a history row has a history that lies; one that notified a student and then
+ * failed to commit has told them something untrue; one that wrote an audit entry for a
+ * change that did not happen has a record nobody can trust.
  */
 
 import { randomUUID } from "node:crypto";
 import { serializable, db, type Db } from "@/server/lib/db";
 import { ConflictError, ForbiddenError, NotFoundError, UnprocessableError } from "@/server/lib/errors";
 import type { RequestLogger } from "@/server/lib/logger";
+import { recordAudit } from "@/server/modules/audit/audit.service";
+import { notify, notificationsForTransition } from "@/server/modules/notifications/notifications.service";
 import {
   checkTransition,
   describeRefusal,
@@ -202,9 +205,32 @@ export async function transitionApplication(
       },
     });
 
-    /* §51 also calls for an audit entry and a notification here. Both land in P08 and
-       both belong inside this transaction: a notification sent for a status change that
-       rolled back is worse than none. The audit line below is the interim record. */
+    /* §51's remaining two steps, inside this transaction rather than after it.
+       A notification written after a commit that then failed tells somebody their
+       application moved when it did not, and an audit entry in the same position records
+       something that never happened. Both roll back with the status if anything below
+       throws. */
+    await recordAudit(
+      {
+        action: "application.status_changed",
+        entityType: "application",
+        entityId: current.id,
+        actorUserId: input.actorUserId,
+        metadata: {
+          applicationNumber: current.applicationNumber,
+          from: current.status,
+          to: input.to,
+          actor: input.actor,
+          ...(input.note?.trim() ? { note: input.note.trim() } : {}),
+        },
+      },
+      tx,
+    );
+
+    await notify(
+      await notificationsForTransition({ applicationId: current.id, to: input.to }, tx),
+      tx,
+    );
 
     return { updated, previousStatus: current.status, studentId: current.studentId };
   });
