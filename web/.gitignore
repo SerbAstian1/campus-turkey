@@ -16,3 +16,6 @@ coverage/
 # Transient files written by local verification runs
 *.out
 *.log
+
+# Local document storage. Development only; production refuses this provider.
+.uploads/

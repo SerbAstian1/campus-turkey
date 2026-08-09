@@ -69,6 +69,8 @@ model User {
   actedEvents    WithdrawalEvent[] @relation("EventActor")
   reviewedRepresentativeApplications RepresentativeApplication[] @relation("RepresentativeApplicationReviewer")
   applicationStatusChanges           ApplicationStatusHistory[]  @relation("ApplicationStatusActor")
+  uploadedDocuments                  Document[]                  @relation("DocumentUploader")
+  reviewedDocuments                  Document[]                  @relation("DocumentReviewer")
 
   @@index([role])
   @@index([status])
@@ -689,7 +691,8 @@ model Application {
   university     University?            @relation(fields: [universityId], references: [id], onDelete: Restrict)
   program        Program?               @relation(fields: [programId], references: [id], onDelete: Restrict)
 
-  history ApplicationStatusHistory[]
+  history   ApplicationStatusHistory[]
+  documents Document[]
 
   /// §84 names most of these. The composite pairs are the queries the portals and the
   /// staff console actually run: "my applications, newest first" and "everything in this
@@ -747,6 +750,73 @@ model ApplicationStatusHistory {
 
   @@index([applicationId, createdAt(sort: Desc)])
   @@map("application_status_history")
+}
+
+/// Brief §18. A file attached to an application.
+///
+/// **The row is the record; the bytes are elsewhere.** §18 is explicit that raw uploads
+/// do not belong in Postgres, and `storageKey` is the only link to them. Nothing in this
+/// table can be used to reconstruct a file, which means a database dump handed to a
+/// developer contains passport *metadata* and no passports.
+///
+/// `fileName` is what the uploader called it and is shown back to them. It is never used
+/// to build a path: §83 says do not trust filenames, and `storageKey` is generated
+/// server-side from a uuid precisely so a filename cannot escape its directory.
+model Document {
+  id               String         @id @default(uuid()) @db.Uuid
+  applicationId    String         @db.Uuid
+  uploadedByUserId String?        @db.Uuid
+  type             DocumentType
+  /// The uploader's own name for it. Display only.
+  fileName         String
+  /// Server-generated. The only thing that addresses the object.
+  storageKey       String         @unique
+  mimeType         String
+  fileSize         Int
+  status           DocumentStatus @default(PENDING)
+  rejectionReason  String?
+  reviewedByUserId String?        @db.Uuid
+  reviewedAt       DateTime?      @db.Timestamptz(3)
+  /// Set once the browser confirms the upload finished. A row without it is a presigned
+  /// URL that was issued and never used, and it must not appear as a document.
+  uploadedAt       DateTime?      @db.Timestamptz(3)
+  createdAt        DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @db.Timestamptz(3)
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  uploadedBy  User?       @relation("DocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  reviewedBy  User?       @relation("DocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("document")
+}
+
+/// What a document is for. A closed list rather than free text, because the review queue
+/// groups by it and "Passport", "passport" and "Pasport" are three groups.
+enum DocumentType {
+  PASSPORT
+  PHOTOGRAPH
+  HIGH_SCHOOL_DIPLOMA
+  HIGH_SCHOOL_TRANSCRIPT
+  BACHELOR_DIPLOMA
+  BACHELOR_TRANSCRIPT
+  LANGUAGE_CERTIFICATE
+  FINANCIAL_STATEMENT
+  MEDICAL_REPORT
+  OTHER
+
+  @@map("document_type")
+}
+
+enum DocumentStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  REQUIRES_REUPLOAD
+
+  @@map("document_status")
 }
 
 enum CommissionState {

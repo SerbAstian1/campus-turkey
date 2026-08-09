@@ -62,6 +62,27 @@ const schema = z.object({
   MAIL_API_KEY: z.string().optional(),
   MAIL_FROM: z.string().email().optional(),
 
+  /**
+   * Document storage — brief §18, §83.
+   *
+   * `local` writes to `.uploads/` and exists so the upload and review flows can be built
+   * before a bucket exists. It is refused in production by the cross-check below: object
+   * storage on a serverless platform's local disk is a file that vanishes on the next
+   * cold start, and finding that out after a student has uploaded a passport is not a
+   * recoverable mistake.
+   *
+   * `s3` speaks to Amazon S3, Cloudflare R2 and Supabase Storage alike. R2 and Supabase
+   * need `S3_FORCE_PATH_STYLE=true`.
+   */
+  STORAGE_PROVIDER: z.enum(["s3", "local", "unconfigured"]).default("unconfigured"),
+  S3_BUCKET: z.string().optional(),
+  S3_REGION: z.string().optional(),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  /** Full origin, including scheme. R2: `https://<account>.r2.cloudflarestorage.com`. */
+  S3_ENDPOINT: url.optional(),
+  S3_FORCE_PATH_STYLE: z.enum(["true", "false"]).default("false"),
+
   /** Error tracking. Absent in development; required in production by the check below. */
   SENTRY_DSN: url.optional(),
 
@@ -111,6 +132,18 @@ function crossCheck(env: Env): string[] {
     problems.push("CAPTCHA_PROVIDER is set but CAPTCHA_SECRET is missing");
   }
 
+  if (env.STORAGE_PROVIDER === "s3") {
+    const missing = (
+      ["S3_BUCKET", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY", "S3_ENDPOINT"] as const
+    ).filter((name) => !env[name]);
+
+    // Refused at boot rather than at the first upload. A document subsystem that accepts
+    // a passport it cannot store is worse than one that will not start.
+    if (missing.length > 0) {
+      problems.push(`STORAGE_PROVIDER is s3 but ${missing.join(", ")} missing`);
+    }
+  }
+
   if (env.NODE_ENV === "production") {
     if (!env.SENTRY_DSN) {
       problems.push("SENTRY_DSN is required in production — errors would go unrecorded");
@@ -122,6 +155,18 @@ function crossCheck(env: Env): string[] {
     }
     if (env.CAPTCHA_PROVIDER === "disabled") {
       problems.push("CAPTCHA_PROVIDER must be configured in production — see handoff note 13");
+    }
+    if (env.STORAGE_PROVIDER === "local") {
+      // Serverless local disk does not survive a cold start. A passport stored there is
+      // a passport lost, discovered only when somebody goes looking for it.
+      problems.push(
+        "STORAGE_PROVIDER cannot be 'local' in production — uploaded documents would be lost on the next cold start",
+      );
+    }
+    if (env.STORAGE_PROVIDER === "unconfigured") {
+      problems.push(
+        "STORAGE_PROVIDER must be configured in production — document upload is part of every application",
+      );
     }
     if (env.MAIL_PROVIDER === "disabled") {
       // `auth.ts` requires email verification only when a provider exists, so that
