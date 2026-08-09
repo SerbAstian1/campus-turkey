@@ -24,8 +24,24 @@
 
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { emailOTP } from "better-auth/plugins";
 import { db } from "./db";
 import { env, isProduction } from "./config";
+import { logger } from "./logger";
+import { sendMail, verificationCodeEmail } from "./mail";
+import { rememberCode } from "./dev-codes";
+
+/**
+ * How long a code is good for, and how many guesses it gets.
+ *
+ * Ten minutes is long enough to switch to a mail app on a slow connection and short
+ * enough that a code read off a shoulder is usually dead. Three attempts because a
+ * six-digit code has a million values: three guesses is 3-in-a-million, while the
+ * default of several more, multiplied across unlimited re-requests, is how brute force
+ * stops being theoretical. Better Auth invalidates the code once attempts are spent.
+ */
+const OTP_MINUTES = 10;
+const OTP_ATTEMPTS = 3;
 
 export const auth = betterAuth({
   database: prismaAdapter(db, { provider: "postgresql" }),
@@ -135,6 +151,59 @@ export const auth = betterAuth({
   },
 
   trustedOrigins: [env.SITE_ORIGIN],
+
+  plugins: [
+    /**
+     * Email codes, for partner onboarding and password reset.
+     *
+     * A six-digit code rather than a magic link, because the flow this serves keeps the
+     * partner on one page: they set a password and confirm the code without navigating
+     * away. A link would move them to a new tab mid-form and lose the password they had
+     * just typed — and a link that survives that is a link that logs someone in from a
+     * forwarded email.
+     *
+     * The code is generated, hashed and expired by the library. Nothing here stores or
+     * compares one by hand.
+     */
+    emailOTP({
+      otpLength: 6,
+      expiresIn: OTP_MINUTES * 60,
+      allowedAttempts: OTP_ATTEMPTS,
+
+      /**
+       * Sign-up via OTP stays closed.
+       *
+       * Without this, requesting a code for an unknown address would create an account
+       * for it — reopening the self-registration that `disableSignUp` exists to prevent,
+       * through a different door. Partners are created by staff approving an
+       * application; this plugin only ever finishes onboarding one that already exists.
+       */
+      disableSignUp: true,
+
+      async sendVerificationOTP({ email, otp, type }) {
+        const result = await sendMail(verificationCodeEmail({
+          to: email,
+          code: otp,
+          minutesValid: OTP_MINUTES,
+        }));
+
+        if (!result.ok) {
+          // Thrown, not swallowed. The caller is about to be told "check your email" for
+          // a message that does not exist, and would then blame a code that never
+          // arrived on themselves. Better Auth turns this into a failed request.
+          logger.error({ type, error: result.error }, "verification code could not be sent");
+          throw new Error("We could not send your code. Please try again in a moment.");
+        }
+
+        // Development only, and inert unless no mail provider is configured — see
+        // `dev-codes.ts` for why that second condition is the one doing the work.
+        rememberCode(email, otp);
+
+        // Never log `otp`. It is the credential.
+        logger.info({ type, delivered: result.delivered }, "verification code issued");
+      },
+    }),
+  ],
 });
 
 export type Auth = typeof auth;

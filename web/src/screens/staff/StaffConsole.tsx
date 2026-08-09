@@ -211,7 +211,11 @@ export function StaffConsole({
 
         {view === "withdrawals" ? <WithdrawalQueue canAct={canAct} /> : null}
         {view === "commissions" ? <CommissionQueue canAct={canAct} /> : null}
-        {view === "leads" ? <LeadInbox /> : null}
+        {/* Approving an application creates a login that will hold a balance, which is a
+            narrower permission than paying an existing partner — ADMIN only, matching the
+            endpoint. Passed explicitly rather than derived from `canAct`, because this
+            queue's `actionRoles` includes SUPPORT for reading. */}
+        {view === "leads" ? <LeadInbox canApprove={role === "ADMIN"} /> : null}
       </main>
     </div>
   );

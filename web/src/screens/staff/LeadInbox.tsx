@@ -17,8 +17,8 @@
  */
 
 import { useState } from "react";
-import { Card, Icon } from "@/ds";
-import { useLeadInbox, when, type LeadKind, type QueueLead } from "@/features/staff/data";
+import { Button, Card, Icon, Input, Select } from "@/ds";
+import { act, useLeadInbox, when, type LeadKind, type QueueLead } from "@/features/staff/data";
 import { Filters, QueueState, StatusDot } from "./shared";
 
 const KINDS: { key: string; label: string }[] = [
@@ -37,7 +37,7 @@ const KIND_LABEL: Record<LeadKind, string> = {
   MEDICAL: "Medical",
 };
 
-export function LeadInbox() {
+export function LeadInbox({ canApprove }: { canApprove: boolean }) {
   const [filter, setFilter] = useState<LeadKind | null>(null);
   const inbox = useLeadInbox(filter ?? undefined);
 
@@ -79,12 +79,24 @@ export function LeadInbox() {
         }
       />
 
-      {inbox.status === "ready" ? inbox.items.map((lead) => <LeadRow key={lead.id} lead={lead} />) : null}
+      {inbox.status === "ready"
+        ? inbox.items.map((lead) => (
+            <LeadRow key={lead.id} lead={lead} canApprove={canApprove} onDone={inbox.reload} />
+          ))
+        : null}
     </div>
   );
 }
 
-function LeadRow({ lead }: { lead: QueueLead }) {
+function LeadRow({
+  lead,
+  canApprove,
+  onDone,
+}: {
+  lead: QueueLead;
+  canApprove: boolean;
+  onDone: () => void;
+}) {
   const [open, setOpen] = useState(false);
 
   const withheld = "withheld" in lead.payload;
@@ -147,7 +159,140 @@ function LeadRow({ lead }: { lead: QueueLead }) {
           {open ? <Payload payload={lead.payload} /> : null}
         </>
       )}
+
+      {lead.kind === "PARTNER" && canApprove ? (
+        <ApprovePartner lead={lead} onDone={onDone} />
+      ) : null}
     </Card>
+  );
+}
+
+/**
+ * Turning an application into an account.
+ *
+ * The four fields here are the ones an application cannot supply, and they are asked for
+ * rather than defaulted because each has a consequence that outlives this click:
+ *
+ *   **Currency** is on the composite foreign key joining a partner to their commissions
+ *   and withdrawals. Guessing it wrong does not produce a wrong number later — it
+ *   produces a partner who can never be paid a commission, because every insert is
+ *   refused by the database. It cannot be changed afterwards without rewriting every row
+ *   that references it, so it is a select with no default.
+ *
+ *   **Named manager** is a promise the portal makes out loud ("your named contact will
+ *   call"). Recorded here or it is not true.
+ *
+ * No password is set and none is sent. The partner receives a link, chooses their own,
+ * and confirms a code — so nobody at Campus Turkey ever knows a partner's password, and
+ * there is no credential sitting in a chat log waiting to be found.
+ */
+function ApprovePartner({ lead, onDone }: { lead: QueueLead; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    role: "Director",
+    managerName: "",
+    managerRole: "Partnerships Manager",
+    currency: "USD",
+    territory: "",
+  });
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+
+  const converted = lead.status === "CONVERTED";
+
+  const set = (key: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const approve = async () => {
+    setPending(true);
+    setError(null);
+
+    const result = await act(`/api/staff/leads/${lead.id}/approve`, {
+      role: form.role.trim(),
+      managerName: form.managerName.trim(),
+      managerRole: form.managerRole.trim(),
+      currency: form.currency,
+      ...(form.territory.trim() ? { territory: form.territory.trim() } : {}),
+    });
+
+    setPending(false);
+    if (result.ok) {
+      setDone("Account created. The partner has been emailed a link to set their password.");
+      onDone();
+      return;
+    }
+    setError(result.message);
+  };
+
+  if (converted) {
+    return (
+      <p style={{ margin: "var(--space-4) 0 0", color: "var(--text-muted)", fontSize: "var(--fs-body-sm)" }}>
+        Approved. This applicant has a partner account.
+      </p>
+    );
+  }
+
+  if (done) {
+    return (
+      <p style={{ margin: "var(--space-4) 0 0", color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
+        {done}
+      </p>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: "var(--space-5)", paddingTop: "var(--space-5)", borderTop: "1px solid var(--border-subtle)" }}>
+      {!open ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Button variant="primary" size="md" type="button" onClick={() => setOpen(true)}>
+            Approve and create account
+          </Button>
+          <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", maxWidth: "40ch" }}>
+            Creates their login and emails them a link to set a password. No money moves.
+          </span>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <Input id={`role-${lead.id}`} label="Their role"
+            hint="Their job title at the agency."
+            value={form.role} onChange={set("role")} />
+          <Input id={`mgr-${lead.id}`} label="Their named contact at Campus Turkey"
+            hint="The person who will call them. The portal shows this name."
+            placeholder="Elif Demir"
+            value={form.managerName} onChange={set("managerName")} />
+          <Input id={`mgrrole-${lead.id}`} label="That contact's role"
+            value={form.managerRole} onChange={set("managerRole")} />
+          <Select id={`cur-${lead.id}`} label="Payout currency"
+            hint="Cannot be changed later — commissions and withdrawals are keyed to it."
+            options={["USD", "EUR", "GBP", "TRY", "NGN"]}
+            value={form.currency} onChange={set("currency")} />
+          <Input id={`terr-${lead.id}`} label="Territory (optional)"
+            hint="Taken from the application if left blank."
+            value={form.territory} onChange={set("territory")} />
+
+          {error ? (
+            <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>
+              <Icon name="alert-circle" size={16} />
+              {error}
+            </span>
+          ) : null}
+
+          <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
+            <Button variant="primary" size="md" type="button"
+              disabled={pending || form.managerName.trim() === ""}
+              onClick={() => void approve()}>
+              {pending ? "Creating…" : "Create the account"}
+            </Button>
+            <Button variant="secondary" size="md" type="button" disabled={pending}
+              onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
