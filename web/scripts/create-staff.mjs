@@ -62,6 +62,7 @@ try {
       // makes the account usable immediately; partners still go through verification.
       emailVerified: true,
       staffRole: role,
+      role: role === "ADMIN" ? "ADMIN" : "STAFF",
     },
   });
 

@@ -132,6 +132,22 @@ export async function approvePartnerApplication(
         // Not verified, and no credential row: the partner proves the address and
         // chooses the password in the same flow, and cannot sign in until both are done.
         emailVerified: false,
+        /* Declared before the partner row is written, because a database trigger
+           refuses a partner record whose user is not a PARTNER. That trigger is what
+           stops a staff account quietly acquiring a wallet it could then approve
+           payouts from. */
+        role: "PARTNER",
+        /* ACTIVE, deliberately, even though INVITED describes this account more
+           precisely.
+           INVITED refuses sign-in, and nothing yet flips it to ACTIVE when the password
+           is set: that transition would have to happen inside Better Auth's password
+           reset, which exposes no hook we control. Setting it here would lock every new
+           partner out permanently, which is the exact failure the `requireEmailVerification`
+           default already produced once.
+           The account is not reachable anyway — it has no credential row until the
+           partner creates one. INVITED starts being used when the admin invitation flow
+           in §49 lands and brings the transition with it. */
+        status: "ACTIVE",
       },
       select: { id: true, email: true },
     });

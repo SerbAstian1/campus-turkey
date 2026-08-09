@@ -119,7 +119,7 @@ export default function SetPassword() {
               <h1 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Set your password</h1>
               <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
                 Campus Turkey has approved your account. Choose a password, then confirm the
-                code we email you — you will not leave this page.
+                code we email you. You will not leave this page.
               </p>
 
               <form

@@ -15,3 +15,44 @@
 @import url("/ds/tokens/elevation.css");
 @import url("/ds/tokens/motion.css");
 @import url("/ds/tokens/base.css");
+
+/* ── Accessibility override: the primary action ────────────────────────────────
+
+   The brief requires brand green #2EAE6E as the primary colour (§72) and WCAG
+   contrast compliance (§76). Those cannot both hold with a white label:
+
+       #FFFFFF on #2EAE6E  =  2.84:1     fails AA text (4.5:1) and UI (3:1)
+
+   The client's decision was to keep the brand green and darken the label. Measured
+   against the tokens that already exist:
+
+       #0F3D2A (green-800) on #2EAE6E  =  4.30:1   still fails normal text
+       #0A2C1E (green-900) on #2EAE6E  =  5.31:1   passes
+
+   So the label is green-900, not green-800.
+
+   The interaction ramp has to invert with it, and this is the part that is easy to
+   miss. The stock hover and active steps go *darker* — correct underneath a white
+   label, and wrong underneath a dark one:
+
+       #0A2C1E on #1F7A4D (green-600, hover)   =  2.84:1   fails
+       #0A2C1E on #175C3A (green-700, active)  =  1.89:1   fails badly
+
+   A button that passes at rest and fails the moment a pointer touches it is worse
+   than one that fails consistently, because the failure is invisible in review.
+   Going lighter on interaction keeps the direction of travel legible and passes
+   throughout:
+
+       #0A2C1E on #71CEA1 (green-300, hover)   =  7.94:1
+       #0A2C1E on #A7DFC3 (green-200, active)  = 10.05:1
+
+   Written here rather than in `public/ds/tokens/colors.css` so that the design
+   system copy stays byte-identical to its source and can be replaced wholesale
+   without silently losing this. Cascade order does the rest: the imports above are
+   evaluated first, so these win.                                                */
+
+:root {
+  --text-on-brand: var(--green-900);
+  --action-primary-hover: var(--green-300);
+  --action-primary-active: var(--green-200);
+}

@@ -74,6 +74,10 @@ export async function createPartner(options: {
       email: `itest-${tag}@campusturkey.invalid`,
       name: `Integration ${tag}`,
       emailVerified: true,
+      // Declared before the partner row, because a trigger refuses a partner record
+      // whose user is not a PARTNER. That trigger is the reason a staff account cannot
+      // quietly acquire a wallet, so the fixture works with it rather than around it.
+      role: "PARTNER",
     },
   });
 

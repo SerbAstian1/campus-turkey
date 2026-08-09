@@ -39,19 +39,122 @@ model User {
   emailVerified Boolean   @default(false)
   name          String?
   image         String?
-  /// Staff role. Partners have `null` here and reach the domain through `Partner`.
+
+  /// The primary role, declared rather than inferred.
+  ///
+  /// Before this column, a user's role was worked out from relations: staff if
+  /// `staffRole` was non-null, partner if a `Partner` row pointed back. That is
+  /// unreadable at the point of an authorization check and it cannot express a role
+  /// with no profile row yet, which is exactly the state an invited user is in.
+  /// One user, one role, stated here.
+  role          UserRole   @default(STUDENT)
+
+  /// Whether the account may be used, independent of what it may do.
+  status        UserStatus @default(ACTIVE)
+
+  /// Staff capability within the money path. **Being retired** — see the note on
+  /// `StaffRole`. Kept alongside `role` only until `StaffProfile.department` carries
+  /// it, and dropped in a later migration rather than renamed in place.
   staffRole     StaffRole?
+
   createdAt     DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
 
   sessions     Session[]
   accounts     Account[]
   partner      Partner?
+  staffProfile StaffProfile?
   actedEvents  WithdrawalEvent[] @relation("EventActor")
 
+  @@index([role])
+  @@index([status])
   @@map("user")
 }
 
+/// Brief §8. One primary role per user.
+///
+/// `PARTNER` and `REPRESENTATIVE` are separate values on purpose and must stay that
+/// way even while their permissions are identical: the brief's §4 is explicit that a
+/// partner is an organisation and a representative is a person or a territory, and
+/// collapsing them now means a migration later to tell them apart in referral
+/// attribution and reporting.
+enum UserRole {
+  STUDENT
+  PARTNER
+  REPRESENTATIVE
+  STAFF
+  ADMIN
+  SUPER_ADMIN
+
+  @@map("user_role")
+}
+
+/// Brief §9. Whether the account may be used at all.
+///
+/// Separate from `role` because they answer different questions, and conflating them
+/// is how a suspended admin keeps their permissions. Every authorization check reads
+/// both.
+enum UserStatus {
+  /// Created, not yet invited. Cannot sign in.
+  PENDING
+  /// Invited, has not set a password. Cannot sign in until they do.
+  INVITED
+  ACTIVE
+  /// Temporarily barred. Sessions are refused; the record is untouched.
+  SUSPENDED
+  /// Permanently closed. Kept for referential integrity, never reactivated.
+  DEACTIVATED
+
+  @@map("user_status")
+}
+
+/// Brief §13. A staff member's identity and department.
+///
+/// Introduced now rather than in a later phase because `department` is where
+/// `User.staffRole` is going: the brief has no FINANCE role because it has no payout
+/// system, and Campus Turkey does. Expressing "may move money" as a department the
+/// permission layer reads keeps the brief's role vocabulary intact without losing the
+/// distinction the money path depends on.
+model StaffProfile {
+  id         String          @id @default(uuid()) @db.Uuid
+  userId     String          @unique @db.Uuid
+  firstName  String
+  lastName   String
+  department StaffDepartment @default(OPERATIONS)
+  jobTitle   String?
+  createdAt  DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime        @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([department])
+  @@map("staff_profile")
+}
+
+/// Brief §13's suggested departments. `FINANCE` additionally carries the payout
+/// permissions, which is the one department whose name has authorization meaning.
+enum StaffDepartment {
+  ADMISSIONS
+  STUDENT_SUPPORT
+  MEDICAL_TOURISM
+  BUSINESS
+  PARTNERSHIPS
+  OPERATIONS
+  MARKETING
+  MANAGEMENT
+  FINANCE
+
+  @@map("staff_department")
+}
+
+/// **Being retired.** Superseded by `UserRole` plus `StaffProfile.department`.
+///
+/// Retained through one migration so that the backfill has a source to read and any
+/// endpoint not yet moved to the permission layer keeps working. Dropping it in the
+/// same migration that adds `UserRole` would mean a deploy where the old code is still
+/// running against the new schema, which is an outage rather than a refactor.
+///
+/// Removal is a later migration, once no code reads it.
 enum StaffRole {
   /// May read every partner's records. May not approve payouts.
   SUPPORT

@@ -139,7 +139,7 @@ export default function PartnerLogin() {
                     named contact will call within one working day.
                   </p>
                   <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "var(--fs-body-sm)" }}>
-                    Your login is created after that call — you cannot sign in yet, and this
+                    Your login is created after that call. You cannot sign in yet, and this
                     form has not made you a password.
                   </p>
                   <Button variant="secondary" size="lg" fullWidth onClick={() => setTab("login")}>
@@ -155,7 +155,7 @@ export default function PartnerLogin() {
                       and then could not sign in. */}
                   <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
                     This sends an application. Campus Turkey reviews it and creates your
-                    login — accounts are not opened automatically.
+                    login. Accounts are not opened automatically.
                   </p>
 
                   <Input id="r-org" label="Organisation name" icon="building-2"

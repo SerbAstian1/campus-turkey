@@ -209,7 +209,7 @@ function WithdrawalRow({
             <Input
               id={`ref-${item.id}`}
               label="Provider reference"
-              hint="Required once money is moving — it is how this is reconciled against the provider's statement."
+              hint="Required once money is moving. It is how this is reconciled against the provider's statement."
               placeholder="e.g. wise_9f2b41"
               value={providerRef}
               onChange={(e) => setProviderRef(e.target.value)}

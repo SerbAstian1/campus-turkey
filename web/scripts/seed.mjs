@@ -45,8 +45,8 @@ async function main() {
   // ---- account
   await db.user.upsert({
     where: { id: USER_ID },
-    update: {},
-    create: { id: USER_ID, email: EMAIL, emailVerified: true, name: "Adaeze Okafor" },
+    update: { role: "PARTNER" },
+    create: { id: USER_ID, email: EMAIL, emailVerified: true, name: "Adaeze Okafor", role: "PARTNER" },
   });
 
   // Better Auth owns the hashing scheme; using its own helper is what keeps this seed

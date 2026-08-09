@@ -47,7 +47,7 @@ const NAV: NavItem[] = [
     key: "withdrawals",
     label: "Payouts",
     icon: "banknote",
-    lead: "Requests waiting on a decision. Oldest first — a partner has been waiting for each of these.",
+    lead: "Requests waiting on a decision. Oldest first, because a partner has been waiting for each of these.",
     actionRoles: ["FINANCE", "ADMIN"],
   },
   {

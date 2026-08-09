@@ -39,6 +39,7 @@ import {
 } from "@/server/lib/errors";
 import { enforceRateLimit, type RateLimitPolicy } from "@/server/lib/ratelimit";
 import { reportError } from "@/server/lib/reporting";
+import { canAct, hasPermission, type Permission } from "@/server/lib/permissions";
 import { resolveSession } from "./session";
 import type { Session } from "./session";
 
@@ -55,7 +56,25 @@ const MAX_BODY_BYTES = 64 * 1024;
 export type Access =
   | { kind: "public" }
   | { kind: "partner" }
-  | { kind: "staff"; roles: ReadonlyArray<"SUPPORT" | "FINANCE" | "ADMIN"> };
+  | { kind: "staff"; roles: ReadonlyArray<"SUPPORT" | "FINANCE" | "ADMIN"> }
+  /**
+   * Permission-based access — brief §33, and where all of these are heading.
+   *
+   * The three kinds above name *who* may call an endpoint; this one names *what the
+   * caller must be able to do*, which is the question authorization is actually about.
+   * The difference shows the moment a role changes: `{ kind: "staff", roles: [...] }`
+   * has to be found and edited at every call site, while a permission grant moves in
+   * `permissions.ts` alone.
+   *
+   * Both forms are live at once on purpose. Converting twenty-one endpoints in the same
+   * change that introduces the mechanism would mean the mechanism and every use of it
+   * are unverified together — so the mechanism lands first with its own tests, and
+   * endpoints move across one at a time behind them.
+   *
+   * This only answers "may this kind of user do this kind of thing". Whether the record
+   * in question belongs to the caller is the service's job, every time.
+   */
+  | { kind: "permission"; require: readonly Permission[] };
 
 export interface RouteContext<TBody, TQuery> {
   body: TBody;
@@ -227,6 +246,42 @@ export function route<TBody = undefined, TQuery = undefined, TResult = unknown>(
           });
           throw new ForbiddenError("You do not have access to that.");
         }
+        await enforceRateLimit(config.rateLimit, {
+          request,
+          scope: "user",
+          identifier: session.user.id,
+        });
+      }
+
+      if (config.access.kind === "permission") {
+        if (!session.user) throw new UnauthenticatedError();
+
+        const principal = {
+          role: session.user.role,
+          status: session.user.status,
+          department: session.user.department ?? null,
+        };
+
+        // Status first, and separately, so the log distinguishes "this account is
+        // barred" from "this account lacks a permission". They need different answers
+        // from support, and a single "forbidden" line cannot tell them apart at 2am.
+        if (!canAct(principal)) {
+          log.warn("authorization refused: account not active", {
+            userId: session.user.id,
+            status: principal.status,
+          });
+          throw new ForbiddenError("This account is not active.");
+        }
+
+        if (!hasPermission(principal, config.access.require)) {
+          log.warn("authorization refused: missing permission", {
+            userId: session.user.id,
+            role: principal.role,
+            required: config.access.require,
+          });
+          throw new ForbiddenError("You do not have access to that.");
+        }
+
         await enforceRateLimit(config.rateLimit, {
           request,
           scope: "user",

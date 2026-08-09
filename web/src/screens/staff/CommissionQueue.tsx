@@ -232,7 +232,7 @@ function CommissionRow({
 
       {settled ? (
         <p style={{ margin: "var(--space-4) 0 0", color: "var(--text-muted)", fontSize: "var(--fs-body-sm)" }}>
-          Reversed. Record a new commission if this needs reinstating — reversals are not undone.
+          Reversed. Record a new commission if this needs reinstating. Reversals are not undone.
         </p>
       ) : null}
     </Card>

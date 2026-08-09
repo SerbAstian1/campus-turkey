@@ -65,7 +65,7 @@ export function LeadInbox({ canApprove }: { canApprove: boolean }) {
           <Icon name="shield" size={18} color="var(--green-600)" />
           <span>
             These enquiries contain health information. Opening this queue is recorded. They are
-            deleted 90 days after consent — the date is on each row.
+            deleted 90 days after consent. The date is on each row.
           </span>
         </p>
       ) : null}
@@ -265,7 +265,7 @@ function ApprovePartner({ lead, onDone }: { lead: QueueLead; onDone: () => void 
           <Input id={`mgrrole-${lead.id}`} label="That contact's role"
             value={form.managerRole} onChange={set("managerRole")} />
           <Select id={`cur-${lead.id}`} label="Payout currency"
-            hint="Cannot be changed later — commissions and withdrawals are keyed to it."
+            hint="Cannot be changed later. Commissions and withdrawals are keyed to it."
             options={["USD", "EUR", "GBP", "TRY", "NGN"]}
             value={form.currency} onChange={set("currency")} />
           <Input id={`terr-${lead.id}`} label="Territory (optional)"
