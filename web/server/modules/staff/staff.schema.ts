@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { MAX_MINOR } from "@/server/lib/money";
+import { leadTypes, type LeadType } from "@/server/modules/leads/leads.service";
 
 const uuid = z.string().uuid();
 
@@ -78,11 +79,37 @@ export const updateStudentBody = z.object({
 
 // ----------------------------------------------------------------------- leads
 
+/**
+ * Filtering by `kind` reuses the writable list rather than repeating it, so a new
+ * service desk becomes filterable the moment its form exists. `APPLY` is absent from
+ * both — it is a retired value no row carries.
+ */
 export const leadQueueQuery = listQuery.extend({
-  kind: z.enum(["APPLY", "CONTACT", "PARTNER", "REPRESENTATIVE", "MEDICAL"]).optional(),
+  kind: z.enum(leadTypes as [LeadType, ...LeadType[]]).optional(),
   status: z.enum(["NEW", "CONTACTED", "CONVERTED", "CLOSED"]).optional(),
 });
 
-export const updateLeadBody = z.object({
-  status: z.enum(["NEW", "CONTACTED", "CONVERTED", "CLOSED"]),
+/**
+ * Working a lead: a status, an assignee, or both.
+ *
+ * Both optional with at least one required, so the inbox can reassign without restating
+ * the status. Sending neither is a 400 rather than a silent no-op — a request that
+ * changes nothing is a bug in the caller, and answering 200 to it hides that.
+ *
+ * `CONVERTED` is absent by design. A lead becomes converted by an approval creating an
+ * account, which sets the status and the user id together; typing it in by hand would
+ * produce leads marked converted with no account behind them.
+ */
+export const updateLeadBody = z
+  .object({
+    status: z.enum(["NEW", "CONTACTED", "CLOSED"]).optional(),
+    /** `null` hands it back to the unassigned pile — §19. */
+    assignedToUserId: uuid.nullable().optional(),
+  })
+  .refine((body) => body.status !== undefined || body.assignedToUserId !== undefined, {
+    message: "Say what to change: a status, an assignee, or both.",
+  });
+
+export const updateInquiryBody = z.object({
+  status: z.enum(["OPEN", "ANSWERED", "CLOSED"]),
 });

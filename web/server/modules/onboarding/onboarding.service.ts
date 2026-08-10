@@ -54,17 +54,28 @@ export function setPasswordUrl(): string {
   return `${env.SITE_ORIGIN}/portal/set-password`;
 }
 
-function readPayload(payload: unknown): { name: string; email: string; org: string; territory?: string } {
+/**
+ * Read the applicant out of the application.
+ *
+ * Name, email and country come from the lead's own columns where they exist — those are
+ * promoted, typed and maintained, and the JSON copy is whatever the form sent on the day.
+ * The org and territory have no column and are read from the payload, defensively:
+ * a JSON column is where yesterday's shape lives.
+ */
+function readPayload(
+  payload: unknown,
+  lead: { name: string | null; email: string; country: string | null },
+): { name: string; email: string; org: string; territory?: string } {
   const record = (payload ?? {}) as Record<string, unknown>;
   const text = (key: string): string | undefined =>
     typeof record[key] === "string" && record[key] !== "" ? (record[key] as string) : undefined;
 
-  const name = text("name");
-  const email = text("email");
+  const name = lead.name ?? text("name");
+  const email = lead.email || text("email");
   const org = text("org");
 
-  // The lead schema guarantees all three for a PARTNER lead. Checked anyway because this
-  // reads a JSON column, and a JSON column is a place where yesterday's shape lives.
+  // The lead schema guarantees all three for a PARTNER application. Checked anyway,
+  // because two of the three still pass through JSON on the way here.
   if (!name || !email || !org) {
     throw new UnprocessableError(
       "incomplete_application",
@@ -72,7 +83,7 @@ function readPayload(payload: unknown): { name: string; email: string; org: stri
     );
   }
 
-  const territory = text("territory") ?? text("country");
+  const territory = text("territory") ?? lead.country ?? text("country");
   return { name, email, org, ...(territory ? { territory } : {}) };
 }
 
@@ -92,11 +103,28 @@ export async function approvePartnerApplication(
   const created = await db.$transaction(async (tx: Db) => {
     const lead = await tx.lead.findUnique({
       where: { id: input.leadId },
-      select: { id: true, kind: true, status: true, payload: true },
+      select: {
+        id: true, status: true,
+        name: true, email: true, country: true,
+        /**
+         * The partner application itself. Since 0011 the payload lives on the inquiry,
+         * and a lead can hold several — someone who asked about a degree in March and
+         * applied to partner in September is one person with two messages. Filtering by
+         * type is what makes sure the org name comes from the partner application and
+         * not from whatever they happened to send most recently.
+         */
+        inquiries: {
+          where: { type: "PARTNER" },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { payload: true },
+        },
+      },
     });
     if (!lead) throw new NotFoundError("We could not find that application.");
 
-    if (lead.kind !== "PARTNER") {
+    const application = lead.inquiries[0];
+    if (!application) {
       throw new UnprocessableError(
         "wrong_lead_kind",
         "Only a partner application can become a partner account.",
@@ -109,7 +137,7 @@ export async function approvePartnerApplication(
       );
     }
 
-    const applicant = readPayload(lead.payload);
+    const applicant = readPayload(application.payload, lead);
 
     // An address that already has an account is a person who already works with Campus
     // Turkey. Creating a second one would split their students across two logins.
@@ -171,7 +199,10 @@ export async function approvePartnerApplication(
 
     await tx.lead.update({
       where: { id: lead.id },
-      data: { status: "CONVERTED" },
+      // `convertedUserId` is what makes the conversion traceable — §20's whole purpose is
+      // answering "which campaign produced this partner", and without the link the
+      // attribution row is orphaned from the account it explains.
+      data: { status: "CONVERTED", convertedUserId: user.id },
     });
 
     return { user, partner, applicant };

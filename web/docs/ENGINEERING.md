@@ -41,7 +41,9 @@ motion layer lives in `app/src` and this run did not touch it.
 |---|---|---|
 | Withdrawal statuses are the frontend's five, not `BACKEND-PLAN`'s four | `types.ts` and `WITHDRAWAL_STATUS` already render copy for exactly these five; the frontend contract wins | `withdrawal.state.ts` header |
 | `lifetimeMinor` means total confirmed earnings ever, not what is left | Two plausible readings; the portal shows available separately | `balance.ts` |
-| Lead retention: 730 days ordinary, 90 days medical | Defensible defaults, not an answer — client open question 2 | `leads.service.ts` |
+| Lead retention: 730 days ordinary, 1095 partner/representative, 90 medical — held **per message**, not per person | Defensible defaults, not an answer — client open question 2. Per-message because one row cannot honour two policies, and the longer one always wins by accident | `leads.service.ts`, `inquiry` |
+| A lead is a person, identified by email; an inquiry is one message | Two people sharing an address become one lead. Accepted: the address is the reply channel, and the alternative was the same person appearing five times with no shared history | `0011_leads_inquiries_attribution` |
+| Attribution is first-touch, captured only when the campaign link and the form submission are in the same visit | Storing it between visits means a cookie following someone around the site for a campaign name. Undercounts rather than inventing a journey | `submit.ts` |
 | Withdrawal approval is a single FINANCE actor | Client open question 1 (second approver above a threshold) is unanswered | `withdrawal.state.ts` |
 
 **Still blocked on the client.** Payout provider (open question 3) — the endpoints

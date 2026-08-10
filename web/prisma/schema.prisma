@@ -70,6 +70,11 @@ model User {
   conversations                      ConversationParticipant[]
   sentMessages                       Message[]
   auditEntries                       AuditLog[]                  @relation("AuditActor")
+  assignedLeads                      Lead[]                      @relation("LeadAssignee")
+  /// Leads that became this account. Plural because two enquiries from two addresses
+  /// can both convert to one person.
+  convertedFromLeads                 Lead[]                      @relation("LeadConversion")
+  handledInquiries                   Inquiry[]                   @relation("InquiryHandler")
 
   @@index([role])
   @@index([status])
@@ -1074,43 +1079,216 @@ model WithdrawalEvent {
 
 // ----------------------------------------------------------------------- leads
 
-/// Every public form posts here: Apply, Contact, Partner registration,
-/// Representative registration. One table discriminated by `kind` rather than four
-/// near-identical tables, because the only thing that differs is the payload shape
-/// and that is validated at the boundary by a per-kind Zod schema.
+/**
+ * A person who contacted Campus Turkey — brief §19.
+ *
+ * **The row is the person, not the message.** That is the change from the original
+ * design, where every form submission created its own row: someone who asked about a
+ * medical procedure in March and a degree in September was two unrelated leads with no
+ * way to see they were the same person. Now they are one `Lead` with two `Inquiry`
+ * rows, and the second enquiry arrives on a record that already has a history.
+ *
+ * The identity is the email address, which is why it is unique here. That is a real
+ * choice with a real cost — two people sharing an address become one lead — and it is
+ * the right one for this business, where the address is the reply channel.
+ */
 model Lead {
-  id             String     @id @default(uuid()) @db.Uuid
-  kind           LeadKind
-  /// Validated against the per-kind schema before it is written. Never rendered as
-  /// HTML anywhere without escaping.
-  payload        Json
-  email          String
-  /// Set when the visitor ticked the consent box. A lead with no consent timestamp
-  /// must not be marketed to; the CHECK constraint requires one.
-  consentAt      DateTime   @db.Timestamptz(3)
-  /// Computed at write time from the retention policy for this `kind`. The purge job
-  /// deletes on this column, so it is indexed. Medical enquiries carry health data
-  /// and get the shortest window — see Department 18.6.
-  retentionUntil DateTime   @db.Timestamptz(3)
-  status         LeadStatus @default(NEW)
-  /// Truncated to /24 (IPv4) or /48 (IPv6) before storage. Enough to investigate
-  /// abuse, not enough to be a location record.
+  id    String @id @default(uuid()) @db.Uuid
+  /// The service they first asked about. Kept as a column, rather than derived from the
+  /// newest inquiry, because §59 filters the inbox on it and a derived value cannot be
+  /// indexed for that. `Inquiry.type` is the per-message truth.
+  kind  LeadType
+  email String @unique
+
+  /**
+   * Promoted out of `payload` — brief §19.
+   *
+   * §59's lead table filters and sorts on these, and a JSON column cannot be indexed
+   * for that usefully. What stays in `Inquiry.payload` is the per-message remainder: a
+   * medical enquiry's free-text description, an application's university slug, a
+   * partner's stated volume. Flattening those too would mean forty nullable columns,
+   * thirty-nine of them null on any given row.
+   *
+   * Nullable because not every form collects every field. A contact enquiry has no
+   * country, and writing an empty string instead would sort and filter as a real value.
+   */
+  name            String?
+  phone           String?
+  country         String?
+  /// Which service page they came in through. Free text rather than an enum, so adding
+  /// a service page does not need a migration — `kind` is the enumerated view.
+  serviceInterest String?
+
+  status LeadStatus @default(NEW)
+  /// §19's assignment. Null until somebody picks it up.
+  assignedToUserId String? @db.Uuid
+  /// Set when a lead becomes an account, so a conversion traces back to its source
+  /// without keeping a second copy of the person.
+  convertedUserId  String? @db.Uuid
+
+  /// Earliest consent on file. A lead with no consent timestamp must not be marketed
+  /// to; the CHECK constraint requires one.
+  consentAt      DateTime @db.Timestamptz(3)
+  /**
+   * The latest expiry among this lead's inquiries, maintained by trigger.
+   *
+   * Derived rather than written by the application, for the reason the `Student.stage`
+   * trigger exists: two places computing the same value is two places to get it wrong.
+   * The purge deletes on this column, so it stays indexed.
+   *
+   * Note what it does *not* do: it does not extend a medical inquiry's life. Inquiries
+   * are purged individually on their own dates, so a 90-day health enquiry still dies at
+   * 90 days even when the same person sent a contact form that keeps the lead for two
+   * years. See `purgeExpiredLeads`.
+   */
+  retentionUntil DateTime @db.Timestamptz(3)
+  /// Truncated to /24 (IPv4) or /48 (IPv6) before storage. Enough to investigate abuse,
+  /// not enough to be a location record. From the first submission.
   ipPrefix       String?
-  createdAt      DateTime   @default(now()) @db.Timestamptz(3)
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+
+  assignedTo  User?            @relation("LeadAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  convertedTo User?            @relation("LeadConversion", fields: [convertedUserId], references: [id], onDelete: SetNull)
+  attribution LeadAttribution?
+  inquiries   Inquiry[]
 
   /// The purge job: `WHERE retention_until < now()`.
   @@index([retentionUntil])
   @@index([kind, createdAt(sort: Desc)])
+  /// §59's filters: by status, by assignee, by country.
+  @@index([status, createdAt(sort: Desc)])
+  @@index([assignedToUserId, status])
+  @@index([country])
   @@map("lead")
 }
 
-enum LeadKind {
-  APPLY
+/**
+ * One message from one person — brief §21.
+ *
+ * Everything that is true of a single submission lives here: what they asked, which form
+ * they used, what they consented to, and when it must be deleted. Everything true of the
+ * *person* lives on `Lead`.
+ *
+ * The split is what makes per-message retention possible. A medical enquiry carries
+ * health data and gets ninety days; a partner enquiry gets three years. Held on one row
+ * those two policies cannot both be honoured, and the longer one always wins by
+ * accident — which is the failure mode that matters, because it is the one where health
+ * data outlives its promise.
+ */
+model Inquiry {
+  id     String   @id @default(uuid()) @db.Uuid
+  leadId String   @db.Uuid
+  type   LeadType
+
+  subject String?
+  /// The free-text body, promoted out of `payload` because staff read it in the inbox
+  /// and a JSON path lookup for the one field everybody opens is a false economy.
+  message String?
+  /**
+   * The per-type remainder, validated against that type's Zod schema before it is
+   * written — see `leadPayloadSchemas`. Never rendered as HTML anywhere without
+   * escaping, and never logged: a MEDICAL payload is health data.
+   */
+  payload Json
+
+  status         InquiryStatus @default(OPEN)
+  /// Who answered it, and when. Both null until somebody does.
+  handledByUserId String?      @db.Uuid
+  respondedAt     DateTime?    @db.Timestamptz(3)
+
+  /// Set when the visitor ticked the consent box on *this* submission. Consent is per
+  /// message, not per person — an old tick does not authorise a new conversation.
+  consentAt      DateTime @db.Timestamptz(3)
+  /// Computed at write time from the retention policy for this `type` — Department 18.6.
+  retentionUntil DateTime @db.Timestamptz(3)
+  ipPrefix       String?
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+
+  lead      Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  handledBy User? @relation("InquiryHandler", fields: [handledByUserId], references: [id], onDelete: SetNull)
+
+  @@index([leadId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([type, createdAt(sort: Desc)])
+  /// The per-inquiry purge.
+  @@index([retentionUntil])
+  @@map("inquiry")
+}
+
+enum InquiryStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+
+  @@map("inquiry_status")
+}
+
+/**
+ * Where a lead came from — brief §20.
+ *
+ * A separate table rather than seven more columns on `Lead`, for one reason that matters
+ * more than tidiness: **it can be deleted on its own.** Attribution is marketing data
+ * with no operational use once a lead converts, and §20 is explicit about not keeping
+ * more tracking than the work needs. Detaching it means the retention job can drop it
+ * early without touching the enquiry itself.
+ *
+ * First touch, not last: written once, on the submission that created the lead, and
+ * never updated. A campaign that gets credit for a visitor's third visit is measuring
+ * remarketing, not acquisition.
+ */
+model LeadAttribution {
+  id       String  @id @default(uuid()) @db.Uuid
+  leadId   String  @unique @db.Uuid
+  source   String?
+  medium   String?
+  campaign String?
+  term     String?
+  content  String?
+  /// The page the form was on, path only. Query strings are stripped before storage —
+  /// they carry session ids and search terms this table has no business keeping.
+  landingPage String?
+  /// Origin only, for the same reason.
+  referrer    String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([source, medium])
+  @@index([campaign])
+  @@map("lead_attribution")
+}
+
+/**
+ * What someone is asking about.
+ *
+ * Renamed from `LeadKind` and extended: the site sells five services — see
+ * `src/content/services.ts` — and the original five values covered two of them. A
+ * Business Facilitation enquiry had nowhere to go and arrived as `CONTACT`, which meant
+ * the desk that should have received it could not filter for it.
+ *
+ * `APPLY` is retained but deprecated; migration 0012 rewrote every row to `STUDY`. It
+ * stays in the type because Postgres cannot drop an enum value without recreating the
+ * type and rewriting every column that uses it, and doing that to remove a word is not
+ * a trade worth making today. `leadTypes` in the service layer is the list the
+ * application offers; this is the list the column accepts.
+ */
+enum LeadType {
+  /// University applications. Was `APPLY`.
+  STUDY
+  /// Carries health information. Shortest retention, narrowest access.
+  MEDICAL
+  BUSINESS
+  EMPLOYMENT
+  TOURS
+  /// Anything the service pages do not cover.
   CONTACT
   PARTNER
   REPRESENTATIVE
-  /// Carries health information. Shortest retention, narrowest access.
-  MEDICAL
+
+  /// @deprecated Migrated to STUDY in 0012. No row carries it; nothing writes it.
+  APPLY
 
   @@map("lead_kind")
 }

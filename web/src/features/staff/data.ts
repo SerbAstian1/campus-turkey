@@ -14,7 +14,20 @@ import { useCallback, useEffect, useState } from "react";
 
 export type WithdrawalStatus = "REQUESTED" | "APPROVED" | "PROCESSING" | "PAID" | "REJECTED";
 export type CommissionState = "PENDING" | "CONFIRMED" | "REVERSED";
-export type LeadKind = "APPLY" | "CONTACT" | "PARTNER" | "REPRESENTATIVE" | "MEDICAL";
+/**
+ * Mirrors `leadTypes` on the server. Kept as a literal union rather than imported,
+ * because this file is the client's own view of the API's shape and importing a server
+ * module here drags the server's dependency graph into the browser bundle.
+ */
+export type LeadType =
+  | "STUDY"
+  | "MEDICAL"
+  | "BUSINESS"
+  | "EMPLOYMENT"
+  | "TOURS"
+  | "CONTACT"
+  | "PARTNER"
+  | "REPRESENTATIVE";
 
 export interface QueueWithdrawal {
   id: string;
@@ -50,15 +63,39 @@ export interface QueueCommission {
   partner: { id: string; org: string };
 }
 
+/** One message. `payload` is `{ withheld }` when a medical enquiry was not asked for. */
+export interface QueueInquiry {
+  id: string;
+  type: LeadType;
+  subject: string | null;
+  message: string | null;
+  payload: Record<string, unknown>;
+  status: "OPEN" | "ANSWERED" | "CLOSED";
+  createdAt: string;
+  retentionUntil: string;
+}
+
+/**
+ * One person, with their newest message attached.
+ *
+ * `latest` is null only for a lead whose inquiries were all purged — the retention job
+ * deletes those leads on its next pass, so it is a window, not a steady state.
+ */
 export interface QueueLead {
   id: string;
-  kind: LeadKind;
+  kind: LeadType;
   email: string;
+  name: string | null;
+  phone: string | null;
+  country: string | null;
+  serviceInterest: string | null;
   status: "NEW" | "CONTACTED" | "CONVERTED" | "CLOSED";
+  assignedToUserId: string | null;
   consentAt: string;
   retentionUntil: string;
   createdAt: string;
-  payload: Record<string, unknown>;
+  inquiryCount: number;
+  latest: QueueInquiry | null;
 }
 
 export type Feed<T> =
@@ -150,7 +187,7 @@ export const useCommissionQueue = (state?: CommissionState) =>
     `/api/staff/commissions?limit=50${state ? `&state=${state}` : ""}`,
   );
 
-export const useLeadInbox = (kind?: LeadKind) =>
+export const useLeadInbox = (kind?: LeadType) =>
   useFeed<QueueLead>(`/api/staff/leads?limit=50${kind ? `&kind=${kind}` : ""}`);
 
 /** Money formatting. Minor units in, display string out; never float arithmetic. */

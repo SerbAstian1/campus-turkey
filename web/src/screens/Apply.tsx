@@ -35,7 +35,7 @@ export default function Apply() {
     name: "", email: "", phone: "", country: "", level: "", field: "", city: "", intake: "", consent: true,
   });
 
-  const { state, submit } = useLeadSubmit("APPLY");
+  const { state, submit } = useLeadSubmit("STUDY");
 
   const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>

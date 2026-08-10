@@ -18,7 +18,15 @@
 
 import { useCallback, useState } from "react";
 
-export type LeadKind = "APPLY" | "CONTACT" | "PARTNER" | "REPRESENTATIVE" | "MEDICAL";
+export type LeadType =
+  | "STUDY"
+  | "MEDICAL"
+  | "BUSINESS"
+  | "EMPLOYMENT"
+  | "TOURS"
+  | "CONTACT"
+  | "PARTNER"
+  | "REPRESENTATIVE";
 
 export type SubmitState =
   | { status: "idle" }
@@ -59,7 +67,52 @@ function compact(payload: Record<string, unknown>): Record<string, unknown> {
   );
 }
 
-export function useLeadSubmit(kind: LeadKind) {
+/**
+ * Where this visit came from — brief §20.
+ *
+ * Read at submit time rather than on mount, from the URL and the referrer, and stored
+ * nowhere in between. A cookie or a localStorage entry would follow the visitor around
+ * the site for the sake of a campaign name, which is more tracking than the work needs
+ * and would need its own consent banner to be honest about.
+ *
+ * The consequence is deliberate: attribution is captured when someone arrives on a
+ * campaign link *and* fills the form in that same visit. It undercounts rather than
+ * inventing a journey, and undercounting is the failure a marketing report can survive.
+ *
+ * The query string is dropped from `landingPage` and only the origin is kept from
+ * `referrer` — a full referrer carries the search terms someone typed elsewhere.
+ */
+function attribution(): Record<string, string> | undefined {
+  if (typeof window === "undefined") return undefined;
+
+  const params = new URLSearchParams(window.location.search);
+  const utm = (key: string): string | undefined => params.get(`utm_${key}`)?.trim() || undefined;
+
+  let referrer: string | undefined;
+  try {
+    referrer = document.referrer ? new URL(document.referrer).origin : undefined;
+    // Our own pages are not a referral source; recording them would credit the site for
+    // every visitor who read two pages before writing in.
+    if (referrer === window.location.origin) referrer = undefined;
+  } catch {
+    referrer = undefined;
+  }
+
+  const found = {
+    ...(utm("source") ? { source: utm("source")! } : {}),
+    ...(utm("medium") ? { medium: utm("medium")! } : {}),
+    ...(utm("campaign") ? { campaign: utm("campaign")! } : {}),
+    ...(utm("term") ? { term: utm("term")! } : {}),
+    ...(utm("content") ? { content: utm("content")! } : {}),
+    ...(referrer ? { referrer } : {}),
+  };
+
+  // The landing page is only worth sending alongside something that explains it.
+  if (Object.keys(found).length === 0) return undefined;
+  return { ...found, landingPage: window.location.pathname };
+}
+
+export function useLeadSubmit(kind: LeadType, serviceInterest?: string) {
   const [state, setState] = useState<SubmitState>({ status: "idle" });
 
   const submit = useCallback(
@@ -75,6 +128,7 @@ export function useLeadSubmit(kind: LeadKind) {
       }
 
       setState({ status: "sending" });
+      const source = attribution();
 
       try {
         const response = await fetch("/api/leads", {
@@ -85,6 +139,8 @@ export function useLeadSubmit(kind: LeadKind) {
             payload: compact(payload),
             consent: true,
             captchaToken: await captchaToken(),
+            ...(serviceInterest ? { serviceInterest } : {}),
+            ...(source ? { attribution: source } : {}),
           }),
         });
 
@@ -118,7 +174,7 @@ export function useLeadSubmit(kind: LeadKind) {
         return false;
       }
     },
-    [kind],
+    [kind, serviceInterest],
   );
 
   const reset = useCallback(() => setState({ status: "idle" }), []);

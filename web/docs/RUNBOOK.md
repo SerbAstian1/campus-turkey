@@ -163,7 +163,7 @@ WHERE relname IN ('commission','withdrawal');
 
 | Job | Cadence | What it does |
 |---|---|---|
-| Lead retention purge | daily, 03:00 UTC | `purgeExpiredLeads` — hard-deletes past `retentionUntil` |
+| Lead retention purge | daily, 03:00 UTC | `purgeExpiredLeads` — hard-deletes expired **inquiries** first, then leads left with none. Two passes on purpose: a 90-day medical enquiry must not inherit a 730-day study enquiry's window because the same person sent both. Converted leads are kept — they are an account holder's origin record. |
 | Backup restore drill | quarterly | see DEPLOYMENT.md; record the measured RTO |
 | Dependency review | monthly | `npm audit --omit=dev`; never `--force` (handoff note 14) |
 | Certificate renewal | automatic | Vercel; verify annually that it still is |

@@ -18,6 +18,11 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
+// 0005 creates a trigram index for university search. PGlite ships contrib extensions as
+// separate bundles rather than compiling them all into the base image, so the extension
+// has to be handed to the constructor — without it the migration fails with "extension
+// pg_trgm is not available", which is a fact about this harness and not about the schema.
+import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -45,18 +50,48 @@ async function refusal(sql: string): Promise<string | null> {
 }
 
 beforeAll(async () => {
-  db = new PGlite();
+  db = new PGlite({ extensions: { pg_trgm } });
 
-  // The real migrations, in order, exactly as `prisma migrate deploy` would apply them.
-  // This is itself the first assertion: until now, neither had ever been executed.
-  await db.exec(migration("0001_init"));
-  await db.exec(migration("0002_integrity_constraints"));
+  /**
+   * Every migration, in order, exactly as `prisma migrate deploy` would apply them.
+   *
+   * This is itself the first assertion, and it has caught two things a schema dump never
+   * could: that each file runs, and that it runs *after the ones before it*. A migration
+   * is only ever applied once against the real database, so a file that depends on state
+   * a later file removes fails on the client's machine and nowhere else.
+   *
+   * Listed rather than globbed. A glob would silently stop covering a migration whose
+   * directory was named unexpectedly, and would sort `0010` before `0002` on the day the
+   * count reaches three digits.
+   */
+  for (const name of [
+    "0001_init",
+    "0002_integrity_constraints",
+    "0003_user_roles",
+    "0004_representative",
+    "0005_universities",
+    "0006_applications",
+    "0007_student_profile",
+    "0008_documents",
+    "0009_notifications_messaging_audit",
+    "0010_retire_staff_role",
+    "0011_leads_inquiries_attribution",
+    "0012_lead_type_remap",
+  ]) {
+    await db.exec(migration(name));
+  }
 
   // A minimal, valid world. Everything below mutates from here.
+  //
+  // `role` is stated rather than left to default. 0003 installs a trigger refusing a
+  // partner record whose user is not a PARTNER — the one that stops a staff account
+  // quietly acquiring a wallet it could then approve payouts from — and the default is
+  // STUDENT. The fixture predates that trigger and was invalid against it, which nothing
+  // could see while this suite stopped applying migrations at 0002.
   await db.exec(`
-    INSERT INTO "user" ("id","email","emailVerified","createdAt","updatedAt")
-      VALUES ('${USER}','partner@example.test',true,now(),now()),
-             ('${OTHER_USER}','other@example.test',true,now(),now());
+    INSERT INTO "user" ("id","email","emailVerified","role","createdAt","updatedAt")
+      VALUES ('${USER}','partner@example.test',true,'PARTNER',now(),now()),
+             ('${OTHER_USER}','other@example.test',true,'PARTNER',now(),now());
 
     INSERT INTO "partner"
       ("id","userId","org","person","role","territory","managerName","managerRole",
@@ -78,7 +113,20 @@ beforeAll(async () => {
       VALUES ('${METHOD}','${PARTNER}','BANK','GTBank','•••• 4417','tok_test','wise',
               '2-5 days','1.2%',true,now(),now());
   `);
-});
+},
+/**
+ * 60 seconds, against a default of 10.
+ *
+ * This hook boots a Postgres compiled to WebAssembly and applies twelve migrations to
+ * it. Alone that takes about three seconds; sharing a machine with two dozen other test
+ * files running in parallel it does not, and the failure was a hook timeout rather than
+ * anything wrong with the SQL — which is a confusing way to find out, because the file
+ * passes when run on its own.
+ *
+ * Raised rather than the migrations trimmed: applying fewer of them is what let the
+ * fixture drift out of agreement with the schema for ten migrations.
+ */
+60_000);
 
 afterAll(async () => {
   await db?.close();
@@ -391,15 +439,178 @@ describe("lead retention", () => {
   it("refuses a retention window that ends before consent begins", async () => {
     // A negative window would make the purge job delete leads on arrival.
     const error = await refusal(`
-      INSERT INTO "lead" ("id","kind","payload","email","consentAt","retentionUntil","status","createdAt")
-      VALUES (gen_random_uuid(),'CONTACT','{}'::jsonb,'a@b.test',now(),now() - interval '1 day','NEW',now())`);
+      INSERT INTO "lead" ("id","kind","email","consentAt","retentionUntil","status","createdAt","updatedAt")
+      VALUES (gen_random_uuid(),'CONTACT','negative@b.test',now(),now() - interval '1 day','NEW',now(),now())`);
     expect(error).toMatch(/lead_retention_after_consent/);
   });
 
   it("accepts a forward-dated retention window", async () => {
     const error = await refusal(`
-      INSERT INTO "lead" ("id","kind","payload","email","consentAt","retentionUntil","status","createdAt")
-      VALUES (gen_random_uuid(),'MEDICAL','{}'::jsonb,'a@b.test',now(),now() + interval '90 days','NEW',now())`);
+      INSERT INTO "lead" ("id","kind","email","consentAt","retentionUntil","status","createdAt","updatedAt")
+      VALUES (gen_random_uuid(),'MEDICAL','forward@b.test',now(),now() + interval '90 days','NEW',now(),now())`);
     expect(error).toBeNull();
+  });
+
+  it("refuses a second lead for the same address", async () => {
+    // A lead is a person. Two rows for one address is the state the reshape removed:
+    // the desk sees the same person twice and neither row has the other's history.
+    const error = await refusal(`
+      INSERT INTO "lead" ("id","kind","email","consentAt","retentionUntil","status","createdAt","updatedAt")
+      VALUES (gen_random_uuid(),'STUDY','forward@b.test',now(),now() + interval '730 days','NEW',now(),now())`);
+    expect(error).toMatch(/lead_email_key|duplicate key/i);
+  });
+});
+
+describe("inquiries", () => {
+  const LEAD = "77777777-7777-7777-7777-777777777777";
+
+  const MEDICAL_INQUIRY = "99999999-9999-9999-9999-999999999999";
+
+  beforeAll(async () => {
+    // A person who asked about a treatment: one lead, one 90-day inquiry. The tests below
+    // add a second, longer-lived enquiry from the same person and take it away again.
+    await db.exec(`
+      INSERT INTO "lead" ("id","kind","email","consentAt","retentionUntil","status","createdAt","updatedAt")
+      VALUES ('${LEAD}','MEDICAL','inq@b.test',now(),now() + interval '90 days','NEW',now(),now());
+
+      INSERT INTO "inquiry" ("id","leadId","type","payload","consentAt","retentionUntil","createdAt","updatedAt")
+      VALUES ('${MEDICAL_INQUIRY}','${LEAD}','MEDICAL','{}'::jsonb,now(),now() + interval '90 days',now(),now());
+    `);
+  });
+
+  it("refuses a retention window that ends before consent, exactly as a lead does", async () => {
+    const error = await refusal(`
+      INSERT INTO "inquiry" ("id","leadId","type","payload","consentAt","retentionUntil","createdAt","updatedAt")
+      VALUES (gen_random_uuid(),'${LEAD}','CONTACT','{}'::jsonb,now(),now() - interval '1 day',now(),now())`);
+    expect(error).toMatch(/inquiry_retention_after_consent/);
+  });
+
+  it("refuses a response with no responder", async () => {
+    // A row that says it was answered but cannot say by whom is a row an SLA report
+    // cannot use and a complaint cannot be traced through.
+    const error = await refusal(`
+      INSERT INTO "inquiry" ("id","leadId","type","payload","status","respondedAt","consentAt","retentionUntil","createdAt","updatedAt")
+      VALUES (gen_random_uuid(),'${LEAD}','CONTACT','{}'::jsonb,'ANSWERED',now(),now(),now() + interval '1 day',now(),now())`);
+    expect(error).toMatch(/inquiry_responded_has_handler/);
+  });
+
+  it("refuses a responder with no response time", async () => {
+    const error = await refusal(`
+      INSERT INTO "inquiry" ("id","leadId","type","payload","handledByUserId","consentAt","retentionUntil","createdAt","updatedAt")
+      VALUES (gen_random_uuid(),'${LEAD}','CONTACT','{}'::jsonb,'${USER}',now(),now() + interval '1 day',now(),now())`);
+    expect(error).toMatch(/inquiry_responded_has_handler/);
+  });
+
+  /**
+   * The trigger installed by 0011, and the reason it exists.
+   *
+   * `lead.retentionUntil` drives the purge. Computed in the application it would be
+   * computed in two places — the submit path and the purge — and the one that got it
+   * wrong would either delete data early or keep it past its promise. Both are the kind
+   * of bug nobody notices until somebody asks.
+   */
+  describe("a lead's retention window follows its inquiries", () => {
+    it("extends when a longer-lived inquiry arrives", async () => {
+      await db.exec(`
+        INSERT INTO "inquiry" ("id","leadId","type","payload","consentAt","retentionUntil","createdAt","updatedAt")
+        VALUES ('88888888-8888-8888-8888-888888888888','${LEAD}','STUDY','{}'::jsonb,
+                now(),now() + interval '730 days',now(),now());
+      `);
+
+      const result = await db.query<{ days: number }>(
+        `SELECT extract(day from "retentionUntil" - now())::int AS days FROM "lead" WHERE "id"='${LEAD}'`,
+      );
+      expect(result.rows[0]!.days).toBeGreaterThan(700);
+    });
+
+    it("contracts again when that inquiry is purged, leaving the medical window", async () => {
+      /**
+       * This is the case that matters, and the reason retention is per message.
+       *
+       * The person now has two enquiries: a medical one expiring in 90 days and a study
+       * one expiring in 730. When the study enquiry is deleted the lead must fall back
+       * to 90 — otherwise health data would live for two years because the same person
+       * later asked about a degree, and nobody would ever see that it had.
+       */
+      await db.exec(`DELETE FROM "inquiry" WHERE "id"='88888888-8888-8888-8888-888888888888'`);
+
+      const result = await db.query<{ days: number }>(
+        `SELECT extract(day from "retentionUntil" - now())::int AS days FROM "lead" WHERE "id"='${LEAD}'`,
+      );
+      expect(result.rows[0]!.days).toBeLessThan(100);
+    });
+
+    it("leaves the window alone when the last inquiry goes, rather than writing NULL", async () => {
+      /**
+       * The `max_until IS NOT NULL` guard in the trigger. A lead whose every enquiry has
+       * been purged has nothing to derive a date from, and `retentionUntil` is NOT NULL —
+       * so the trigger declines rather than failing the delete.
+       *
+       * The stale date is harmless because it is never read again: `purgeExpiredLeads`
+       * removes leads by `inquiries: { none: {} }`, not by date. Asserted here so that
+       * anyone who later makes the purge date-driven finds out that it cannot be.
+       */
+      await db.exec(`DELETE FROM "inquiry" WHERE "id"='${MEDICAL_INQUIRY}'`);
+
+      const result = await db.query<{ n: string }>(
+        `SELECT count(*) AS n FROM "lead" WHERE "id"='${LEAD}' AND "retentionUntil" IS NOT NULL`,
+      );
+      expect(Number(result.rows[0]!.n)).toBe(1);
+    });
+  });
+
+  it("takes its inquiries and attribution with it when deleted", async () => {
+    await db.exec(`
+      INSERT INTO "lead_attribution" ("id","leadId","source","campaign","createdAt")
+      VALUES (gen_random_uuid(),'${LEAD}','google','autumn-intake',now());
+      DELETE FROM "lead" WHERE "id"='${LEAD}';
+    `);
+
+    const left = await db.query<{ n: string }>(`
+      SELECT (SELECT count(*) FROM "inquiry" WHERE "leadId"='${LEAD}')
+           + (SELECT count(*) FROM "lead_attribution" WHERE "leadId"='${LEAD}') AS n
+    `);
+    // A purge that leaves the attribution behind leaves a campaign record pointing at a
+    // person who was deleted for asking to be.
+    expect(Number(left.rows[0]!.n)).toBe(0);
+  });
+});
+
+describe("the retired APPLY value", () => {
+  it("is gone from every row", async () => {
+    // 0012's own assertion proves this at migration time. Repeating it here proves the
+    // migration ran, rather than that it was written.
+    const result = await db.query<{ n: string }>(`
+      SELECT (SELECT count(*) FROM "lead" WHERE "kind"='APPLY')
+           + (SELECT count(*) FROM "inquiry" WHERE "type"='APPLY') AS n
+    `);
+    expect(Number(result.rows[0]!.n)).toBe(0);
+  });
+
+  it("still exists in the type, because dropping it would rewrite every table that uses it", async () => {
+    const result = await db.query<{ enumlabel: string }>(
+      `SELECT enumlabel FROM pg_enum e
+       JOIN pg_type t ON t.oid = e.enumtypid
+       WHERE t.typname = 'lead_kind' AND e.enumlabel = 'APPLY'`,
+    );
+    expect(result.rows).toHaveLength(1);
+  });
+
+  it("accepts every value the application can write", async () => {
+    const result = await db.query<{ enumlabel: string }>(
+      `SELECT enumlabel FROM pg_enum e
+       JOIN pg_type t ON t.oid = e.enumtypid
+       WHERE t.typname = 'lead_kind'`,
+    );
+    const values = result.rows.map((row) => row.enumlabel);
+
+    // Mirrors `leadTypes`. A service desk whose value never reached the database would
+    // present as a contact form that fails only for that one topic.
+    for (const type of [
+      "STUDY", "MEDICAL", "BUSINESS", "EMPLOYMENT", "TOURS",
+      "CONTACT", "PARTNER", "REPRESENTATIVE",
+    ]) {
+      expect(values).toContain(type);
+    }
   });
 });

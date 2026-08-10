@@ -14,19 +14,36 @@ import { Badge, BrandDivider, Button, Card, Checkbox, Icon, Input, Select } from
 import { contact } from "@/content";
 import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
-import { useLeadSubmit } from "@/features/leads/submit";
+import { useLeadSubmit, type LeadType } from "@/features/leads/submit";
 import { PageBody, PageHero } from "./shared";
 
+/**
+ * The topic someone picks decides which desk receives the enquiry.
+ *
+ * Every option used to arrive as `CONTACT`, so the four service desks could not filter
+ * for their own work and read the whole inbox instead. The routing matters most for
+ * "Medical treatment", and not cosmetically: medical enquiries carry health information,
+ * and the server gives that type a 90-day retention window instead of two years
+ * (`RETENTION_DAYS` in server/modules/leads/leads.service.ts). Handoff note 13.
+ *
+ * Partnership and Country representative deliberately stay `CONTACT`. Those types
+ * require an organisation name — `approvePartnerApplication` creates the partner record
+ * from it — and this form does not ask for one. Routing them here would post a payload
+ * the server rejects, which presents as a broken contact form. Somebody who wants to
+ * apply is sent to the registration form; somebody who wants to *ask* about it gets a
+ * reply, which is what this form is for.
+ */
+const TOPIC_ROUTING: Record<string, LeadType> = {
+  "Study in Türkiye": "STUDY",
+  "Medical treatment": "MEDICAL",
+  "Business facilitation": "BUSINESS",
+  Employment: "EMPLOYMENT",
+  "Tours and delegations": "TOURS",
+};
+
 export default function Contact() {
-  /**
-   * "Medical treatment" is routed as a MEDICAL lead rather than a CONTACT one.
-   *
-   * That is not cosmetic: medical enquiries carry health information, and the server
-   * gives that kind a 90-day retention window instead of two years
-   * (`RETENTION_DAYS` in server/modules/leads/leads.service.ts). Handoff note 13.
-   */
   const [form, setForm] = useState({ name: "", email: "", phone: "", topic: "", when: "", message: "", consent: true });
-  const kind = form.topic === "Medical treatment" ? "MEDICAL" : "CONTACT";
+  const kind = TOPIC_ROUTING[form.topic] ?? "CONTACT";
   const { state, submit } = useLeadSubmit(kind);
   const sent = state.status === "sent";
 

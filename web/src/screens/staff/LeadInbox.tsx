@@ -18,32 +18,44 @@
 
 import { useState } from "react";
 import { Button, Card, Icon, Input, Select } from "@/ds";
-import { act, useLeadInbox, when, type LeadKind, type QueueLead } from "@/features/staff/data";
+import { act, useLeadInbox, when, type LeadType, type QueueLead } from "@/features/staff/data";
 import { Filters, QueueState, StatusDot } from "./shared";
 
+/**
+ * One filter per desk. The order is the order the desks are staffed in, not the order
+ * the enum happens to declare — Applications and Contact carry the volume, the four
+ * service queues are worked by the people who own those services, and Medical is last
+ * because reaching it should take a deliberate scroll past everything else.
+ */
 const KINDS: { key: string; label: string }[] = [
-  { key: "APPLY", label: "Applications" },
+  { key: "STUDY", label: "Applications" },
   { key: "CONTACT", label: "Contact" },
   { key: "PARTNER", label: "Partner" },
   { key: "REPRESENTATIVE", label: "Representative" },
+  { key: "BUSINESS", label: "Business" },
+  { key: "EMPLOYMENT", label: "Employment" },
+  { key: "TOURS", label: "Tours" },
   { key: "MEDICAL", label: "Medical" },
 ];
 
-const KIND_LABEL: Record<LeadKind, string> = {
-  APPLY: "Application",
+const KIND_LABEL: Record<LeadType, string> = {
+  STUDY: "Application",
   CONTACT: "Contact",
   PARTNER: "Partner registration",
   REPRESENTATIVE: "Representative",
+  BUSINESS: "Business facilitation",
+  EMPLOYMENT: "Employment",
+  TOURS: "Tours",
   MEDICAL: "Medical",
 };
 
 export function LeadInbox({ canApprove }: { canApprove: boolean }) {
-  const [filter, setFilter] = useState<LeadKind | null>(null);
+  const [filter, setFilter] = useState<LeadType | null>(null);
   const inbox = useLeadInbox(filter ?? undefined);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-      <Filters options={KINDS} value={filter} onChange={(key) => setFilter((key as LeadKind) ?? null)} />
+      <Filters options={KINDS} value={filter} onChange={(key) => setFilter((key as LeadType) ?? null)} />
 
       {filter === "MEDICAL" ? (
         <p
@@ -99,11 +111,17 @@ function LeadRow({
 }) {
   const [open, setOpen] = useState(false);
 
-  const withheld = "withheld" in lead.payload;
-  const name = typeof lead.payload["name"] === "string" ? lead.payload["name"] : lead.email;
+  const latest = lead.latest;
+  const withheld = latest ? "withheld" in latest.payload : false;
+  const name = lead.name ?? lead.email;
 
+  /**
+   * The newest message's date, not the lead's. The lead's is the latest of all of them,
+   * and showing that beside a medical enquiry would say "deleted in 700 days" about
+   * something being deleted in 90 — the exact promise this row exists to display.
+   */
   const daysLeft = Math.ceil(
-    (new Date(lead.retentionUntil).getTime() - Date.now()) / 86_400_000,
+    (new Date(latest?.retentionUntil ?? lead.retentionUntil).getTime() - Date.now()) / 86_400_000,
   );
 
   return (
@@ -117,7 +135,10 @@ function LeadRow({
             {lead.email}
           </div>
           <div style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", marginTop: 2 }}>
-            {KIND_LABEL[lead.kind]} · {when(lead.createdAt)}
+            {KIND_LABEL[latest?.type ?? lead.kind]} · {when(latest?.createdAt ?? lead.createdAt)}
+            {/* Somebody who has written in before is somebody to greet differently, so
+                the count is on the row rather than behind a click. */}
+            {lead.inquiryCount > 1 ? ` · ${lead.inquiryCount} enquiries` : ""}
           </div>
         </div>
 
@@ -135,12 +156,32 @@ function LeadRow({
         </div>
       </div>
 
-      {withheld ? (
+      {withheld || !latest ? (
         <p style={{ margin: "var(--space-4) 0 0", color: "var(--text-muted)", fontSize: "var(--fs-body-sm)" }}>
-          Held in the medical queue. Open that filter to read it.
+          {latest
+            ? "Held in the medical queue. Open that filter to read it."
+            : "Every enquiry from this person has passed its retention date and been deleted."}
         </p>
       ) : (
         <>
+          {/* The message itself, above the fold. It is what the row is for, and putting
+              it behind the same click as the structured fields made the desk open every
+              row to find out whether it needed opening. */}
+          {latest.message ? (
+            <p
+              style={{
+                margin: "var(--space-4) 0 0",
+                color: "var(--text-body)",
+                fontSize: "var(--fs-body-sm)",
+                lineHeight: "var(--lh-body)",
+                maxWidth: "68ch",
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {latest.message}
+            </p>
+          ) : null}
+
           <button
             type="button"
             onClick={() => setOpen(!open)}
@@ -153,17 +194,77 @@ function LeadRow({
             }}
           >
             <Icon name={open ? "chevron-up" : "chevron-down"} size={16} />
-            {open ? "Hide enquiry" : "Read enquiry"}
+            {open ? "Hide details" : "Show details"}
           </button>
 
-          {open ? <Payload payload={lead.payload} /> : null}
+          {open ? <Payload payload={latest.payload} /> : null}
         </>
       )}
 
-      {lead.kind === "PARTNER" && canApprove ? (
+      <Progress lead={lead} onDone={onDone} />
+
+      {latest?.type === "PARTNER" && canApprove ? (
         <ApprovePartner lead={lead} onDone={onDone} />
       ) : null}
     </Card>
+  );
+}
+
+/**
+ * Recording that somebody dealt with the enquiry.
+ *
+ * The inbox has had a status column since it was built and no way to change it, so every
+ * enquiry sat at NEW for ever and the desk could not tell yesterday's unanswered messages
+ * from last month's finished ones. Two buttons, because two is the number of states a
+ * desk actually needs: someone is on it, or it is done.
+ *
+ * A converted lead shows neither. It has an account now, and the account is where the
+ * work continues — the endpoint refuses the change for the same reason.
+ */
+function Progress({ lead, onDone }: { lead: QueueLead; onDone: () => void }) {
+  const [pending, setPending] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  if (lead.status === "CONVERTED") return null;
+
+  const move = async (status: "CONTACTED" | "CLOSED" | "NEW") => {
+    setPending(status);
+    setError(null);
+    const result = await act(`/api/staff/leads/${lead.id}`, { status });
+    setPending(null);
+    if (result.ok) onDone();
+    else setError(result.message);
+  };
+
+  const options: { status: "CONTACTED" | "CLOSED" | "NEW"; label: string }[] =
+    lead.status === "CLOSED"
+      ? [{ status: "NEW", label: "Reopen" }]
+      : [
+          ...(lead.status === "NEW"
+            ? [{ status: "CONTACTED" as const, label: "Mark contacted" }]
+            : []),
+          { status: "CLOSED" as const, label: "Close" },
+        ];
+
+  return (
+    <div style={{ marginTop: "var(--space-4)", display: "flex", flexWrap: "wrap", gap: "var(--space-3)", alignItems: "center" }}>
+      {options.map((option) => (
+        <Button
+          key={option.status}
+          variant="secondary"
+          onClick={() => void move(option.status)}
+          disabled={pending !== null}
+        >
+          {pending === option.status ? "Saving…" : option.label}
+        </Button>
+      ))}
+
+      {error ? (
+        <span role="alert" style={{ color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>
+          {error}
+        </span>
+      ) : null}
+    </div>
   );
 }
 
