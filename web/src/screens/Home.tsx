@@ -53,7 +53,10 @@ function Hero({ onApply, onExplore }: { onApply: () => void; onExplore: () => vo
   const t = useT();
   return (
     <section style={{ position: "relative", minHeight: "min(94vh,880px)", display: "flex", flexDirection: "column", overflow: "hidden", paddingTop: 160, marginBottom: "calc(var(--overlap) * -1)", background: "var(--gradient-brand-deep)" }}>
+      {/* Decorative. See the note in shared.tsx — deprioritised so it cannot delay the
+          hero heading, which is the LCP element on this page. */}
       <img src={`${ASSETS}/map-of-turkey.jpg`} alt="" aria-hidden="true"
+        decoding="async" fetchPriority="low"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", mixBlendMode: "soft-light", opacity: .5, filter: "invert(1)" }} />
       <span style={{ position: "absolute", inset: 0, background: "var(--surface-overlay-brand)" }} />
       <span style={{ position: "absolute", inset: 0, background: "var(--gradient-protect-bottom)" }} />

@@ -20,7 +20,11 @@ export function PageHero({
 }) {
   return (
     <section style={{ position: "relative", background: "var(--gradient-brand-deep)", paddingTop: 150, paddingBottom: "calc(var(--section-y) + 40px)", marginBottom: "calc(var(--overlap) * -1)", overflow: "hidden" }}>
+      {/* Decorative, so it must not compete with the heading for the LCP. `low`
+          deprioritises the fetch and `async` keeps the decode off the main thread;
+          neither changes what is painted, only when it is paid for. */}
       <img src={`${ASSETS}/map-of-turkey.jpg`} alt="" aria-hidden="true"
+        decoding="async" fetchPriority="low"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", mixBlendMode: "soft-light", opacity: .32, filter: "invert(1)" }} />
       <div className="ct-container" style={{ position: "relative", display: "flex", flexDirection: "column", gap: "var(--space-5)", alignItems: "flex-start" }}>
         {badge ? <span style={{ alignSelf: "flex-start" }}><Badge tone="onDark" dot>{badge}</Badge></span> : null}

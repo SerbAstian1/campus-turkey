@@ -135,7 +135,9 @@ export function ErrorScreen({ state = "notFound", detail }: { state?: ErrorState
   return (
     <div style={{ background: "var(--surface-subtle)", minHeight: 560 }}>
       <section style={{ position: "relative", overflow: "hidden", background: "var(--gradient-brand-deep)", paddingTop: 168, paddingBottom: "calc(var(--section-y) + 48px)", marginBottom: "calc(var(--overlap) * -1)" }}>
+        {/* Decorative, and on an error page doubly so — see the note in shared.tsx. */}
         <img src={`${ASSETS}/map-of-turkey.jpg`} alt="" aria-hidden="true"
+          decoding="async" fetchPriority="low"
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: .13, filter: "invert(1)" }} />
         <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "var(--gradient-protect-bottom)" }} />
         <div className="ct-container" style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: "var(--space-5)", alignItems: "flex-start" }}>

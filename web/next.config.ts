@@ -36,10 +36,26 @@ const nextConfig: NextConfig = {
    */
   trailingSlash: false,
 
+  /**
+   * **Currently inert, and that is worth stating rather than discovering.**
+   *
+   * These options govern `next/image` only, and nothing in this application uses it.
+   * The brand marks are rendered by the design system bundle, which is a classic script
+   * outside React's control, and the three decorative images the app owns are absolutely
+   * positioned backgrounds that `next/image` would complicate for no measured gain.
+   *
+   * The reason it stays is that the underlying problem is already solved by other means.
+   * Handoff note 4 measured ~900KB of decorative raster on the critical path; the
+   * delivery variants in `assets/` brought that to a 31KB map and a 25KB mark, which is
+   * below where format negotiation would repay its complexity. Left in place so that the
+   * first component to adopt `next/image` inherits the right sizes rather than Next's
+   * defaults — the `220` and `440` entries exist because those are the widths the mark
+   * and the lockup are actually displayed at.
+   *
+   * If nothing has adopted it by the next performance pass, delete this block. Config
+   * that reads as a solved problem while doing nothing is worse than no config.
+   */
   images: {
-    // Handoff note 4, measured: ~900KB of decorative raster on the critical path.
-    // AVIF first, WebP fallback, and the loader generates variants at the sizes the
-    // brand marks are actually displayed at rather than their 6477px source.
     formats: ["image/avif", "image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 220, 256, 440],

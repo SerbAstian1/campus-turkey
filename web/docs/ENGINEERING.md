@@ -405,14 +405,35 @@ Both were found by review rather than by a failing test, which is the point of t
 
 | Target | Result |
 |---|---|
-| Blockers | **0** |
-| Majors | **3** |
+| Blockers | **0** — three were found and fixed this pass; see below |
+| Majors | **1** (backup restore, never drilled) |
 | Minors | 4 · Nitpicks | 1 |
 | Money path coverage (balance, state machine, money) | **100%** lines/branches/functions — target 100%, **met** |
 | Error mapping coverage | **100%** — met |
-| Service layer coverage | partial vs 80% target — **not met**; the ownership-scoped reads are covered, the rest is not |
-| Authorization rules with a negative test | **8 / 13**, each with a positive control — **not met**, and no longer zero |
+| Gated-set coverage | **99.61%** statements, 97.23% branches, 100% functions — gate green |
+| Service layer coverage | partial vs 80% target — **not met**; ownership-scoped reads, rate limiting and logging are covered, the remaining services are not |
+| Authorization rules with a negative test | **13 / 13** — 8 ownership rules at the service layer, plus the `route()` guard itself, which is where the other 5 are decided |
 | `any` types without a stated reason | **0** |
+| Production build | **passes** — 1,263 pages, 103 kB shared First Load JS, middleware 35.5 kB |
+
+### The three that would have shipped
+
+None of these were visible to a typechecker, a unit test, or a careful reading. All
+three were found by deleting the retired Vite `app/`, which had been propping the new
+application up by accident.
+
+1. **The design system would not have deployed.** `public/ds/` and `public/assets/` are
+   generated and gitignored; nothing in the deploy path generated them. `next build`
+   does not need them, so a clean checkout would have built green, deployed green, and
+   served unstyled markup with no components — silently. `prebuild` now refuses.
+2. **Two undeclared dependencies.** `web/src` imports `gsap` and `leaflet`; neither was
+   in `web/package.json`. They resolved by hoisting from the workspace being deleted.
+3. **The build could not finish.** 680 university pages at two to three queries each
+   exhausted the connection pool at page 315. Now one query per build worker.
+
+A fourth, from the same root cause: the `.ct-error*` classes the 404 renders with were
+defined in no stylesheet in the repository. The page the routing migration existed to
+deliver was rendering unstyled.
 
 ---
 
@@ -520,32 +541,45 @@ PRODUCTION AUDIT — Campus Turkey (server layer)
                                 target-plus-mechanism with nothing deployed to profile
   9. Accessibility     PASS     EDSAI's targets preserved — pinch-zoom never disabled,
                                 error screens keep their recovery routes. Untouched
- 10. Testing           FAIL     Money path at 100%, but service layer 0% vs 80% target
-                                and 0/13 authorization rules have a denial test
+ 10. Testing           REQ IMP  Money path 100%, gated set 99.61%, 13/13 authorization
+                                rules denied with positive controls, 24 integration
+                                assertions. Remaining services still uncovered
  11. Logging           PASS     Structured, correlated, two redaction layers, tested;
-                                no PII or secrets in output
+                                no PII or secrets in output. `requestLogger` and the
+                                audit line shape now covered
  12. Monitoring        REQ IMP  9/9 thresholds stated as numbers with a named
-                                recipient; no error-tracking SDK initialised
- 13. Deployment        REQ IMP  Pipeline automated with all checks blocking; rollback
-                                documented and time-boxed — but never rehearsed, and
-                                backup restore never tested
+                                recipient; Sentry is initialised (lazily, Node-only),
+                                but no dashboard exists and server-component render
+                                errors still bypass it — reasoned, in `error.tsx`
+ 13. Deployment        REQ IMP  Production build passes end to end for the first time,
+                                all checks blocking, the design system can no longer be
+                                omitted silently — but rollback and backup restore are
+                                both still unrehearsed, and nothing has been deployed
  14. Documentation     PASS     README, architecture, deployment, environment, runbook,
                                 migration and testing docs all present and current
 
 DETERMINATION: REQUIRES IMPROVEMENT
 ```
 
-**Not PASS, and the reason is check 10.** Three open Major issues, and any open Major
-means this gate cannot return PASS. The most consequential is that the concurrency
-guarantee protecting the money path is designed, reasoned about, and never executed. The
-design is sound — SERIALIZABLE with bounded retry, a replay check, a unique idempotency
-key per partner, an append-only audit trail. But "sound design" and "demonstrated
-behaviour" are different claims, and only one of them belongs in a sentence about
-someone else's money.
+**Still not PASS, and now for one reason rather than three.** The concurrency guarantee
+has been executed — two simultaneous requests for the whole of a $400 balance produce
+exactly one withdrawal, and the loser is refused with a `ConflictError` rather than
+escaping as a 500. The authorization rules have been made to deny, each against a
+positive control. What has not happened is a backup restore, and until one has been
+performed and timed, the stated RPO and RTO are a provider's brochure rather than a
+measurement.
 
-**Not FAIL either.** Nothing here is known-broken, there is no open Blocker, no
-authorization gap, no secret in the repository, and the schema makes the dangerous
-states unrepresentable. This is a system that is safe to run in staging today.
+The honest framing of the remainder is narrower than the last run's and more specific:
+**nothing has ever been deployed.** Every claim in this document is now demonstrated by
+a test or a build, and the class of defect that a build and a test cannot see is exactly
+the class this pass kept finding — a design system that is never copied, a dependency
+that resolves by accident, a stylesheet nobody wrote. Three of those shipped undetected
+through every previous review. It would be unwise to assume the fourth does not exist.
+
+**Not FAIL.** No open Blocker, no authorization gap, no secret in the repository, the
+schema makes the dangerous states unrepresentable, and the production build now
+completes. Safe to run in staging today, and the preview walk in MIGRATION.md step 6 is
+the next thing that should happen — before, not after, the remaining polish.
 
 ### Required before PASS
 
