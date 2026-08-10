@@ -166,6 +166,46 @@ export async function createPartner(options: {
 }
 
 /**
+ * Give a fixture's student an application, so ownership can be tested against it.
+ *
+ * Returned rather than folded into `createPartner` because most tests do not need one,
+ * and an application nobody looks at is a row the teardown has to unwind for nothing.
+ */
+export async function createApplication(fixture: PartnerFixture): Promise<string> {
+  const application = await db.application.create({
+    data: {
+      id: randomUUID(),
+      // Unique per row, and namespaced so a leaked fixture is identifiable in the table.
+      applicationNumber: `ITEST-${randomUUID().slice(0, 12).toUpperCase()}`,
+      studentId: fixture.studentId,
+      partnerId: fixture.partnerId,
+      status: "SUBMITTED",
+      submittedAt: new Date(),
+    },
+    select: { id: true },
+  });
+  return application.id;
+}
+
+/**
+ * A `DocumentActor` for this partner, shaped the way the service expects.
+ *
+ * `principal.role` is PARTNER and `status` ACTIVE, because the isolation these tests
+ * are about is the one that applies to a legitimate, fully entitled partner. A
+ * suspended or wrong-role actor would be refused a step earlier by `canAct`, which
+ * would pass the test for the wrong reason.
+ */
+export function partnerActor(fixture: PartnerFixture) {
+  return {
+    userId: fixture.userId,
+    principal: { role: "PARTNER" as const, status: "ACTIVE" as const },
+    partnerId: fixture.partnerId,
+    studentProfileId: null,
+    representativeId: null,
+  };
+}
+
+/**
  * Unwind in dependency order — see the note at the top of this file.
  *
  * The audit-trail deletion needs the append-only trigger switched off around it, and
@@ -197,6 +237,23 @@ export async function destroyPartner(fixture: PartnerFixture): Promise<void> {
   await db.withdrawal.deleteMany({ where: { partnerId: fixture.partnerId } });
   await db.commission.deleteMany({ where: { partnerId: fixture.partnerId } });
   await db.payoutMethod.deleteMany({ where: { partnerId: fixture.partnerId } });
+
+  /**
+   * Applications, and everything hanging off them, before the student they belong to.
+   * `onDelete: Restrict` on `application.studentId` means the student cannot go first —
+   * the same schema decision the note at the top of this file describes, one level down.
+   * Documents cascade from the application, but they are deleted explicitly so that a
+   * future change to that cascade shows up here as a failing teardown rather than as
+   * rows quietly accumulating in someone's database.
+   */
+  await db.document.deleteMany({
+    where: { application: { partnerId: fixture.partnerId } },
+  });
+  await db.applicationStatusHistory.deleteMany({
+    where: { application: { partnerId: fixture.partnerId } },
+  });
+  await db.application.deleteMany({ where: { partnerId: fixture.partnerId } });
+
   await db.student.deleteMany({ where: { partnerId: fixture.partnerId } });
   await db.partner.deleteMany({ where: { id: fixture.partnerId } });
   await db.user.deleteMany({ where: { id: fixture.userId } });

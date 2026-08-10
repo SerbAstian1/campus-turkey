@@ -11,6 +11,7 @@
  */
 
 import { randomUUID } from "node:crypto";
+import type { Prisma } from "@prisma/client";
 import { db } from "@/server/lib/db";
 import { ForbiddenError, NotFoundError, UnprocessableError } from "@/server/lib/errors";
 import type { RequestLogger } from "@/server/lib/logger";
@@ -43,31 +44,38 @@ export interface DocumentActor {
  * Staff reach everything, by role. Everyone else reaches only what is theirs, and §62 is
  * explicit that a partner sees their own students and nothing else.
  */
-async function reachableApplication(applicationId: string, actor: DocumentActor) {
+/**
+ * The `where` fragment describing everything this actor may reach.
+ *
+ * Extracted so the document lookup can apply the same scope in its own query rather
+ * than checking the application separately afterwards — see `reachableDocument`.
+ */
+function applicationScope(actor: DocumentActor) {
   const isStaff =
     actor.principal.role === "STAFF" ||
     actor.principal.role === "ADMIN" ||
     actor.principal.role === "SUPER_ADMIN";
 
-  const scope = isStaff
-    ? { id: applicationId }
-    : {
-        id: applicationId,
-        OR: [
-          ...(actor.studentProfileId ? [{ student: { profileId: actor.studentProfileId } }] : []),
-          ...(actor.partnerId ? [{ partnerId: actor.partnerId }] : []),
-          ...(actor.representativeId ? [{ representativeId: actor.representativeId }] : []),
-        ],
-      };
+  if (isStaff) return {};
+
+  const OR = [
+    ...(actor.studentProfileId ? [{ student: { profileId: actor.studentProfileId } }] : []),
+    ...(actor.partnerId ? [{ partnerId: actor.partnerId }] : []),
+    ...(actor.representativeId ? [{ representativeId: actor.representativeId }] : []),
+  ];
 
   // An actor with no scope at all would produce `OR: []`, which Prisma treats as matching
   // nothing — but relying on that is relying on a library's edge case. Refused explicitly.
-  if (!isStaff && (!scope.OR || scope.OR.length === 0)) {
+  if (OR.length === 0) {
     throw new ForbiddenError("You do not have access to that application.");
   }
 
+  return { OR };
+}
+
+async function reachableApplication(applicationId: string, actor: DocumentActor) {
   const application = await db.application.findFirst({
-    where: scope,
+    where: { id: applicationId, ...applicationScope(actor) },
     select: { id: true, status: true, applicationNumber: true },
   });
 
@@ -77,6 +85,36 @@ async function reachableApplication(applicationId: string, actor: DocumentActor)
   if (!application) throw new NotFoundError("We could not find that application.");
 
   return application;
+}
+
+/**
+ * Resolve a document the actor is allowed to see, in one query.
+ *
+ * The obvious shape — load the document by id, then check its application — leaks the
+ * distinction this module is built to hide. Both refusals are a 404, but they carry
+ * *different messages*: "we could not find that document" for an id that does not
+ * exist, and "we could not find that application" for one that exists and belongs to
+ * somebody else. That is an oracle. A caller walking ids learns which are real without
+ * ever being allowed to read one, and it survived review precisely because both paths
+ * looked like a correct 404 in isolation.
+ *
+ * Found by the isolation suite, which asserts the two answers are identical. Fixed by
+ * scoping the lookup instead of checking after it, so there is only one refusal and no
+ * second message to keep in step.
+ */
+async function reachableDocument<T extends Prisma.DocumentSelect>(
+  documentId: string,
+  actor: DocumentActor,
+  select: T,
+) {
+  const document = await db.document.findFirst({
+    where: { id: documentId, application: applicationScope(actor) },
+    select,
+  });
+
+  if (!document) throw new NotFoundError("We could not find that document.");
+
+  return document;
 }
 
 export interface RequestUploadInput {
@@ -160,15 +198,11 @@ export async function confirmUpload(
   actor: DocumentActor,
   log: RequestLogger,
 ) {
-  const document = await db.document.findUnique({
-    where: { id: input.documentId },
-    select: { id: true, applicationId: true, uploadedAt: true },
+  // Scope is re-applied rather than trusted from the upload call: this is a separate
+  // request and the id in it is client-supplied.
+  const document = await reachableDocument(input.documentId, actor, {
+    id: true, applicationId: true, uploadedAt: true,
   });
-  if (!document) throw new NotFoundError("We could not find that document.");
-
-  // Re-checked rather than trusted from the upload call: this is a separate request and
-  // the id in it is client-supplied.
-  await reachableApplication(document.applicationId, actor);
 
   if (document.uploadedAt) return { ok: true as const };
 
@@ -194,13 +228,9 @@ export async function downloadUrl(
   actor: DocumentActor,
   log: RequestLogger,
 ) {
-  const document = await db.document.findUnique({
-    where: { id: input.documentId },
-    select: { id: true, applicationId: true, storageKey: true, fileName: true, uploadedAt: true },
+  const document = await reachableDocument(input.documentId, actor, {
+    id: true, applicationId: true, storageKey: true, fileName: true, uploadedAt: true,
   });
-  if (!document) throw new NotFoundError("We could not find that document.");
-
-  await reachableApplication(document.applicationId, actor);
 
   if (!document.uploadedAt) {
     throw new UnprocessableError("upload_incomplete", "That file has not finished uploading.");

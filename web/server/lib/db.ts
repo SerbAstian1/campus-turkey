@@ -9,6 +9,7 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import { env, isProduction } from "./config";
 import { logger } from "./logger";
+import { ConflictError } from "./errors";
 
 /**
  * Next.js keeps modules alive across hot reloads in development, so a plain `new
@@ -70,15 +71,59 @@ export type Db = PrismaClient | Prisma.TransactionClient;
  *
  * Retries are bounded and only for 40001/40P01. Anything else propagates immediately —
  * retrying an unknown failure against a money path is how one bug becomes several.
+ *
+ * When the budget *is* spent on a genuine conflict, the caller gets a `ConflictError`
+ * rather than the raw Prisma error. That distinction is the difference between a 409
+ * telling a partner to press the button again and a 500 telling them nothing, and the
+ * integration suite caught it as exactly that: under Neon's round-trip latency the
+ * collision window is wide enough that three attempts occasionally all lose, and the
+ * loser escaped as `PrismaClientKnownRequestError`. A serialisation failure is by
+ * definition transient and by definition the current state refusing the request, which
+ * is what a 409 means — propagating it as an unhandled error says "the server is
+ * broken" about a database doing precisely its job.
  */
+/**
+ * True when Postgres aborted the transaction for contention rather than for a fault.
+ *
+ * P2034 is Prisma's wrapper for "transaction failed due to a write conflict or a
+ * deadlock". 40001 is serialisation failure, 40P01 deadlock detected.
+ */
+export function isSerialisationConflict(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
+  const pgCode = error.meta?.["code"] as string | undefined;
+  return error.code === "P2034" || pgCode === "40001" || pgCode === "40P01";
+}
+
+/**
+ * What to do about a failed attempt.
+ *
+ * Pure, exported and separately tested, because it is the part with the decisions in it
+ * and the part around it needs two live connections to exercise at all. The integration
+ * suite proved the `exhausted` branch existed by hitting it; this is what pins the
+ * behaviour without waiting for a race to happen to lose three times.
+ */
+export type RetryDecision = "retry" | "exhausted" | "propagate";
+
+export function retryDecision(
+  error: unknown,
+  attempt: number,
+  maxAttempts: number,
+): RetryDecision {
+  if (!isSerialisationConflict(error)) return "propagate";
+  return attempt >= maxAttempts ? "exhausted" : "retry";
+}
+
+/** Full jitter. Two transactions that back off by the same fixed amount collide again. */
+export function retryBackoffMs(attempt: number): number {
+  return Math.random() * 25 * 2 ** (attempt - 1);
+}
+
 export async function serializable<T>(
   fn: (tx: Prisma.TransactionClient) => Promise<T>,
   options: { maxAttempts?: number; timeoutMs?: number } = {},
 ): Promise<T> {
   const maxAttempts = options.maxAttempts ?? 3;
   const timeout = options.timeoutMs ?? 10_000;
-
-  let lastError: unknown;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -88,24 +133,22 @@ export async function serializable<T>(
         maxWait: 5_000,
       });
     } catch (error) {
-      lastError = error;
+      const decision = retryDecision(error, attempt, maxAttempts);
 
-      const code =
-        error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined;
-      const pgCode =
-        error instanceof Prisma.PrismaClientKnownRequestError
-          ? (error.meta?.["code"] as string | undefined)
-          : undefined;
+      if (decision === "propagate") throw error;
 
-      // P2034 is Prisma's wrapper for "transaction failed due to a write conflict or a
-      // deadlock". 40001 is serialisation failure, 40P01 deadlock detected.
-      const retryable = code === "P2034" || pgCode === "40001" || pgCode === "40P01";
+      if (decision === "exhausted") {
+        logger.warn(
+          { attempt, maxAttempts },
+          "serialisable transaction still conflicting after the last attempt",
+        );
+        throw new ConflictError(
+          "write_conflict",
+          "Another change to this account was in progress. Please try that again.",
+        );
+      }
 
-      if (!retryable || attempt === maxAttempts) throw error;
-
-      // Full jitter. Two transactions that collide and then back off by the same fixed
-      // amount collide again; randomising the wait is what breaks the lockstep.
-      const backoff = Math.random() * 25 * 2 ** (attempt - 1);
+      const backoff = retryBackoffMs(attempt);
       logger.warn(
         { attempt, maxAttempts, backoffMs: Math.round(backoff) },
         "serialisable transaction conflicted, retrying",
@@ -114,7 +157,13 @@ export async function serializable<T>(
     }
   }
 
-  throw lastError;
+  // Unreachable: the loop either returns, or the last attempt throws above. Thrown
+  // rather than left implicit so a future edit to the loop bounds cannot fall out of
+  // the function having silently done nothing.
+  throw new ConflictError(
+    "write_conflict",
+    "Another change to this account was in progress. Please try that again.",
+  );
 }
 
 /** True when the error is Postgres rejecting a duplicate on a unique constraint. */

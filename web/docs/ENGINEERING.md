@@ -410,8 +410,8 @@ Both were found by review rather than by a failing test, which is the point of t
 | Minors | 4 · Nitpicks | 1 |
 | Money path coverage (balance, state machine, money) | **100%** lines/branches/functions — target 100%, **met** |
 | Error mapping coverage | **100%** — met |
-| Service layer coverage | **0%** vs 80% target — **not met** |
-| Authorization rules with a negative test | **0 / 13** vs target 13 — **not met** |
+| Service layer coverage | partial vs 80% target — **not met**; the ownership-scoped reads are covered, the rest is not |
+| Authorization rules with a negative test | **8 / 13**, each with a positive control — **not met**, and no longer zero |
 | `any` types without a stated reason | **0** |
 
 ---
@@ -549,12 +549,21 @@ states unrepresentable. This is a system that is safe to run in staging today.
 
 ### Required before PASS
 
-1. **Write the integration suite** — the four cases in TESTING.md, against a disposable
-   Postgres. The concurrency case is the one that matters; run it in a loop.
-2. **Add authorization denial tests** — eight handlers, partner A requesting partner B's
-   resource, asserting 404. Currently 0/13.
-3. **Run the backup restore drill** — once, recording the measured RTO.
+1. ~~**Write the integration suite**~~ — done. 24 assertions against a real Postgres:
+   the withdrawal path, and tenant isolation across payout methods, wallet, students and
+   documents. Still worth running the concurrency case in a loop before a release.
+2. ~~**Add authorization denial tests**~~ — done for the ownership-scoped surface, 8 of
+   13, each paired with a positive control so it cannot pass on a service that is simply
+   broken. The five not covered are the staff-permission endpoints, where the rule is
+   enforced by the route's `access` declaration rather than by the service.
+3. **Run the backup restore drill** — once, recording the measured RTO. Still open, and
+   now the only one of the three that has not moved.
 4. Re-run checks 10 and 13.
+
+**Two defects came out of writing item 1**, both invisible to a reading and to the type
+checker: a document-id oracle in the two document endpoints that loaded a row before
+scoping it, and a serialisation conflict that reached the client as a 500 once its retry
+budget was spent. Both are described in TESTING.md and both are now covered.
 
 ### Non-blocking, worth closing soon
 

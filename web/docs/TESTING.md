@@ -11,10 +11,11 @@
 | **Schema constraints and triggers** | all enforced | **30 assertions, all passing** | met — executed, not asserted |
 | **Query plans** | 3 heaviest | **3 observed + FK index audit** | met |
 | **Withdrawal service — concurrency, idempotency, state machine** | executed | **14 assertions against real Postgres** | met |
-| **Other services, repositories, route handlers** | **≥80%** | **0%** | **NOT MET — QA issue #1** |
+| **Tenant isolation — payout methods, wallet, students, documents** | every rule denied at least once | **10 assertions, each with a positive control** | met |
+| **Other services, repositories, route handlers** | **≥80%** | partial — the ownership-scoped reads are covered, the rest is not | **NOT MET — QA issue #1** |
 | Overall statement coverage | ≥80% | ~17% lines | not met |
 
-**311 unit tests across 17 files, plus 14 integration tests against a real Postgres.**
+**494 unit tests across 27 files, plus 24 integration tests against a real Postgres.**
 
 The integration suite closed the gap that every previous pass had to leave open. PGlite is
 single-connection, so the write skew that SERIALIZABLE exists to prevent could not be
@@ -41,18 +42,32 @@ PASS.
 
 ## What a real database found that reading could not
 
-Four defects surfaced only once the app was pointed at a live Postgres and driven with
+Six defects surfaced only once the app was pointed at a live Postgres and driven with
 real sessions. Each had been read past repeatedly:
 
-1. **Every staff endpoint returned 403 to every role.** `staffRole` is not part of Better
+1. **A document id oracle.** `downloadUrl` and `confirmUpload` loaded the document by id
+   and *then* checked the application, so a document that exists but is not yours
+   answered "we could not find that application" while an invented id answered "we could
+   not find that document". Both are 404s, which is why it survived review — but the two
+   messages differ, and that difference tells an outsider which ids are real. Fixed by
+   scoping the lookup instead of checking after it, so there is one refusal and no second
+   message to keep in step. Found by asserting the two answers are identical.
+2. **A serialisation conflict could reach the client as a 500.** When all three attempts
+   of a `serializable()` transaction lost, the raw `PrismaClientKnownRequestError`
+   propagated. A write conflict is transient and is the current state refusing the
+   request — a 409 — and reporting it as a server error tells a partner the system is
+   broken when the database has done exactly what it promises. Now a `ConflictError`,
+   with the decision pinned by `db.retry.test.ts` because reproducing it needs a race to
+   lose three times in a row.
+3. **Every staff endpoint returned 403 to every role.** `staffRole` is not part of Better
    Auth's own schema, and the library returns only the fields it knows about on
    `session.user` — so the role was correct in the database and `undefined` in the
    session. Fixed by declaring it in `user.additionalFields` with `input: false`, which
    is what stops it also becoming a self-promotion endpoint.
-2. **The app refused to boot on a correct `.env`.** Optional variables left blank arrive
+4. **The app refused to boot on a correct `.env`.** Optional variables left blank arrive
    as `""`, which `z.string().url().optional()` rejects rather than skips.
-3. **Scripts run under plain `node` never loaded `.env` at all.**
-4. **`pgbouncer=true` cost 6.5x on every query** against Neon's pooler, which has not
+5. **Scripts run under plain `node` never loaded `.env` at all.**
+6. **`pgbouncer=true` cost 6.5x on every query** against Neon's pooler, which has not
    needed that flag since 2024.
 
 None of these are visible to a type checker, a unit test, or a careful reading. They are
