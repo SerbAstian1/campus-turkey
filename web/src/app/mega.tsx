@@ -27,19 +27,22 @@ export const MEGA: Record<string, ReactNode> = {
         {
           title: "Education",
           links: [
-            { label: "Study in Türkiye", description: "Admissions and scholarships", icon: "graduation-cap", href: "#/study" },
+            { label: "Study in Türkiye", description: "Admissions and scholarships", icon: "graduation-cap", href: "#/study-in-turkiye" },
             { label: "University directory", description: "Public and private", icon: "landmark", href: "#/universities" },
-            { label: "Educational tours", description: "Campus and study visits", icon: "bus-front", href: "#/service/tours" },
-            { label: "Scholarships", description: "What you can get", icon: "award", href: "#/study" },
+            { label: "Educational tours", description: "Campus and study visits", icon: "bus-front", href: "#/services/tours" },
+            /* Scholarships pointed at the study hub, which meant two menu items in the
+               same column went to the same page — one of them lying about where. It now
+               has its own page. */
+            { label: "Scholarships", description: "What you can get", icon: "award", href: "#/study-in-turkiye/scholarships" },
           ],
         },
         {
           title: "Other services",
           links: [
-            { label: "Medical Tourism", description: "Hospitals and travel", icon: "heart-pulse", href: "#/service/medical" },
-            { label: "Business Facilitation", description: "Invitations and B2B", icon: "briefcase", href: "#/service/business" },
-            { label: "Employment", description: "Legal and seasonal work", icon: "hard-hat", href: "#/service/employment" },
-            { label: "Partnerships", description: "Agencies and reps", icon: "handshake", href: "#/partners" },
+            { label: "All services", description: "The four, side by side", icon: "layout-grid", href: "#/services" },
+            { label: "Medical Tourism", description: "Hospitals and travel", icon: "heart-pulse", href: "#/services/medical" },
+            { label: "Business Facilitation", description: "Invitations and B2B", icon: "briefcase", href: "#/services/business" },
+            { label: "Employment", description: "Legal and seasonal work", icon: "hard-hat", href: "#/services/employment" },
           ],
         },
       ]}
@@ -65,8 +68,9 @@ export const MEGA: Record<string, ReactNode> = {
         {
           title: "Work with us",
           links: [
-            { label: "Become a Partner", description: "Agencies and consultants", icon: "handshake", href: "#/partners" },
-            { label: "Become a Representative", description: "Country representatives", icon: "globe", href: "#/representative" },
+            { label: "All partnerships", description: "Which one you are", icon: "handshake", href: "#/partnerships" },
+            { label: "Become a Partner", description: "Agencies and consultants", icon: "briefcase", href: "#/partnerships/agents" },
+            { label: "Become a Representative", description: "Country representatives", icon: "globe", href: "#/partnerships/representatives" },
             { label: "Partner Login", description: "Existing partners sign in", icon: "log-in", href: "#/portal" },
           ],
         },
@@ -75,8 +79,9 @@ export const MEGA: Record<string, ReactNode> = {
         {
           title: "For institutions",
           links: [
-            { label: "Universities", href: "#/institutions/universities" },
+            { label: "Universities", href: "#/partnerships/universities" },
             { label: "Hospitals", href: "#/institutions/hospitals" },
+            { label: "Agencies", href: "#/institutions/agencies" },
             { label: "Chambers of commerce", href: "#/institutions/chambers" },
           ],
         },

@@ -53,7 +53,12 @@ export default function Study() {
           <ScrollReveal style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", alignItems: "flex-end", justifyContent: "space-between" }}>
             <SectionHeading eyebrow="Scholarships" title="What you can actually get"
               lead="Four routes to a lower fee. We tell you which ones you qualify for before you spend anything." />
-            <Button variant="secondary" icon="arrow-right" onClick={() => go("apply")}>Check my eligibility</Button>
+            {/* Out to the spoke, not to the form. The hub's job is to route; sending
+                somebody straight to "apply" from a section they are still reading skips
+                the page that answers what they were reading it for. */}
+            <Button variant="secondary" icon="arrow-right" onClick={() => go("study-in-turkiye/scholarships")}>
+              Compare all four
+            </Button>
           </ScrollReveal>
           <CardGrid min={280} gap="var(--space-6)">
             {scholarships.map((s, i) => (
@@ -78,14 +83,23 @@ export default function Study() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
-          <ScrollReveal><SectionHeading eyebrow="Application process" title="What happens, in order" /></ScrollReveal>
+          <ScrollReveal style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", alignItems: "flex-end", justifyContent: "space-between" }}>
+            <SectionHeading eyebrow="Application process" title="What happens, in order"
+              lead="Five steps from first message to first week on campus." />
+            <Button variant="secondary" icon="arrow-right" onClick={() => go("study-in-turkiye/application-process")}>
+              What to have ready
+            </Button>
+          </ScrollReveal>
           <ScrollReveal delay={80}><TimelineTrack steps={journey} /></ScrollReveal>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
-          <ScrollReveal>
+          <ScrollReveal style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", alignItems: "flex-end", justifyContent: "space-between" }}>
             <SectionHeading eyebrow="Student life" title="What a month actually costs"
               lead="Real figures from students we placed this year. Budget about $350 to $550 a month in most cities." />
+            <Button variant="secondary" icon="arrow-right" onClick={() => go("study-in-turkiye/student-life")}>
+              See it added up
+            </Button>
           </ScrollReveal>
           <CardGrid min={250} gap="var(--space-6)">
             {studentLife.map((s, i) => (

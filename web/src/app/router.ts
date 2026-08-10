@@ -15,7 +15,7 @@
  * resolves to the same 200.
  *
  * Route names map to paths one-to-one, except where the prototype used a singular
- * segment. Those are redirected server-side in next.config.mjs so old links survive.
+ * segment. Those are redirected server-side in next.config.ts so old links survive.
  */
 
 import { useEffect, useMemo } from "react";
@@ -34,6 +34,12 @@ export interface Route {
  * Only the names that differ appear here. `university` → `universities` and
  * `service` → `services` are the two the prototype got singular; `blog` → `resources`
  * is a rename. Every other name is its own path.
+ *
+ * The last three are the brief's information architecture. Adding them here is what
+ * moved three pages without touching the fifteen screens that link to them: `go("study")`
+ * and `href="#/partners"` are unchanged at every call site and now resolve to the new
+ * addresses. This indirection existing is the reason the move was a two-line diff
+ * instead of a search-and-replace across EDSAI's screens — which is what it is for.
  */
 const PATH_FOR: Record<string, string> = {
   home: "",
@@ -41,13 +47,28 @@ const PATH_FOR: Record<string, string> = {
   service: "services",
   institutions: "institutions",
   blog: "resources",
+  study: "study-in-turkiye",
+  partners: "partnerships/agents",
+  representative: "partnerships/representatives",
 };
 
-/** The inverse, for reading a route name back out of a pathname. */
+/**
+ * The inverse, for reading a route name back out of a pathname.
+ *
+ * Load-bearing beyond tidiness: `Shell` looks the name up in its `ACTIVE` map to decide
+ * which navbar item is highlighted. Without `study-in-turkiye → study`, the study page
+ * would render with nothing in the navbar marked current — a small wrongness on the
+ * page the whole funnel points at.
+ *
+ * `partnerships` maps to `partners` for both of its children, which is correct: they
+ * share one navbar item, and the map's job is the highlight, not the identity.
+ */
 const NAME_FOR: Record<string, string> = {
   universities: "university",
   services: "service",
   resources: "blog",
+  "study-in-turkiye": "study",
+  partnerships: "partners",
 };
 
 /**

@@ -1,5 +1,5 @@
 /**
- * /representative
+ * /study-in-turkiye
  *
  * A server component whose only job is metadata. The screen itself is EDSAI's and is a
  * client component, because every design system component it renders needs the browser
@@ -13,7 +13,7 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
-import Representative from "@/screens/Representative";
+import Study from "@/screens/Study";
 
 /**
  * Prerendered in every language. 17 locales x this page.
@@ -27,13 +27,13 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { locale } = await params;
   return pageMetadata({
-  title: "Become a representative",
-  description: "Represent Campus Turkey in your territory. What it pays, what it requires, and how to start.",
-  path: "/representative",
+  title: "Study in Türkiye",
+  description: "Tuition, scholarships, intakes and what a year in Türkiye actually costs. Written for students applying from abroad.",
+  path: "/study-in-turkiye",
     locale: locale as Locale,
   });
 }
 
 export default function Page() {
-  return <Representative />;
+  return <Study />;
 }

@@ -1,11 +1,19 @@
-import { fileURLToPath } from "node:url";
-
 /**
  * Next.js configuration.
  *
- * @type {import('next').NextConfig}
+ * TypeScript rather than `.mjs`, for one concrete reason: `redirects()` reads the route
+ * table in `src/app/moved-routes.ts`, and a `.mjs` config cannot import a `.ts` module.
+ * The alternative was keeping the same list in two files and trusting them to stay in
+ * step — which is exactly how a redirect gets deleted from one place and left in the
+ * other.
  */
-const nextConfig = {
+
+import { fileURLToPath } from "node:url";
+import type { NextConfig } from "next";
+import { MOVED_ROUTES } from "./src/app/moved-routes";
+import { LOCALES, DEFAULT_LOCALE } from "./src/i18n/locales";
+
+const nextConfig: NextConfig = {
   reactStrictMode: true,
 
   /**
@@ -58,16 +66,31 @@ const nextConfig = {
      * cannot be redirected server-side — the rewrite happens client-side in the root
      * layout, which reads `location.hash` on first paint and replaces the URL.
      *
-     * What *can* be redirected is the old flat shape, and the singular/plural drift
-     * between the prototype's `#/university/:slug` and the contract's `/universities/
-     * :slug`. 308 preserves the method and tells search engines the move is permanent.
+     * What *can* be redirected is every address that has moved since, and
+     * `MOVED_ROUTES` is the single list of those. Each entry is emitted twice: once
+     * unprefixed for English, and once as `/:locale/...` for the other sixteen.
+     *
+     * The locale form is the half that was missing. An English visitor following an old
+     * link was redirected; an Arabic visitor following `/ar/university/itu` got a 404,
+     * because the redirect matched `/university/:slug` and nothing else. Sixteen
+     * languages of broken inbound links, invisible from an English browser.
+     *
+     * One `/:locale/...` pattern rather than sixteen copies, with the locale constrained
+     * by an alternation built from `LOCALES` itself. The constraint is load-bearing:
+     * unconstrained, `/:locale/blog` matches `/resources/blog` and redirects it into a
+     * loop. Built from the list rather than typed out, so adding a language adds its
+     * redirects.
      */
-    return [
-      { source: "/university/:slug", destination: "/universities/:slug", permanent: true },
-      { source: "/service/:slug", destination: "/services/:slug", permanent: true },
-      { source: "/blog/:slug", destination: "/resources/:slug", permanent: true },
-      { source: "/institution/:slug", destination: "/institutions/:slug", permanent: true },
-    ];
+    const localePattern = LOCALES.filter((locale) => locale !== DEFAULT_LOCALE).join("|");
+
+    return MOVED_ROUTES.flatMap(({ from, to }) => [
+      { source: from, destination: to, permanent: true },
+      {
+        source: `/:locale(${localePattern})${from}`,
+        destination: `/:locale${to}`,
+        permanent: true,
+      },
+    ]);
   },
 
   async headers() {

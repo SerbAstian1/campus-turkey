@@ -1,5 +1,5 @@
 /**
- * /study
+ * /partnerships/agents
  *
  * A server component whose only job is metadata. The screen itself is EDSAI's and is a
  * client component, because every design system component it renders needs the browser
@@ -13,7 +13,7 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
-import Study from "@/screens/Study";
+import Partners from "@/screens/Partners";
 
 /**
  * Prerendered in every language. 17 locales x this page.
@@ -27,13 +27,13 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { locale } = await params;
   return pageMetadata({
-  title: "Study in Türkiye",
-  description: "Tuition, scholarships, intakes and what a year in Türkiye actually costs. Written for students applying from abroad.",
-  path: "/study",
+  title: "Partner as a recruitment agent",
+  description: "Refer students to Turkish universities and earn commission on every confirmed registration. Terms, rates and how to apply.",
+  path: "/partnerships/agents",
     locale: locale as Locale,
   });
 }
 
 export default function Page() {
-  return <Study />;
+  return <Partners />;
 }

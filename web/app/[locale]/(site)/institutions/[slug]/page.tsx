@@ -30,8 +30,16 @@ export const dynamicParams = false;
 export function generateStaticParams() {
   // Every page, in every language. The catalogue is static content, so the whole
   // cross product is known at build time and none of it needs a render on request.
+  //
+  // `universities` is excluded: it moved to `/partnerships/universities`, where the
+  // brief groups the partner offers. Generated here as well it would be the same page at
+  // two live addresses — the duplicate-content problem the redirect exists to avoid.
+  // With `dynamicParams = false` above, leaving it out is what makes the old address
+  // reach the redirect instead of rendering a second copy.
   return LOCALES.flatMap((locale) =>
-    institutions.map((i) => ({ locale, slug: i.slug })),
+    institutions
+      .filter((i) => i.slug !== "universities")
+      .map((i) => ({ locale, slug: i.slug })),
   );
 }
 

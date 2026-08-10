@@ -1,7 +1,7 @@
 /**
  * /resources/[slug]
  *
- * The prototype published these at `#/blog/<slug>`. `next.config.mjs` 308s the old
+ * The prototype published these at `#/blog/<slug>`. `next.config.ts` 308s the old
  * `/blog/:slug` shape here so nothing already shared breaks.
  */
 

@@ -14,7 +14,7 @@ export interface NavEntry {
 }
 
 export const nav: NavEntry[] = [
-  { label: "Study in Türkiye", route: "study" },
+  { label: "Study in Türkiye", route: "study-in-turkiye" },
   { label: "Universities", route: "universities" },
   { label: "Services", mega: "services" },
   { label: "Partners", mega: "partners" },
@@ -28,26 +28,32 @@ export const footerColumns: FooterColumn[] = [
   {
     title: "Education",
     links: [
-      { label: "Study in Türkiye", route: "study" },
+      { label: "Study in Türkiye", route: "study-in-turkiye" },
       { label: "University directory", route: "universities" },
-      { label: "Scholarships", route: "study" },
+      // Was a second link to the study hub. Two footer links with different labels
+      // going to one page is a footer that lies twice.
+      { label: "Scholarships", route: "study-in-turkiye/scholarships" },
+      { label: "How to apply", route: "study-in-turkiye/application-process" },
       { label: "Apply Now", route: "apply" },
     ],
   },
   {
     title: "Services",
     links: [
-      { label: "Medical Tourism", route: "service/medical" },
-      { label: "Business Facilitation", route: "service/business" },
-      { label: "Employment", route: "service/employment" },
-      { label: "Tours & delegations", route: "service/tours" },
+      { label: "All services", route: "services" },
+      { label: "Medical Tourism", route: "services/medical" },
+      { label: "Business Facilitation", route: "services/business" },
+      { label: "Employment", route: "services/employment" },
+      { label: "Tours & delegations", route: "services/tours" },
     ],
   },
   {
     title: "Partners",
     links: [
-      { label: "Become a Partner", route: "partners" },
-      { label: "Become a Representative", route: "representative" },
+      { label: "Partnerships", route: "partnerships" },
+      { label: "Become a Partner", route: "partnerships/agents" },
+      { label: "Become a Representative", route: "partnerships/representatives" },
+      { label: "For universities", route: "partnerships/universities" },
       { label: "Partner Login", route: "portal" },
     ],
   },
@@ -57,7 +63,7 @@ export const footerColumns: FooterColumn[] = [
       { label: "About us", route: "about" },
       { label: "Resources", route: "resources" },
       { label: "Contact", route: "contact" },
-      { label: "For universities", route: "institutions/universities" },
+      { label: "For hospitals", route: "institutions/hospitals" },
     ],
   },
 ];

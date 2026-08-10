@@ -42,19 +42,24 @@ export function MobileNav({
 
   const groups: Group[] = [
     { key: "education", label: t("Education"), icon: "graduation-cap", links: [
-      ["Study in Türkiye", "study", "graduation-cap"],
+      ["Study in Türkiye", "study-in-turkiye", "graduation-cap"],
       ["University directory", "universities", "landmark"],
-      ["Scholarships", "study", "award"],
+      // Was a second link to the study hub. It has its own page now, so the label and
+      // the destination finally agree.
+      ["Scholarships", "study-in-turkiye/scholarships", "award"],
+      ["How to apply", "study-in-turkiye/application-process", "list-checks"],
       ["Resources", "resources", "book-open"]] },
     { key: "services", label: t("Services"), icon: "heart-pulse", links: [
-      ["Medical Tourism", "service/medical", "heart-pulse"],
-      ["Business Facilitation", "service/business", "briefcase"],
-      ["Employment", "service/employment", "hard-hat"],
-      ["Educational tours", "service/tours", "bus-front"]] },
+      ["All services", "services", "layout-grid"],
+      ["Medical Tourism", "services/medical", "heart-pulse"],
+      ["Business Facilitation", "services/business", "briefcase"],
+      ["Employment", "services/employment", "hard-hat"],
+      ["Educational tours", "services/tours", "bus-front"]] },
     { key: "partners", label: t("Partners"), icon: "handshake", links: [
-      ["Become a Partner", "partners", "handshake"],
-      ["Become a Representative", "representative", "globe"],
-      ["For universities", "institutions/universities", "landmark"],
+      ["All partnerships", "partnerships", "handshake"],
+      ["Become a Partner", "partnerships/agents", "briefcase"],
+      ["Become a Representative", "partnerships/representatives", "globe"],
+      ["For universities", "partnerships/universities", "landmark"],
       ["For agencies", "institutions/agencies", "users"],
       ["For hospitals", "institutions/hospitals", "stethoscope"],
       ["Partner Login", "portal", "log-in"]] },

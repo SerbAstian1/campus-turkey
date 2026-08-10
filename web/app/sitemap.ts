@@ -15,6 +15,7 @@ import { articles } from "@contracts/articles";
 import { institutions } from "@contracts/institutions";
 import { canonical } from "@/server/lib/seo";
 import { BCP47, LOCALES, localePath, DEFAULT_LOCALE } from "@/i18n/locales";
+import { MOVED_FROM } from "@/app/moved-routes";
 
 /**
  * One entry per page, carrying every language as an alternate.
@@ -61,15 +62,39 @@ export default function sitemap(): MetadataRoute.Sitemap {
    */
   const staticRoutes: MetadataRoute.Sitemap = [
     entry("/", now, "weekly", 1.0),
-    entry("/study", now, "monthly", 0.9),
+    entry("/study-in-turkiye", now, "monthly", 0.9),
+    entry("/study-in-turkiye/scholarships", now, "monthly", 0.85),
+    entry("/study-in-turkiye/application-process", now, "monthly", 0.85),
+    entry("/study-in-turkiye/student-life", now, "monthly", 0.75),
     entry("/universities", now, "weekly", 0.9),
     entry("/apply", now, "monthly", 0.9),
-    entry("/partners", now, "monthly", 0.7),
-    entry("/representative", now, "monthly", 0.6),
+    entry("/services", now, "monthly", 0.8),
+    entry("/partnerships", now, "monthly", 0.7),
+    entry("/partnerships/agents", now, "monthly", 0.7),
+    entry("/partnerships/representatives", now, "monthly", 0.6),
+    entry("/partnerships/universities", now, "monthly", 0.6),
     entry("/resources", now, "weekly", 0.7),
     entry("/about", now, "yearly", 0.5),
     entry("/contact", now, "yearly", 0.6),
   ];
+
+  /**
+   * A moved address must never appear here.
+   *
+   * A sitemap that advertises a URL which answers 308 is telling a crawler to index a
+   * redirect — it wastes crawl budget and, worse, keeps the old address alive in the
+   * index competing with the one that replaced it. Asserted rather than trusted, because
+   * this list and `MOVED_ROUTES` are edited months apart.
+   */
+  const advertisedButMoved = staticRoutes
+    .map((route) => new URL(route.url).pathname)
+    .filter((path) => MOVED_FROM.has(path));
+
+  if (advertisedButMoved.length > 0) {
+    throw new Error(
+      `sitemap advertises ${advertisedButMoved.join(", ")}, which redirect. Point the entry at the new address.`,
+    );
+  }
 
   const universityRoutes = universities.map((u) =>
     entry(`/universities/${u.slug}`, now, "monthly", 0.8),

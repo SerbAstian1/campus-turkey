@@ -2,20 +2,22 @@
 
 ## Where this stands
 
-**Done — the server half.** `web/` is a working Next.js application: nine API endpoints,
-the schema and its integrity migration, auth, the security headers, a real 404, the
-sitemap, robots, structured data, and the edge maintenance response. `tsc --noEmit`
-passes, 165 tests pass, `prisma generate` validates the schema.
+**Done — the server half.** `web/` is a working Next.js application: the API surface,
+the schema and its migrations, auth, the security headers, a real 404, the sitemap,
+robots, structured data, and the edge maintenance response.
 
-**Not done — the screen half.** The seventeen screens in `app/src/screens/` still render
-under the Vite shell and still navigate by `location.hash`. Nothing in `app/` has been
-moved, renamed or broken: it builds and its tests pass exactly as before.
+**Done — the screen half.** Steps 1–5 below are applied. The screens live in `web/src/`,
+`src/app/router.ts` navigates through the Next.js router rather than `location.hash`, and
+every route in the table has a `page.tsx`. `tsc --noEmit` passes and the suite is green.
 
-That split is deliberate. Moving `app/src` and rewriting the URL layer across seventeen
-screens is a large mechanical change that cannot be verified without running the result,
-and leaving the repository in a state where neither the old app nor the new one works
-would be worse than either. The steps below are ordered so that each one is verifiable
-on its own.
+**Not done — step 6, the cutover.** `app/` is still in the tree: the old Vite application,
+now a complete duplicate of `web/src` and built by nothing. It is kept until the preview
+walk in step 6 has actually been done against a deployed URL, because that walk is the
+only thing that has not been verified by a test. Delete it in its own commit afterwards.
+
+The steps below are ordered so that each one is verifiable on its own, and are kept in
+the past tense of a plan rather than rewritten as a description — the reasoning is why
+each was done the way it was.
 
 ## Why the URL layer had to change at all
 
@@ -46,8 +48,10 @@ Then in `web/tsconfig.json`, change one line:
 + "@contracts/*": ["./src/content/*"]
 ```
 
-And delete `outputFileTracingRoot` from `next.config.mjs` — it exists only to let Next
-compile files from outside its root during this transition.
+`outputFileTracingRoot` stays, but its reason changes. It existed to let Next compile
+files from outside its root during the transition; it is kept because `web/` has its own
+lockfile, and without it Next walks up, finds the root workspace lockfile as well, and
+traces the wrong files into the deployment bundle.
 
 **Verify:** `npx tsc --noEmit` still passes.
 
@@ -99,17 +103,27 @@ export default async function Page({ params }) {
 
 The route table to reproduce, from `src/app/screens.tsx`:
 
+Paths below are current. Where one differs from the prototype's, the old address 308s to
+it in every locale — see `src/app/moved-routes.ts`, which is the one list those redirects,
+the sitemap and `moved-routes.test.ts` all read.
+
 | Route | Screen | Notes |
 |---|---|---|
 | `/` | `Home` | |
-| `/study` | `Study` | |
+| `/study-in-turkiye` | `Study` | was `/study` |
+| `/study-in-turkiye/scholarships` | `study/Scholarships` | |
+| `/study-in-turkiye/application-process` | `study/ApplicationProcess` | |
+| `/study-in-turkiye/student-life` | `study/StudentLife` | |
 | `/universities` | `Universities` | filters move to `searchParams` |
 | `/universities/[slug]` | `UniversityDetail` | `generateStaticParams`, JSON-LD |
+| `/services` | `Services` | added; the address was a 404 |
 | `/services/[slug]` | `Service` | JSON-LD, FAQ schema |
 | `/apply` | `Apply` | posts to `/api/leads` |
-| `/partners` | `Partners` | |
-| `/representative` | `Representative` | |
-| `/institutions/[slug]` | `Institution` | |
+| `/partnerships` | `Partnerships` | added; the hub over the three tracks |
+| `/partnerships/agents` | `Partners` | was `/partners` |
+| `/partnerships/representatives` | `Representative` | was `/representative` |
+| `/partnerships/universities` | `Institution` | was `/institutions/universities`; excluded from that route's `generateStaticParams` so it is not served twice |
+| `/institutions/[slug]` | `Institution` | agencies, hospitals, chambers. No index page — the three are reached from the nav |
 | `/about` | `About` | |
 | `/contact` | `Contact` | posts to `/api/leads` |
 | `/resources` | `Resources` | |
@@ -129,9 +143,17 @@ Mechanical, and the only step that touches every screen:
 
 **The old addresses.** A hash never reaches the server, so `#/study` cannot be
 redirected server-side. Add a client-side rewrite in the root layout that reads
-`location.hash` on first paint and `history.replaceState`s to the real path. The
-server-side `redirects()` in `next.config.mjs` already handle the singular→plural drift
-(`/university/:slug` → `/universities/:slug`).
+`location.hash` on first paint and `history.replaceState`s to the real path.
+
+Everything that *can* be redirected server-side is in `src/app/moved-routes.ts`, which
+`redirects()` in `next.config.ts` reads. Each entry is emitted twice: unprefixed for
+English and as `/:locale/...` for the other sixteen. The locale half is not optional — it
+was missing at first, and an Arabic visitor following `/ar/university/itu` got a 404 while
+the English form redirected correctly. Sixteen languages of broken inbound links,
+invisible from an English browser.
+
+The config is TypeScript rather than `.mjs` for exactly this: a `.mjs` config cannot
+import the table, and keeping the same list in two files is how one copy gets edited.
 
 **Check the slugs before deploying.** `slugify` does not transliterate: `Boğaziçi
 University` becomes `bo-azi-i-university`, not `bogazici-university`. Those are the
