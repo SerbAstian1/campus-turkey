@@ -1,6 +1,7 @@
 import { defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
+import { integrationDatabaseUrl, withConnectionTimeouts } from "./tests/integration/database-url";
 
 /**
  * Integration tests — the suite that needs a real Postgres.
@@ -38,12 +39,7 @@ import { existsSync } from "node:fs";
 const envPath = fileURLToPath(new URL("./.env", import.meta.url));
 if (existsSync(envPath)) process.loadEnvFile(envPath);
 
-const databaseUrl = process.env["DATABASE_URL"];
-if (!databaseUrl) {
-  throw new Error(
-    "Integration tests need a real DATABASE_URL. Put one in .env or pass it in the environment.",
-  );
-}
+const databaseUrl = integrationDatabaseUrl();
 
 export default defineConfig({
   esbuild: { jsx: "automatic" },
@@ -56,6 +52,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/integration/**/*.test.ts"],
+
+    /** Wakes a suspended Neon compute before any test is timed. See the file itself. */
+    globalSetup: ["tests/integration/warmup.ts"],
 
     /**
      * One file at a time, and no concurrency *between* files.
@@ -75,7 +74,9 @@ export default defineConfig({
 
     env: {
       DATABASE_URL: databaseUrl,
-      DIRECT_DATABASE_URL: process.env["DIRECT_DATABASE_URL"] ?? databaseUrl,
+      DIRECT_DATABASE_URL: withConnectionTimeouts(
+        process.env["DIRECT_DATABASE_URL"] ?? process.env["DATABASE_URL"]!,
+      ),
       SITE_ORIGIN: "https://test.campusturkey.invalid",
       SESSION_SECRET: "test-secret-not-used-for-anything-real",
       LOG_LEVEL: "fatal",
