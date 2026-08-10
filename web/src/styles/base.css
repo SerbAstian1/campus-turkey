@@ -177,3 +177,39 @@ form label,form label>*{min-width:0}
    takes focus, so it changes nothing visually for a mouse user. */
 .ct-skip{position:absolute;left:-9999px;top:0;z-index:400;padding:12px 20px;background:var(--white);color:var(--green-900);border-radius:0 0 var(--radius-md) 0}
 .ct-skip:focus{left:0}
+
+/* ---- The server-rendered error pages -----------------------------------------
+   `not-found.tsx`, `error.tsx` and `global-error.tsx` use these classes and nothing
+   else. They were referenced before they were written, so the 404 — the page the whole
+   routing migration existed to deliver — rendered as unstyled markup.
+
+   Deliberately not built from the design system's components. These pages have to
+   render when the DS bundle is the thing that failed to load, so they depend on the
+   token CSS only, which is a plain stylesheet with no JavaScript behind it. That is
+   also why the buttons here are a local class rather than `.ct-btn`, which the bundle
+   styles at runtime.
+
+   The treatment follows `screens/Errors.tsx`: deep brand gradient, white type, the
+   eyebrow-and-code pair above the title, recovery routes as buttons below. */
+.ct-error{min-height:100vh;display:flex;align-items:center;background:var(--gradient-brand-deep);padding:var(--section-y) 0}
+.ct-error-inner{max-width:var(--container-max);margin-inline:auto;padding-inline:var(--gutter);width:100%;display:flex;flex-direction:column;gap:var(--space-5);align-items:flex-start}
+.ct-error-eyebrow{margin:0;font-family:var(--font-ui);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+.ct-error-title{margin:0;max-width:18ch;color:var(--white);font-size:var(--fs-display-2);line-height:var(--lh-display);letter-spacing:var(--ls-display)}
+.ct-error-body{margin:0;max-width:560px;color:rgba(255,255,255,.88);font-size:var(--fs-lead);line-height:var(--lh-body)}
+.ct-error-actions{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-top:var(--space-2)}
+
+/* Mirrors the design system's `onDark` button: brand green with the dark label the
+   contrast override in tokens.css establishes, and a lighter — not darker — hover, for
+   the reason written out at length there. */
+.ct-error-btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 24px;border:0;border-radius:var(--radius-pill);background:var(--action-primary);color:var(--text-on-brand);font-family:var(--font-ui);font-size:var(--fs-body-sm,15px);font-weight:600;text-decoration:none;cursor:pointer;transition:background var(--dur-base,.2s) var(--ease-out,ease)}
+.ct-error-btn:hover{background:var(--action-primary-hover)}
+.ct-error-btn:active{background:var(--action-primary-active)}
+.ct-error-btn--outline{background:transparent;color:var(--white);border:1px solid rgba(255,255,255,.4)}
+.ct-error-btn--outline:hover{background:rgba(255,255,255,.12)}
+.ct-error-btn--outline:active{background:rgba(255,255,255,.2)}
+.ct-error-btn:focus-visible,.ct-error-btn--outline:focus-visible{outline:2px solid var(--white);outline-offset:3px}
+
+/* The technical detail toggle. Suppressed in production by the component, not by CSS —
+   hiding it here would still ship the message to the page source. */
+.ct-error-detail{margin:var(--space-4) 0 0;padding:var(--space-4);max-width:560px;border-radius:var(--radius-md);background:rgba(0,0,0,.25);color:rgba(255,255,255,.8);font-family:var(--font-mono,ui-monospace,monospace);font-size:var(--fs-micro);white-space:pre-wrap;overflow-wrap:anywhere}
+.ct-error-detail summary{cursor:pointer;color:rgba(255,255,255,.6)}

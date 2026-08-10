@@ -10,10 +10,17 @@ robots, structured data, and the edge maintenance response.
 `src/app/router.ts` navigates through the Next.js router rather than `location.hash`, and
 every route in the table has a `page.tsx`. `tsc --noEmit` passes and the suite is green.
 
-**Not done — step 6, the cutover.** `app/` is still in the tree: the old Vite application,
-now a complete duplicate of `web/src` and built by nothing. It is kept until the preview
-walk in step 6 has actually been done against a deployed URL, because that walk is the
-only thing that has not been verified by a test. Delete it in its own commit afterwards.
+**Done — step 6, the cutover.** `app/` is deleted. The root package is no longer a
+workspace, its scripts point at `web/`, and CI no longer builds a Vite application that
+does not exist. The revert is one `git revert` of that commit, which is why it is its
+own.
+
+**Still to do, and it needs a deployment:** the preview walk in step 6 below. Every
+route is covered by a test and by the build, but nobody has loaded this site in a
+browser. Two things in particular can only be checked there — that `/no-such-page`
+answers a real 404, and that `/ds/_ds_bundle.js` answers 200 rather than 404. The
+second is new to this document and is the more dangerous of the two; see
+[DEPLOYMENT.md](DEPLOYMENT.md), "Design system assets".
 
 The steps below are ordered so that each one is verifiable on its own, and are kept in
 the past tense of a plan rather than rewritten as a description — the reasoning is why

@@ -1,12 +1,16 @@
 /**
- * One-time setup. Copies the design tokens and the brand assets out of the prototype
- * into app/public, where Vite serves them.
+ * One-time setup. Copies the design tokens and the brand assets out of the design
+ * system into web/public, where Next serves them.
  *
- * These are not committed into app/ because the design system is the source of truth
+ * These are not committed into web/ because the design system is the source of truth
  * for the tokens, and duplicating them is how the two drift apart. Re-run this after
  * the design system changes.
  *
- *   node scripts/setup.mjs
+ *   npm run setup
+ *
+ * `lucide` is a devDependency of the *root* package for this script alone. It used to
+ * arrive by workspace hoisting from `app/`, which is deleted — and a copy step whose
+ * source silently disappears leaves every icon a 404 rather than an error.
  */
 import { cp, mkdir, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -30,14 +34,11 @@ if (!ds) {
 }
 
 /**
- * Both public directories are populated during the migration.
- *
- * `app/` is the Vite frontend being retired; `web/` is the Next.js application taking
- * over. Keeping both fed means the old one still runs while the new one is built, so a
- * problem in the migration is never a site that cannot be served at all. Drop `app` from
- * this list once `app/` is deleted.
+ * `web/` is the application. It used to be `["app", "web"]`, because the Vite frontend
+ * was still being served while the Next.js one was built; `app/` is deleted and the
+ * migration is complete, so there is one target again.
  */
-const targets = ["app", "web"].filter((dir) => existsSync(join(root, dir)));
+const targets = ["web"].filter((dir) => existsSync(join(root, dir)));
 
 const jobs = targets.flatMap((target) => [
   [join(ds, "tokens"), join(root, target, "public/ds/tokens")],

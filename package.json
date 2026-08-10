@@ -3,13 +3,15 @@
   "private": true,
   "version": "1.0.0",
   "engines": { "node": ">=20" },
-  "workspaces": ["app"],
   "scripts": {
-    "dev": "npm run dev --workspace app",
-    "build": "npm run build --workspace app",
-    "preview": "npm run preview --workspace app",
-    "typecheck": "npm run typecheck --workspace app",
-    "test": "npm test --workspace app",
+    "dev": "npm run dev --prefix web",
+    "build": "npm run build --prefix web",
+    "start": "npm run start --prefix web",
+    "typecheck": "npm run typecheck --prefix web",
+    "test": "npm test --prefix web",
     "setup": "node scripts/setup.mjs"
+  },
+  "devDependencies": {
+    "lucide": "^0.454.0"
   }
 }

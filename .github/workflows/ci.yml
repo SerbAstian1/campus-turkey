@@ -56,12 +56,38 @@ jobs:
         # path is held at 100%; a dropped branch fails the build rather than a review.
         run: npm run test:coverage
 
+      # The design system lives in `_ds/` and is copied into web/public by this step.
+      # It is not committed — see the root .gitignore — so a build without it produces a
+      # site that serves unstyled markup with no components. `prebuild` refuses to build
+      # in that state; this is what puts the files there.
+      - name: Install root tooling
+        run: npm install --no-audit --no-fund
+
+      - name: Sync the design system into web/public
+        run: npm run setup
+
+      # `npm run build`, not `npx next build`: the former runs the `prebuild` guard.
+      #
+      # Two things about this env block are easy to get wrong, and both were:
+      #
+      #   1. It has to satisfy *every* production config rule, not the memorable ones.
+      #      Storage and mail were missing, so the build failed at page-data collection
+      #      naming them — after a green compile, which is the confusing order.
+      #   2. `DATABASE_URL` must reach a **real** database. `generateStaticParams` for
+      #      `/universities/[slug]` reads the catalogue at build time (P04 moved it into
+      #      Postgres), so a placeholder URL fails the build rather than prerendering
+      #      nothing. A Neon branch is the intended source; the secret is set per repo.
       - name: Build
         working-directory: web
-        run: npx next build
+        run: npm run build
         env:
-          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
-          DIRECT_DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+          # A real, reachable branch database. Not a placeholder — see note 2 above.
+          # The secret must carry `?pool_timeout=60&connect_timeout=60`: waking a
+          # suspended Neon compute takes ~8s against Prisma's 10s default, and the first
+          # query of a cold build otherwise fails at page 0. See DEPLOYMENT.md,
+          # "The build needs a real database".
+          DATABASE_URL: ${{ secrets.CI_DATABASE_URL }}
+          DIRECT_DATABASE_URL: ${{ secrets.CI_DIRECT_DATABASE_URL }}
           SITE_ORIGIN: https://campusturkey.com
           SESSION_SECRET: ci-placeholder-secret-at-least-32-chars-long
           NODE_ENV: production
@@ -70,6 +96,18 @@ jobs:
           UPSTASH_REDIS_REST_TOKEN: placeholder
           CAPTCHA_PROVIDER: turnstile
           CAPTCHA_SECRET: placeholder
+          # Values are shape-only. The config guard checks that each provider's
+          # companions are present, which is the rule being satisfied here; nothing in a
+          # build ever calls S3 or the mail provider.
+          STORAGE_PROVIDER: s3
+          S3_BUCKET: placeholder
+          S3_REGION: eu-west-2
+          S3_ACCESS_KEY_ID: placeholder
+          S3_SECRET_ACCESS_KEY: placeholder
+          S3_ENDPOINT: https://s3.eu-west-2.amazonaws.com
+          MAIL_PROVIDER: resend
+          MAIL_API_KEY: placeholder
+          MAIL_FROM: no-reply@campusturkey.com
 
       # Handoff note 14 is explicit that `npm audit fix --force` breaks this build and
       # that the reported findings are dev-only and unreachable. So this reports and
@@ -78,37 +116,6 @@ jobs:
       - name: Audit production dependencies (report only)
         working-directory: web
         run: npm audit --omit=dev --audit-level=high || true
-
-  prototype:
-    name: app — existing Vite prototype
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install
-        run: npm install --no-audit --no-fund
-
-      # Kept green during the migration. The Vite app is what is deployed until the
-      # consolidation step in docs/MIGRATION.md completes; letting it rot while the
-      # Next.js app is built means discovering it is broken on cutover day.
-      - name: Setup assets
-        run: npm run setup
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test
-        run: npm test
-
-      - name: Build
-        run: npm run build
 
   secrets:
     name: secret scan

@@ -32,6 +32,68 @@ variable discovered by a 500 at 3am is a documentation failure, not an ops failu
 4. **Migrations.** `npx prisma migrate deploy` against `DIRECT_DATABASE_URL`.
 5. **HSTS.** `middleware.ts` sets `preload`. Only submit the domain to the preload list
    once you are certain the site will be https-only forever — it is difficult to undo.
+6. **Design system assets.** See the next section. This one is easy to miss and the
+   failure is silent, so it is not a bullet point.
+
+## Design system assets
+
+`web/public/ds/` and `web/public/assets/` are **generated, not committed**. The design
+system's one home is `_ds/` at the repository root, and `npm run setup` copies it in.
+
+This matters more than a build step usually does, because of how the assets are
+consumed. `src/styles/tokens.css` imports `/ds/tokens/*.css` at *runtime*, and
+`src/ds/load.ts` fetches `/ds/_ds_bundle.js` from the browser — that bundle is the
+component library. `next build` does not need any of it to succeed. So a deploy that
+skips the copy step builds green, deploys green, and serves **unstyled markup with no
+components and no icons**, with nothing anywhere reporting an error.
+
+`prebuild` now refuses to build in that state and names the fix. What remains is a
+choice about the deploy, and it has to be made deliberately:
+
+| Option | Vercel Root Directory | Build command | Trade |
+|---|---|---|---|
+| **A — build from the repo root** *(recommended)* | repository root | `npm run setup && npm run build --prefix web` | Keeps one home for the design system. Needs the root directory set to the repo, not `web/`. |
+| **B — vendor the copies** | `web/` | unchanged | `web/` becomes genuinely self-contained. Costs ~2.3MB committed and a second copy that can drift from `_ds/` — remove `web/public/ds/` and `web/public/assets/` from `.gitignore` and commit them. |
+
+A is recommended: the drift in B is the exact problem the gitignore entry was added to
+prevent, and it drifts silently. If B is chosen anyway, add a CI step that re-runs
+`npm run setup` and fails on a non-empty `git diff`, so the copies cannot go stale
+unnoticed.
+
+Whichever is chosen, verify it the same way — deploy, then `view-source:` the homepage
+and confirm `/ds/_ds_bundle.js` returns 200 rather than 404. A 404 there is the blank
+site, and it looks identical to a styling bug from the outside.
+
+## The build needs a real database
+
+`next build` prerenders **1,263 pages**, and the university catalogue moved into Postgres
+in P04 — so `generateStaticParams` and every university page read from the database at
+build time. `DATABASE_URL` must point at a reachable instance during the build. A
+placeholder URL does not degrade gracefully; the build fails.
+
+Two things about that connection were found by running it, and both are configuration
+rather than code:
+
+**Give the build URL longer timeouts.** Neon suspends an idle compute and waking this one
+measures ~8 seconds, against Prisma's `pool_timeout` default of 10. The first query of a
+cold build lands inside that margin and the build dies at page 0. Append to the build's
+`DATABASE_URL`:
+
+```
+?pool_timeout=60&connect_timeout=60
+```
+
+**Do not raise `connection_limit` instead.** That was tried: at the default the build
+failed at 315 of 1,263 pages with the pool exhausted, and at `connection_limit=25` it
+reached 631 before Neon's pooler refused connections outright with P1001. Tuning the pool
+moves the ceiling; it does not remove it. The ceiling was an N+1 — two to three queries
+per page against a forty-row table — and it is fixed in
+`app/[locale]/(site)/universities/[slug]/page.tsx`, which loads the catalogue once per
+build worker. That fix is why the default pool is now sufficient and the timeouts are the
+only setting that matters.
+
+The same reasoning applies to `npm run test:integration`, which sets these timeouts
+itself in `vitest.integration.config.ts`.
 
 ## Deploying
 

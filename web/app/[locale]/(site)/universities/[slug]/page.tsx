@@ -58,16 +58,59 @@ export const revalidate = 3600;
  * This is per-render memoisation, not a data cache: it lasts for one page render and
  * cannot serve stale rows to a later one.
  */
-const findUniversity = cache(async (slug: string) => {
+const DETAIL_FIELDS = {
+  slug: true, name: true, city: true, type: true, description: true,
+  website: true, founded: true, latitude: true, longitude: true,
+  languages: true, tuitionDisplay: true, programCount: true, scholarship: true,
+  studentsDisplay: true, ranking: true, faculties: true, deadlines: true,
+} as const;
+
+/**
+ * During `next build` only: the whole published catalogue, fetched once.
+ *
+ * Forty universities in seventeen languages is 680 pages, and each one queried for
+ * itself and again for its "similar" list — two to three round trips per page, roughly
+ * 1,700 in total, for a table of forty rows that cannot change during a build. It is an
+ * N+1, and the build is where it hurts most because Next renders pages concurrently.
+ *
+ * It was not a theoretical cost. The build failed at 315 of 1,263 pages with Prisma's
+ * pool exhausted; raising `connection_limit` to 25 got it to 631 and then Neon's pooler
+ * refused connections outright (P1001). Tuning the pool moves the ceiling, it does not
+ * remove it — the fix is to stop making the calls.
+ *
+ * **Build-phase only, deliberately.** `revalidate = 3600` means these pages regenerate
+ * in the serving process too, and a module-level cache there would pin the catalogue to
+ * whatever the worker first saw and quietly serve it past every revalidation. So at
+ * runtime the queries below behave exactly as before; only the build reads from here.
+ */
+const isBuild = process.env["NEXT_PHASE"] === "phase-production-build";
+
+let catalogue: Promise<Array<Record<string, unknown>>> | null = null;
+
+function publishedCatalogue() {
+  catalogue ??= db.university.findMany({
+    where: { status: "PUBLISHED" },
+    orderBy: { name: "asc" },
+    select: DETAIL_FIELDS,
+  }) as unknown as Promise<Array<Record<string, unknown>>>;
+  return catalogue;
+}
+
+type UniversityDetailRow = Awaited<ReturnType<typeof queryUniversity>>;
+
+async function queryUniversity(slug: string) {
   return db.university.findFirst({
     where: { slug, status: "PUBLISHED" },
-    select: {
-      slug: true, name: true, city: true, type: true, description: true,
-      website: true, founded: true, latitude: true, longitude: true,
-      languages: true, tuitionDisplay: true, programCount: true, scholarship: true,
-      studentsDisplay: true, ranking: true, faculties: true, deadlines: true,
-    },
+    select: DETAIL_FIELDS,
   });
+}
+
+const findUniversity = cache(async (slug: string): Promise<UniversityDetailRow> => {
+  if (isBuild) {
+    const all = (await publishedCatalogue()) as unknown as NonNullable<UniversityDetailRow>[];
+    return all.find((u) => u.slug === slug) ?? null;
+  }
+  return queryUniversity(slug);
 });
 
 const SIMILAR_FIELDS = {
@@ -87,6 +130,26 @@ const SIMILAR_FIELDS = {
  * name — which produces a list that looks arbitrary, because it is.
  */
 async function findSimilar(university: { slug: string; city: string; type: "PUBLIC" | "PRIVATE" }) {
+  // Same ordering rule as below, applied in memory. See `publishedCatalogue`.
+  if (isBuild) {
+    const all = (await publishedCatalogue()) as unknown as Array<{
+      slug: string; city: string; type: "PUBLIC" | "PRIVATE"; name: string;
+    }>;
+    const others = all.filter((u) => u.slug !== university.slug);
+    const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
+
+    const sameCity = others.filter((u) => u.city === university.city).sort(byName).slice(0, 3);
+    if (sameCity.length >= 3) return sameCity as never;
+
+    const chosen = new Set(sameCity.map((u) => u.slug));
+    const sameType = others
+      .filter((u) => u.type === university.type && !chosen.has(u.slug))
+      .sort(byName)
+      .slice(0, 3 - sameCity.length);
+
+    return [...sameCity, ...sameType] as never;
+  }
+
   const sameCity = await db.university.findMany({
     where: { status: "PUBLISHED", slug: { not: university.slug }, city: university.city },
     orderBy: { name: "asc" },

@@ -6,7 +6,9 @@
     "node": ">=20"
   },
   "scripts": {
+    "predev": "node scripts/check-design-system.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/check-design-system.mjs",
     "build": "prisma generate && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
@@ -24,6 +26,8 @@
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.34.3",
     "better-auth": "^1.1.0",
+    "gsap": "^3.12.5",
+    "leaflet": "^1.9.4",
     "next": "^15.1.0",
     "pino": "^9.5.0",
     "react": "^19.0.0",
@@ -36,6 +40,7 @@
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
+    "@types/leaflet": "^1.9.12",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
