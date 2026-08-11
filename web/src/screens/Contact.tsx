@@ -16,6 +16,7 @@ import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
 import { useLeadSubmit, type LeadType } from "@/features/leads/submit";
 import { CaptchaField } from "@/features/leads/captcha";
+import { useT } from "@/i18n/context";
 import { PageBody, PageHero } from "./shared";
 
 /**
@@ -42,7 +43,26 @@ const TOPIC_ROUTING: Record<string, LeadType> = {
   "Tours and delegations": "TOURS",
 };
 
+/**
+ * The dropdown, in the order it is offered — and the canonical English values.
+ *
+ * Partnership and Country representative route to `CONTACT` deliberately: both lead
+ * types require an organisation name this form does not collect, so posting them
+ * properly would be refused by the server. Somebody who wants to *apply* is sent to the
+ * registration form; somebody who wants to *ask* gets a reply.
+ */
+const TOPICS: readonly string[] = [
+  "Study in Türkiye",
+  "Medical treatment",
+  "Business facilitation",
+  "Employment",
+  "Tours and delegations",
+  "Partnership",
+  "Country representative",
+];
+
 export default function Contact() {
+  const t = useT();
   const [form, setForm] = useState({ name: "", email: "", phone: "", topic: "", when: "", message: "", consent: true });
   const kind = TOPIC_ROUTING[form.topic] ?? "CONTACT";
   const { state, submit } = useLeadSubmit(kind);
@@ -65,9 +85,9 @@ export default function Contact() {
 
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
-      <PageHero eyebrow="Contact" title="Book a consultation"
-        lead="A 30 minute call with someone who knows your case. Free, and no obligation afterwards."
-        actions={<Button variant="outlineOnDark" size="lg" icon="building-2" onClick={() => go("about")}>See our offices</Button>} />
+      <PageHero eyebrow={t("Contact")} title={t("Book a consultation")}
+        lead={t("A 30 minute call with someone who knows your case. Free, and no obligation afterwards.")}
+        actions={<Button variant="outlineOnDark" size="lg" icon="building-2" onClick={() => go("about")}>{t("See our offices")}</Button>} />
 
       <PageBody>
         <div className="ct-faq-inner" style={{ display: "grid", gridTemplateColumns: "1fr minmax(280px,340px)", gap: "var(--space-12)", alignItems: "start" }}>
@@ -75,12 +95,19 @@ export default function Contact() {
             {sent ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-5)", textAlign: "center", padding: "var(--space-6) 0" }}>
                 <BrandMark size={80} />
-                <Badge tone="brand" icon="check">Request received</Badge>
-                <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Thank you{form.name ? `, ${form.name.split(" ")[0]}` : ""}.</h3>
+                <Badge tone="brand" icon="check">{t("Request received")}</Badge>
+                {/* Interpolated rather than concatenated: a name's position in the
+                    sentence is not the same in every language, and `{name}` lets the
+                    translation put it where it belongs. */}
+                <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>
+                  {form.name
+                    ? t("Thank you, {name}.", { name: form.name.split(" ")[0] ?? "" })
+                    : t("Thank you.")}
+                </h3>
                 <BrandDivider style={{ maxWidth: 220 }} />
-                <p style={{ maxWidth: 440, color: "var(--text-body)" }}>We will confirm your call slot on WhatsApp within one working day.</p>
+                <p style={{ maxWidth: 440, color: "var(--text-body)" }}>{t("We will confirm your call slot on WhatsApp within one working day.")}</p>
                 <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap", justifyContent: "center", alignItems: "center" }}>
-                  <Button variant="secondary" onClick={() => go("home")}>Back to home</Button>
+                  <Button variant="secondary" onClick={() => go("home")}>{t("Back to home")}</Button>
                 </div>
               </div>
             ) : (
@@ -104,18 +131,35 @@ export default function Contact() {
                   );
                 }}
                 style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-5)" }}>
-                <Input id="c-name" label="Full name" icon="user" placeholder="Amina Yusuf" required value={form.name} onChange={set("name")} />
-                <Input id="c-email" label="Email address" type="email" icon="mail" placeholder="you@example.com" required value={form.email} onChange={set("email")} />
-                <Input id="c-phone" label="WhatsApp number" icon="phone" hint="Include your country code." value={form.phone} onChange={set("phone")} />
-                <Select id="c-topic" label="What is this about" required value={form.topic} onChange={set("topic")}
-                  options={["Study in Türkiye", "Medical treatment", "Business facilitation", "Employment", "Tours and delegations", "Partnership", "Country representative"]} />
-                <Select id="c-when" label="Best time to call" value={form.when} onChange={set("when")}
-                  options={["Morning, Türkiye time", "Afternoon, Türkiye time", "Evening, Türkiye time"]} style={{ gridColumn: "span 2" }} />
+                <Input id="c-name" label={t("Full name")} icon="user" placeholder={t("Amina Yusuf")} required value={form.name} onChange={set("name")} />
+                <Input id="c-email" label={t("Email address")} type="email" icon="mail" placeholder="you@example.com" required value={form.email} onChange={set("email")} />
+                <Input id="c-phone" label={t("WhatsApp number")} icon="phone" hint={t("Include your country code.")} value={form.phone} onChange={set("phone")} />
+                {/*
+                  The label is translated; the stored value stays English, and the
+                  round-trip below is what keeps those separate.
+
+                  `TOPIC_ROUTING` is keyed by the English topic. Storing the translated
+                  label instead would miss every key and fall through to `CONTACT` — so
+                  a medical enquiry would reach the general desk and inherit a 730-day
+                  retention window instead of 90. The design system's `Select` takes a
+                  flat `string[]` and uses each option as both label and value, so the
+                  separation has to happen here until it accepts `{value,label}` pairs.
+                */}
+                <Select id="c-topic" label={t("What is this about")} required
+                  value={t(form.topic)}
+                  onChange={(e) => {
+                    const chosen = e.target.value;
+                    const english = TOPICS.find((topic) => t(topic) === chosen) ?? "";
+                    setForm((f) => ({ ...f, topic: english }));
+                  }}
+                  options={TOPICS.map((topic) => t(topic))} />
+                <Select id="c-when" label={t("Best time to call")} value={form.when} onChange={set("when")}
+                  options={[t("Morning, Türkiye time"), t("Afternoon, Türkiye time"), t("Evening, Türkiye time")]} style={{ gridColumn: "span 2" }} />
                 <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-                  <label htmlFor="c-msg" style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-medium)", color: "var(--green-800)" }}>Anything we should know</label>
-                  <textarea id="c-msg" rows={4} value={form.message} onChange={set("message")} placeholder="Your grades, your treatment, your sector. Whatever is relevant."
+                  <label htmlFor="c-msg" style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-medium)", color: "var(--green-800)" }}>{t("Anything we should know")}</label>
+                  <textarea id="c-msg" rows={4} value={form.message} onChange={set("message")} placeholder={t("Your grades, your treatment, your sector. Whatever is relevant.")}
                     style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-subtle)", background: "var(--white)", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", color: "var(--green-900)", resize: "vertical" }} />
-                  <Checkbox id="c-consent" label="Contact me on WhatsApp" description="We reply within one working day. No marketing messages." checked={form.consent} onChange={set("consent")} />
+                  <Checkbox id="c-consent" label={t("Contact me on WhatsApp")} description={t("We reply within one working day. No marketing messages.")} checked={form.consent} onChange={set("consent")} />
 
                   {/* The failure path. Without this the form can only ever appear to
                       succeed, which is the specific thing worse than having no form. */}
@@ -129,7 +173,7 @@ export default function Contact() {
                   <CaptchaField />
 
                   <Button variant="primary" size="lg" type="submit" disabled={state.status === "sending"}>
-                    {state.status === "sending" ? "Sending…" : "Request my consultation"}
+                    {state.status === "sending" ? t("Sending…") : t("Request my consultation")}
                   </Button>
                 </div>
               </form>
@@ -138,7 +182,7 @@ export default function Contact() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", position: "sticky", top: 140 }}>
             <Card surface="tinted" padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-              <span className="ct-eyebrow">Head office</span>
+              <span className="ct-eyebrow">{t("Head office")}</span>
               {details.map(([ic, v]) => (
                 <div key={v} style={{ display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
                   <Icon name={ic} size={17} color="var(--green-600)" />
@@ -147,8 +191,8 @@ export default function Contact() {
               ))}
             </Card>
             <Card padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <span className="ct-eyebrow">Reply times</span>
-              <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>WhatsApp within 48 hours, every working day. Email within one working day.</p>
+              <span className="ct-eyebrow">{t("Reply times")}</span>
+              <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>{t("WhatsApp within 48 hours, every working day. Email within one working day.")}</p>
             </Card>
           </div>
         </div>

@@ -133,13 +133,33 @@ for (const [ns, entries] of Object.entries(byNamespace).sort()) {
 
 if (write) {
   mkdirSync(EN_DIR, { recursive: true });
+
+  /*
+   * Merged with what is already there, never overwritten.
+   *
+   * The English catalogue is not purely a function of the current call sites. It also
+   * holds keys whose call site has moved or gone but whose *translations still exist*
+   * in sixteen other locales — 89 such keys were recovered during the namespace
+   * migration and are the only finished translation work in the repository. A plain
+   * overwrite would delete them from the source of record, the gate would stop
+   * requiring them, and the translations would be orphaned and then dropped as unused.
+   *
+   * Removing a genuinely dead key is therefore deliberate: delete it from `en/` by hand,
+   * and the gate stops asking every locale for it on the next run.
+   */
   for (const [ns, entries] of Object.entries(byNamespace)) {
     const target = join(EN_DIR, `${ns}.json`);
-    // The English catalogue maps each string to itself: it is the source of record for
-    // *which* strings exist, and the value is what every other locale is compared to.
-    const sorted = Object.fromEntries(Object.keys(entries).sort().map((k) => [k, k]));
+    const existing = existsSync(target) ? JSON.parse(readFileSync(target, "utf8")) : {};
+
+    const merged = { ...existing };
+    for (const key of Object.keys(entries)) merged[key] = key;
+
+    const added = Object.keys(entries).filter((k) => !(k in existing)).length;
+    const sorted = Object.fromEntries(Object.keys(merged).sort().map((k) => [k, merged[k]]));
     writeFileSync(target, JSON.stringify(sorted, null, 2) + "\n", "utf8");
-    console.log(`   wrote ${relative(web, target).split(sep).join("/")}`);
+    console.log(
+      `   ${relative(web, target).split(sep).join("/")}  ${Object.keys(sorted).length} keys (+${added})`,
+    );
   }
 }
 
