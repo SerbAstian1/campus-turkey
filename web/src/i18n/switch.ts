@@ -16,6 +16,7 @@ import { useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale } from "./context";
 import { isLocale, localePath, splitLocale, type Locale } from "./locales";
+import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from "./detect";
 
 /**
  * `[currentCode, setLanguage]`, matching the shape `LanguageSwitcher` already expects
@@ -30,6 +31,22 @@ export function useLocaleSwitch(): [string, (code: string) => void] {
     (code: string) => {
       const next = code.toLowerCase();
       if (!isLocale(next) || next === locale) return;
+
+      /*
+       * Record the choice before navigating.
+       *
+       * This is what makes the selection survive a refresh, a return visit and an
+       * arrival on an unprefixed URL: `detectLocale` reads this cookie ahead of
+       * `Accept-Language`, so an explicit choice is never overridden by a guess about
+       * the browser. Written here rather than server-side because this is the only
+       * place a *deliberate* selection happens — the middleware records header-derived
+       * guesses separately, and conflating the two would let a guess masquerade as a
+       * decision.
+       *
+       * No secret, and readable by the middleware, so `httpOnly` would buy nothing and
+       * cost the client the ability to keep it in step.
+       */
+      document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax`;
 
       // Strip whichever locale the URL currently carries, then re-apply the new one —
       // rather than prefixing blindly, which would turn /ar/study into /fr/ar/study.

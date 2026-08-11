@@ -12,7 +12,8 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
-import { DEFAULT_LOCALE, isLocale } from "@/i18n/locales";
+import { DEFAULT_LOCALE, isLocale, localePath } from "@/i18n/locales";
+import { detectLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from "@/i18n/detect";
 import { tileImageSources } from "@/features/map/tiles";
 import {
   HCAPTCHA_CONNECT_HOSTS,
@@ -243,6 +244,51 @@ export function middleware(request: NextRequest): NextResponse {
     const redirected = NextResponse.redirect(signIn, 307);
     redirected.headers.set("x-robots-tag", "noindex, nofollow");
     return redirected;
+  }
+
+  /*
+   * First-visit language detection, on the unprefixed entry point only.
+   *
+   * A URL that already carries a locale is never touched — `/ar/study` is Arabic
+   * whatever the browser or the cookie says, because the URL is what gets shared,
+   * bookmarked and indexed. This only decides what `/study` means for someone who has
+   * not said.
+   *
+   * A **307** rather than a rewrite, and rather than a permanent redirect. The visitor
+   * needs to end up at an address that says which language they are reading, so the
+   * next share carries it; but the mapping depends on their cookie and their headers,
+   * so it must never be cached as though it were a property of `/study` itself.
+   *
+   * English is deliberately excluded: it lives unprefixed, so redirecting `/study` to
+   * `/en/study` would both break the addresses handoff note 6 protects and loop.
+   *
+   * SEO is unaffected. `hreflang` already advertises all seventeen versions from every
+   * page, and crawlers send no `Accept-Language` and hold no cookie — they take the
+   * `source === "default"` path and are served English exactly as before.
+   */
+  if (isPageRequest && !isLocale(first)) {
+    const { locale: preferred, source } = detectLocale({
+      cookie: request.cookies.get(LOCALE_COOKIE)?.value,
+      acceptLanguage: request.headers.get("accept-language"),
+    });
+
+    if (source !== "default" && preferred !== DEFAULT_LOCALE) {
+      const target = new URL(localePath(pathname, preferred), request.url);
+      target.search = request.nextUrl.search;
+
+      const redirected = NextResponse.redirect(target, 307);
+      // Remember a header-derived guess, so the redirect is paid once rather than on
+      // every visit — and so the choice survives if the browser's headers change.
+      if (source === "header") {
+        redirected.cookies.set(LOCALE_COOKIE, preferred, {
+          path: "/",
+          maxAge: LOCALE_COOKIE_MAX_AGE,
+          sameSite: "lax",
+          httpOnly: false, // the client switcher writes it too; it carries no secret
+        });
+      }
+      return redirected;
+    }
   }
 
   const rewritten =

@@ -1,0 +1,31 @@
+{
+  "//": "Content allowed to be identical in every locale. Read by src/i18n/protected.ts and by scripts/i18n-check.mjs — JSON so both a TypeScript module and a plain Node script consume the same source rather than one parsing the other. Being hard to translate is not a reason to be here; every entry carries why.",
+
+  "entries": [
+    { "value": "Campus Turkey", "reason": "brand" },
+    { "value": "Türkiye Bursları", "reason": "official-name" },
+    { "value": "WhatsApp", "reason": "brand" },
+    { "value": "MapTiler", "reason": "brand" },
+    { "value": "hCaptcha", "reason": "brand" },
+    { "value": "OpenStreetMap", "reason": "brand" },
+    { "value": "YÖK", "reason": "official-name" },
+    { "value": "YÖS", "reason": "official-name" },
+    { "value": "SAT", "reason": "official-name" },
+    { "value": "IELTS", "reason": "official-name" },
+    { "value": "TOEFL", "reason": "official-name" },
+    { "value": "TÖMER", "reason": "official-name" },
+    { "value": "PDF", "reason": "technical" },
+    { "value": "USD", "reason": "identifier" },
+    { "value": "EUR", "reason": "identifier" },
+    { "value": "TRY", "reason": "identifier" }
+  ],
+
+  "patterns": [
+    { "source": "^https?://\\S+$", "flags": "", "reason": "url-or-address", "note": "a bare URL" },
+    { "source": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", "flags": "", "reason": "url-or-address", "note": "a bare email address" },
+    { "source": "^/[\\w\\-/\\[\\]]*$", "flags": "", "reason": "identifier", "note": "a route path" },
+    { "source": "^[A-Z][A-Z0-9_]{2,}$", "flags": "", "reason": "identifier", "note": "a SCREAMING_CASE identifier" },
+    { "source": "^[\\d\\s+()-]{6,}$", "flags": "", "reason": "identifier", "note": "a phone number" },
+    { "source": "^[^\\p{L}]*$", "flags": "u", "reason": "technical", "note": "no letters at all — punctuation, numbers, symbols" }
+  ]
+}

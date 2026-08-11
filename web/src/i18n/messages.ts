@@ -40,15 +40,57 @@ export type Messages = Record<string, string>;
  * translations exist — that is the normal state during a rollout — and the fallback
  * renders correct English.
  */
+/**
+ * The namespaces a locale's catalogue is split across.
+ *
+ * Split by who translates it and when, rather than by module graph: a translator
+ * working through the forms pack should not have the marketing copy in front of them,
+ * and the staff console is not here at all because it stays English by decision.
+ *
+ * Listed rather than globbed. A glob would silently stop covering a namespace whose
+ * file was renamed, and a missing namespace is a page of untranslated UI rather than an
+ * error — exactly the failure the completeness gate exists to make visible.
+ */
+export const NAMESPACES = [
+  "common",
+  "site",
+  "forms",
+  "portal",
+  "errors",
+  "seo",
+  "content",
+] as const;
+
+export type Namespace = (typeof NAMESPACES)[number];
+
 export async function loadMessages(locale: Locale): Promise<Messages> {
   if (locale === DEFAULT_LOCALE) return {};
 
-  try {
-    const loaded = (await import(`./messages/${locale}.json`)) as { default: Messages };
-    return loaded.default;
-  } catch {
-    return {};
-  }
+  /*
+   * Namespaces are merged into one flat catalogue before they reach the translator,
+   * so `t()` stays a single-argument call. Keys are the English source strings and are
+   * therefore globally unique by construction — the namespace is an authoring and
+   * review boundary, not a lookup one, and making call sites name it would be asking
+   * every developer to remember a filing decision.
+   *
+   * A missing namespace file is not an error. Locales are registered before their
+   * translations exist, which is the normal state during a rollout, and the fallback
+   * renders correct English. The gate is what refuses to call that shippable.
+   */
+  const loaded = await Promise.all(
+    NAMESPACES.map(async (namespace) => {
+      try {
+        const mod = (await import(`./messages/${locale}/${namespace}.json`)) as {
+          default: Messages;
+        };
+        return mod.default;
+      } catch {
+        return {};
+      }
+    }),
+  );
+
+  return Object.assign({}, ...loaded) as Messages;
 }
 
 /**
