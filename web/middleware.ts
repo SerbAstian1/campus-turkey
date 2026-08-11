@@ -13,6 +13,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/locales";
+import { tileImageSources } from "@/features/map/tiles";
 
 /**
  * Content Security Policy.
@@ -46,7 +47,7 @@ function hasSessionCookie(request: NextRequest): boolean {
     .some((cookie) => cookie.name.endsWith("better-auth.session_token") && cookie.value !== "");
 }
 
-function contentSecurityPolicy(tileHost: string): string {
+function contentSecurityPolicy(tileHosts: string[]): string {
   return [
     "default-src 'self'",
     /*
@@ -77,7 +78,15 @@ function contentSecurityPolicy(tileHost: string): string {
      */
     "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://*.basemaps.cartocdn.com " + tileHost,
+    /*
+     * Tile hosts come from `features/map/tiles.ts`, which is also what the map
+     * component builds its URL from. They used to be written out separately here, and
+     * had drifted: this line allowed `*.basemaps.cartocdn.com` — CARTO, which nothing
+     * in this codebase has ever requested — while the map fetched from OpenStreetMap.
+     * Every tile was blocked, and the only symptom was a grey pane and a console
+     * warning nobody was looking at.
+     */
+    `img-src 'self' data: blob: ${tileHosts.join(" ")}`,
     "font-src 'self'",
     // The API is same-origin. Nothing else may be connected to.
     "connect-src 'self'",
@@ -130,7 +139,16 @@ export function middleware(request: NextRequest): NextResponse {
     }
   }
 
-  const tileHost = process.env["MAP_TILE_HOST"] ?? "";
+  /*
+   * MapTiler always; OSM as well outside production, matching the fallback in
+   * `tileLayerFor`. `MAP_TILE_HOST` stays as an additive override for a self-hosted or
+   * proxied tile set — it can widen the allowlist, never narrow it, so an empty or
+   * forgotten value can no longer blank the map.
+   */
+  const tileHosts = tileImageSources({
+    isProduction: process.env.NODE_ENV === "production",
+    extraHost: process.env["MAP_TILE_HOST"],
+  });
 
   /*
    * Locale rewriting.
@@ -220,7 +238,7 @@ export function middleware(request: NextRequest): NextResponse {
     ? NextResponse.rewrite(rewritten)
     : NextResponse.next();
 
-  response.headers.set("content-security-policy", contentSecurityPolicy(tileHost));
+  response.headers.set("content-security-policy", contentSecurityPolicy(tileHosts));
   // Two years, with preload. Set only once the domain is confirmed https-only —
   // preloading is difficult to reverse. See docs/DEPLOYMENT.md.
   response.headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");

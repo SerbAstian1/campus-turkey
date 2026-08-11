@@ -86,6 +86,48 @@ const schema = z.object({
   /** Error tracking. Absent in development; required in production by the check below. */
   SENTRY_DSN: url.optional(),
 
+  /**
+   * MapTiler, for the directory's tile layer — handoff note 13, which asks that
+   * production traffic leave OpenStreetMap's public server.
+   *
+   * **Public by design, and the `NEXT_PUBLIC_` prefix is not a mistake.** Leaflet
+   * requests tiles from the browser, so the key travels in a URL every visitor can
+   * read. The control is the domain restriction set in MapTiler's dashboard, not
+   * secrecy — an unrestricted key is someone else's tile budget regardless of where it
+   * is stored.
+   *
+   * Validated here so a production deploy without it refuses to boot rather than
+   * quietly serving OSM tiles. One caveat that check cannot cover: Next inlines
+   * `NEXT_PUBLIC_*` at **build** time, so the variable must be present in the build
+   * environment as well as the runtime one. Present at runtime but absent at build
+   * gives a server that boots happily and a browser bundle with `undefined` in it.
+   */
+  NEXT_PUBLIC_MAPTILER_KEY: z.string().optional(),
+
+  /**
+   * An additional tile host for the CSP `img-src` allowlist.
+   *
+   * Additive only — `tileImageSources` always includes MapTiler, so an empty or
+   * forgotten value can no longer blank the map, which is how the previous
+   * CARTO-versus-OpenStreetMap mismatch stayed invisible. Set it only for a
+   * self-hosted or proxied tile set.
+   */
+  MAP_TILE_HOST: url.optional(),
+
+  /**
+   * Bearer token for `/api/cron/purge-leads`.
+   *
+   * Read directly from `process.env` by that route. Declared here so the variable is
+   * at least *known* to the schema rather than invisible to it.
+   *
+   * Deliberately **not** enforced in production, because that would be a behaviour
+   * change unrelated to the map work this was added alongside. It arguably should be:
+   * without it the purge returns 503 and never runs, so personal data is retained past
+   * the window the consent notice promised — a silent compliance failure rather than an
+   * outage, which is the kind nothing reports. Worth its own change.
+   */
+  CRON_SECRET: z.string().optional(),
+
   /** Turnstile or hCaptcha, guarding the public lead forms. */
   CAPTCHA_PROVIDER: z.enum(["turnstile", "hcaptcha", "disabled"]).default("disabled"),
   CAPTCHA_SECRET: z.string().optional(),
@@ -179,6 +221,14 @@ function crossCheck(env: Env): string[] {
     }
     if (!env.SITE_ORIGIN.startsWith("https://")) {
       problems.push("SITE_ORIGIN must be https in production — cookies are Secure-only");
+    }
+    if (!env.NEXT_PUBLIC_MAPTILER_KEY) {
+      // Without it the map falls back to OpenStreetMap's public tile server, which
+      // handoff note 13 is explicit must not carry production traffic. The failure is
+      // invisible from the outside — the map looks right — so it has to be caught here.
+      problems.push(
+        "NEXT_PUBLIC_MAPTILER_KEY is required in production — the map would fall back to OpenStreetMap's public tiles, which its usage policy forbids. It must be set at build time too; Next inlines it.",
+      );
     }
   }
 

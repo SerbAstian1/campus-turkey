@@ -34,6 +34,12 @@ variable discovered by a 500 at 3am is a documentation failure, not an ops failu
    once you are certain the site will be https-only forever — it is difficult to undo.
 6. **Design system assets.** See the next section. This one is easy to miss and the
    failure is silent, so it is not a bullet point.
+7. **MapTiler key, in the build environment as well as the runtime one.**
+   `NEXT_PUBLIC_MAPTILER_KEY` is inlined by Next at build time, so setting it only as a
+   runtime variable produces a server that boots cleanly and a browser bundle carrying
+   `undefined`. On Vercel, set it for the build. Then restrict the key to the production
+   origin in MapTiler Cloud → Keys → Allowed origins: it is public by necessity, and the
+   restriction is the only thing standing between it and someone else's tile budget.
 
 ## Design system assets
 

@@ -12,10 +12,15 @@ import {
 } from "@/features/universities/data";
 import { go } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
+import { tileLayerFor } from "@/features/map/tiles";
 
 /**
- * OpenStreetMap view of Türkiye. Tiles wrap horizontally, so panning east or west never
+ * MapTiler view of Türkiye. Tiles wrap horizontally, so panning east or west never
  * runs out of map. Pins are university buildings, not city labels.
+ *
+ * The tile source is chosen in `features/map/tiles.ts`, which the CSP in
+ * `middleware.ts` also reads — they have to name the same host or the tiles are
+ * blocked, and they were out of step before that module existed.
  *
  * Leaflet is imperative and owns its own DOM, so this stays an effect-driven component
  * rather than being expressed in JSX — the same shape the prototype uses.
@@ -40,8 +45,24 @@ function TurkeyMap({
       worldCopyJump: true, scrollWheelZoom: false, zoomControl: true,
       minZoom: 4, maxZoom: 14, attributionControl: true,
     });
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19, noWrap: false, attribution: "&copy; OpenStreetMap contributors",
+    /*
+     * The key is read here rather than passed in because Next inlines `NEXT_PUBLIC_*`
+     * at build time — the literal `process.env.NEXT_PUBLIC_MAPTILER_KEY` is what gets
+     * substituted, so it cannot be destructured or accessed dynamically and still work.
+     */
+    const tiles = tileLayerFor(process.env.NEXT_PUBLIC_MAPTILER_KEY);
+
+    if (tiles.provider === "osm" && process.env.NODE_ENV === "production") {
+      // Should be unreachable: `config.ts` refuses to boot in production without the
+      // key. Said out loud anyway, because the failure it guards against is a map that
+      // looks fine to whoever deployed it and violates OSM's usage policy silently.
+      console.warn(
+        "[map] NEXT_PUBLIC_MAPTILER_KEY was not inlined at build time; falling back to OSM.",
+      );
+    }
+
+    L.tileLayer(tiles.url, {
+      maxZoom: 19, noWrap: false, attribution: tiles.attribution,
     }).addTo(m);
     m.fitBounds([[35.8, 25.6], [42.4, 44.8]], { padding: [24, 24] });
     m.on("click", () => onSelect(null));

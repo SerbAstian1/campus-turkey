@@ -108,6 +108,12 @@ jobs:
           MAIL_PROVIDER: resend
           MAIL_API_KEY: placeholder
           MAIL_FROM: no-reply@campusturkey.com
+          # Inlined into the browser bundle at build time, so it has to be present for
+          # the build and not only at runtime. A placeholder is correct here: CI never
+          # loads a tile, and the boot check only asserts the variable exists. The real
+          # key belongs in the deployment's build environment.
+          NEXT_PUBLIC_MAPTILER_KEY: placeholder
+          CRON_SECRET: ci-placeholder-cron-secret
 
       # Handoff note 14 is explicit that `npm audit fix --force` breaks this build and
       # that the reported findings are dev-only and unreachable. So this reports and
