@@ -14,6 +14,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/locales";
 import { tileImageSources } from "@/features/map/tiles";
+import {
+  HCAPTCHA_CONNECT_HOSTS,
+  HCAPTCHA_FRAME_HOSTS,
+  HCAPTCHA_SCRIPT_HOSTS,
+  HCAPTCHA_STYLE_HOSTS,
+} from "@/features/leads/captcha-hosts";
 
 /**
  * Content Security Policy.
@@ -76,8 +82,17 @@ function contentSecurityPolicy(tileHosts: string[]): string {
      * bootstrap scripts, which is the supported route for a statically generated app.
      * Recorded as a known gap rather than left as a comment nobody reads.
      */
-    "script-src 'self' 'unsafe-inline'",
-    "style-src 'self' 'unsafe-inline'",
+    /*
+     * hCaptcha needs four directives opened, and all four are load-bearing: the script,
+     * the challenge iframe, the XHR it makes while solving, and its stylesheet. Miss any
+     * one and the widget fails to render, `captchaToken()` returns "", and every lead
+     * submission is refused by the server with a message about verification that the
+     * visitor cannot act on. The hosts live in `features/leads/captcha-hosts.ts`
+     * alongside the widget, so the two cannot drift.
+     */
+    `script-src 'self' 'unsafe-inline' ${HCAPTCHA_SCRIPT_HOSTS.join(" ")}`,
+    `style-src 'self' 'unsafe-inline' ${HCAPTCHA_STYLE_HOSTS.join(" ")}`,
+    `frame-src 'self' ${HCAPTCHA_FRAME_HOSTS.join(" ")}`,
     /*
      * Tile hosts come from `features/map/tiles.ts`, which is also what the map
      * component builds its URL from. They used to be written out separately here, and
@@ -88,8 +103,9 @@ function contentSecurityPolicy(tileHosts: string[]): string {
      */
     `img-src 'self' data: blob: ${tileHosts.join(" ")}`,
     "font-src 'self'",
-    // The API is same-origin. Nothing else may be connected to.
-    "connect-src 'self'",
+    // The API is same-origin. The only exception is hCaptcha, which XHRs to its own
+    // service while the challenge is being solved.
+    `connect-src 'self' ${HCAPTCHA_CONNECT_HOSTS.join(" ")}`,
     "frame-ancestors 'none'",
     "form-action 'self'",
     "base-uri 'self'",

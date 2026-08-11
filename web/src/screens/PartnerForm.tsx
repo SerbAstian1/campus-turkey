@@ -13,6 +13,7 @@ import { Badge, BrandDivider, Button, Card, Checkbox, Icon, Input, Select } from
 import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
 import { useLeadSubmit } from "@/features/leads/submit";
+import { CaptchaField } from "@/features/leads/captcha";
 
 export function PartnerForm({
   kinds, submitLabel = "Submit registration", intro, leadKind = "PARTNER",
@@ -93,6 +94,10 @@ export function PartnerForm({
                 <Icon name="alert-circle" size={16} />{state.message}
               </span>
             ) : null}
+
+            {/* Covers both the Partner and Representative tracks — this form serves
+                both, keyed by `leadKind`. */}
+            <CaptchaField />
 
             <Button variant="primary" size="lg" type="submit" disabled={state.status === "sending"}>
               {state.status === "sending" ? "Sending…" : submitLabel}

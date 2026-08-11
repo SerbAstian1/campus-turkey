@@ -133,6 +133,19 @@ const schema = z.object({
   CAPTCHA_SECRET: z.string().optional(),
 
   /**
+   * The hCaptcha **site** key — the public half, rendered into the widget.
+   *
+   * Distinct from `CAPTCHA_SECRET`, which is the private half and never leaves the
+   * server. Both are needed and neither substitutes for the other: without the secret
+   * the server cannot verify, and without the site key the browser produces no token to
+   * verify, which is the state this application shipped in until now.
+   *
+   * `NEXT_PUBLIC_` is correct and is inlined at **build** time, so it must be present in
+   * the build environment as well as at runtime.
+   */
+  NEXT_PUBLIC_HCAPTCHA_SITE_KEY: z.string().optional(),
+
+  /**
    * Set to "on" to serve the maintenance response from the edge. Read by
    * `middleware.ts`, which returns 503 with `Retry-After` before the app bundle is
    * involved — the maintenance screen has to render when the app itself is down.
@@ -172,6 +185,14 @@ function crossCheck(env: Env): string[] {
   }
   if (env.CAPTCHA_PROVIDER !== "disabled" && !env.CAPTCHA_SECRET) {
     problems.push("CAPTCHA_PROVIDER is set but CAPTCHA_SECRET is missing");
+  }
+  if (env.CAPTCHA_PROVIDER === "hcaptcha" && !env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY) {
+    // The secret alone verifies nothing, because no widget renders and the browser sends
+    // no token. Every lead submission would be refused with a 403 the visitor cannot act
+    // on, while the forms look entirely normal — so this is a refusal to boot.
+    problems.push(
+      "CAPTCHA_PROVIDER is hcaptcha but NEXT_PUBLIC_HCAPTCHA_SITE_KEY is missing — no widget would render and every lead submission would be refused",
+    );
   }
 
   if (env.STORAGE_PROVIDER === "s3") {

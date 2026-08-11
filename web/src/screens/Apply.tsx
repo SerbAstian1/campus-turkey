@@ -12,6 +12,7 @@ import { Badge, BrandDivider, Button, Card, Checkbox, Icon, Input, Select, StepI
 import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
 import { useLeadSubmit } from "@/features/leads/submit";
+import { CaptchaField } from "@/features/leads/captcha";
 
 const STEPS = ["You", "Study plan", "Documents", "Done"];
 
@@ -155,6 +156,15 @@ export default function Apply() {
               <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginTop: "var(--space-6)", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
                 <Icon name="alert-circle" size={16} />{state.message}
               </span>
+            ) : null}
+
+            {/* Final step only. Solved on step 0 the token would very likely have
+                expired by the time the visitor finished, and hCaptcha would refuse a
+                submission the form had given every appearance of accepting. */}
+            {step === 2 ? (
+              <div style={{ marginTop: "var(--space-6)" }}>
+                <CaptchaField />
+              </div>
             ) : null}
 
             {step < 3 ? (

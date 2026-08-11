@@ -94,8 +94,12 @@ jobs:
           SENTRY_DSN: https://placeholder@o0.ingest.sentry.io/0
           UPSTASH_REDIS_REST_URL: https://placeholder.upstash.io
           UPSTASH_REDIS_REST_TOKEN: placeholder
-          CAPTCHA_PROVIDER: turnstile
+          # hcaptcha is the implemented provider, so CI builds what production runs.
+          # The site key is NEXT_PUBLIC_ and therefore inlined at build time; a
+          # placeholder is correct because CI never solves a challenge.
+          CAPTCHA_PROVIDER: hcaptcha
           CAPTCHA_SECRET: placeholder
+          NEXT_PUBLIC_HCAPTCHA_SITE_KEY: placeholder
           # Values are shape-only. The config guard checks that each provider's
           # companions are present, which is the rule being satisfied here; nothing in a
           # build ever calls S3 or the mail provider.

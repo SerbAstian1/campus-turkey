@@ -15,6 +15,7 @@ import { contact } from "@/content";
 import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
 import { useLeadSubmit, type LeadType } from "@/features/leads/submit";
+import { CaptchaField } from "@/features/leads/captcha";
 import { PageBody, PageHero } from "./shared";
 
 /**
@@ -123,6 +124,9 @@ export default function Contact() {
                       <Icon name="alert-circle" size={16} />{state.message}
                     </span>
                   ) : null}
+
+                  {/* Renders nothing without a site key, so development is unchanged. */}
+                  <CaptchaField />
 
                   <Button variant="primary" size="lg" type="submit" disabled={state.status === "sending"}>
                     {state.status === "sending" ? "Sending…" : "Request my consultation"}

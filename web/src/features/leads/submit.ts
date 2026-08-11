@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useState } from "react";
+import { captchaToken, resetCaptcha } from "./captcha";
 
 export type LeadType =
   | "STUDY"
@@ -38,21 +39,14 @@ interface ErrorBody {
   error?: { message?: string; fields?: Record<string, string[]> };
 }
 
-/**
- * The captcha token.
+/*
+ * The captcha token now comes from `./captcha`, which renders a real hCaptcha widget.
  *
- * Turnstile renders a widget and hands back a token; until that widget is added this
- * returns a placeholder. That is safe in exactly one direction: production refuses to
- * boot with `CAPTCHA_PROVIDER=disabled` (see server/lib/config.ts), and a configured
- * provider will reject this placeholder outright. So an unfinished captcha fails loudly
- * in staging rather than quietly shipping an open form.
- *
- * Replacing this is a contained job: render the Turnstile widget, and return its token.
+ * This used to read a *Turnstile* global that nothing on the page ever created, and fell
+ * back to a placeholder string. The comment here said replacing it was "a contained job"
+ * — it was, and this is it. The provider is hCaptcha, matching `CAPTCHA_PROVIDER`, and
+ * every form posting a lead must render `<CaptchaField />` or the server refuses it.
  */
-async function captchaToken(): Promise<string> {
-  const widget = (globalThis as { turnstile?: { getResponse: () => string } }).turnstile;
-  return widget?.getResponse() ?? "development-placeholder-token";
-}
 
 /**
  * Drop empty optional fields before sending.
@@ -143,6 +137,17 @@ export function useLeadSubmit(kind: LeadType, serviceInterest?: string) {
             ...(source ? { attribution: source } : {}),
           }),
         });
+
+        /*
+         * The challenge is spent either way, so it is cleared either way.
+         *
+         * hCaptcha tokens are single-use. Resetting only on success would leave a
+         * visitor who tripped a validation error resubmitting a consumed token, refused
+         * for a reason the form cannot explain — the "it worked once and now it won't"
+         * failure that makes a captcha look broken when it is behaving exactly as
+         * specified.
+         */
+        resetCaptcha();
 
         if (response.ok) {
           setState({ status: "sent" });
