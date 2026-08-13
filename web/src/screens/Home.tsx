@@ -51,18 +51,74 @@ function Counter({ value }: { value: string }) {
 
 function Hero({ onApply, onExplore }: { onApply: () => void; onExplore: () => void }) {
   const t = useT();
+
+  /*
+   * A looping background video is motion, and `base.css` already honours
+   * `prefers-reduced-motion` for every animation on the site — an autoplaying reel that
+   * ignores it would be the largest moving thing on the page and the only one that does.
+   *
+   * Resolved in an effect rather than during render because `matchMedia` does not exist
+   * on the server: reading it during render would make the markup differ between the
+   * server and the first client pass and produce a hydration mismatch. Starting at
+   * `false` means the video mounts and is then swapped for its poster, which is the
+   * right way round — the still is what a reduced-motion visitor should be left with.
+   */
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduceMotion(query.matches);
+
+    // Followed rather than sampled once: the setting can be changed while the page is
+    // open, and on macOS and Windows it commonly is.
+    const onChange = (event: MediaQueryListEvent) => setReduceMotion(event.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
   return (
     <section style={{ position: "relative", minHeight: "min(94vh,880px)", display: "flex", flexDirection: "column", overflow: "hidden", paddingTop: 160, marginBottom: "calc(var(--overlap) * -1)", background: "var(--gradient-brand-deep)" }}>
-      {/* Decorative. See the note in shared.tsx — deprioritised so it cannot delay the
-          hero heading, which is the LCP element on this page. */}
-      <img src={`${ASSETS}/map-of-turkey.jpg`} alt="" aria-hidden="true"
-        decoding="async" fetchPriority="low"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", mixBlendMode: "soft-light", opacity: .5, filter: "invert(1)" }} />
+      {/*
+        The hero reel, replacing the placeholder chip that stood here.
+
+        `poster` is the map still that used to be the background: it paints immediately
+        while 6.4 MB of video is still arriving, so the hero is never a flat green box
+        on a slow connection. The video sits beneath the same two overlays as before, so
+        the white heading keeps its contrast over whatever frame happens to be showing —
+        that is what the gradients are for, and it is why they are not optional.
+
+        `muted` is what makes `autoPlay` legal: every browser blocks an unmuted autoplay,
+        and without it the video simply never starts. `playsInline` is the iOS half of
+        the same rule — without it Safari takes the video fullscreen on play.
+
+        Decorative, so `aria-hidden`, no controls, and not in the tab order. Anyone using
+        a screen reader gets the heading, which carries the actual message.
+      */}
+      {reduceMotion ? (
+        // The poster frame, held still. Same geometry and same opacity, so the hero is
+        // composed identically — it simply does not move.
+        <img
+          src={`${ASSETS}/map-of-turkey.jpg`}
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: .55 }}
+        />
+      ) : (
+        <video
+          src={`${ASSETS}/hero-video.mp4`}
+          poster={`${ASSETS}/map-of-turkey.jpg`}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+          tabIndex={-1}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: .55 }}
+        />
+      )}
       <span style={{ position: "absolute", inset: 0, background: "var(--surface-overlay-brand)" }} />
       <span style={{ position: "absolute", inset: 0, background: "var(--gradient-protect-bottom)" }} />
-      <span data-slot="home-hero-video" style={{ position: "absolute", top: 108, left: "var(--gutter)", zIndex: 3, whiteSpace: "nowrap", padding: "4px 10px", borderRadius: "var(--radius-pill)", border: "1px dashed rgba(255,255,255,.4)", color: "rgba(255,255,255,.72)", fontSize: "var(--fs-micro)", letterSpacing: ".08em", textTransform: "uppercase" }}>
-        Background video placeholder
-      </span>
       <div className="ct-container" style={{ position: "relative", zIndex: 2, marginTop: "auto", paddingBottom: "clamp(56px,8vw,110px)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
         <ScrollReveal style={{ display: "flex" }}><Badge tone="onDark" dot>{t("Applications open for the 2026 intake")}</Badge></ScrollReveal>
         <ScrollReveal delay={80}>
