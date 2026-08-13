@@ -39,6 +39,14 @@ export interface UniversityDetailData {
   ranking: string | null;
   faculties: string[];
   deadlines: [string, string][];
+  /**
+   * Campus photography, per university, from `University.coverImage`.
+   *
+   * Nullable and expected to stay nullable for some time: these are licensed images
+   * that arrive one institution at a time, and a university without one still has a
+   * page. The reserved frame renders instead — see `ImagePlaceholder`.
+   */
+  coverImage: string | null;
 }
 
 export interface SimilarUniversity {
@@ -89,7 +97,21 @@ export default function UniversityDetail({
       <section style={{ position: "relative", zIndex: 10, background: "var(--surface-subtle)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", padding: "var(--section-y) 0" }}>
         <div className="ct-container ct-detail-grid" style={{ display: "grid", gridTemplateColumns: "1fr minmax(280px,340px)", gap: "var(--space-12)", alignItems: "start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
-            <ScrollReveal><ImagePlaceholder slot={`campus-${u.slug}`} label={`${u.name} campus photography, 16:9`} ratio="16 / 9" /></ScrollReveal>
+            {/*
+              The photograph when this university has one, the reserved frame when it
+              does not. `alt` names the institution rather than saying "campus photo",
+              because that is what a screen reader user needs to know here — the page
+              is already titled, and "campus photography" describes the medium, not the
+              subject.
+            */}
+            <ScrollReveal>
+              <ImagePlaceholder
+                slot={`campus-${u.slug}`}
+                label={`${u.name} campus photography, 16:9`}
+                ratio="16 / 9"
+                {...(u.coverImage ? { src: u.coverImage, alt: `${u.name} campus` } : {})}
+              />
+            </ScrollReveal>
 
             <ScrollReveal style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
               <h2 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>About the university</h2>

@@ -63,6 +63,9 @@ const DETAIL_FIELDS = {
   website: true, founded: true, latitude: true, longitude: true,
   languages: true, tuitionDisplay: true, programCount: true, scholarship: true,
   studentsDisplay: true, ranking: true, faculties: true, deadlines: true,
+  // Licensed campus photography, one institution at a time. Null until a university's
+  // image is cleared and uploaded; the page renders its reserved frame until then.
+  coverImage: true,
 } as const;
 
 /**
@@ -238,6 +241,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
           // Stored as JSON because the pairs must stay paired. Cast at the boundary
           // rather than trusted throughout: this is the one place that knows the shape.
           deadlines: (university.deadlines as [string, string][] | null) ?? [],
+          coverImage: university.coverImage,
         }}
         similar={similar.map((s) => ({
           slug: s.slug,
