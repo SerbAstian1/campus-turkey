@@ -93,20 +93,21 @@ function Hero({ onApply, onExplore }: { onApply: () => void; onExplore: () => vo
         Decorative, so `aria-hidden`, no controls, and not in the tab order. Anyone using
         a screen reader gets the heading, which carries the actual message.
       */}
-      {reduceMotion ? (
-        // The poster frame, held still. Same geometry and same opacity, so the hero is
-        // composed identically — it simply does not move.
-        <img
-          src={`${ASSETS}/map-of-turkey.jpg`}
-          alt=""
-          aria-hidden="true"
-          decoding="async"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: .55 }}
-        />
-      ) : (
+      {/*
+        No `poster`, and no still behind it.
+
+        The map raster that used to fill this space is gone — the video replaces it, and
+        layering the old background under a video that covers it is just a second image
+        to download. While the video loads, and under reduced motion, what shows is
+        `--gradient-brand-deep` from the section itself: the brand ground the hero was
+        designed on, not an empty box.
+
+        If a poster is wanted later it should be a frame from this reel rather than
+        different artwork — supply `assets/hero-poster.jpg` and it is a one-line change.
+      */}
+      {!reduceMotion && (
         <video
           src={`${ASSETS}/hero-video.mp4`}
-          poster={`${ASSETS}/map-of-turkey.jpg`}
           autoPlay
           loop
           muted

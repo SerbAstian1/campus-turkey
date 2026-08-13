@@ -100,12 +100,27 @@ export function WhatsAppAction({
 }
 
 /**
- * Frame reserved for photography the brand supplies later. `slot` is the stable name a
- * developer swaps for a real <img>; it is rendered as data-slot so each frame is
- * findable in the DOM and in the IDE.
+ * A photography frame: the real image when one exists, the reserved placeholder when it
+ * does not.
+ *
+ * `slot` is the stable name for the frame and stays the identity of the thing whether or
+ * not a photograph has arrived — it is emitted as `data-slot` so every frame is findable
+ * in the DOM, in the IDE and in the image manifest.
+ *
+ * Both states live in one component on purpose. Photography arrives a few pictures at a
+ * time, from different universities and different shoots, and the alternative is
+ * editing thirty call sites twice: once to swap the placeholder for an `<img>`, and
+ * again for whichever ones the licensing did not come through for. Passing `src` is the
+ * whole change; layout, ratio and rounding are already agreed and do not move.
+ *
+ * `alt` is required alongside `src` and deliberately not defaulted. A campus photograph
+ * is content, not decoration, and a default would quietly produce thirty images
+ * described as "Photography" to a screen reader. Pass `alt=""` to mark one genuinely
+ * decorative — that is a decision worth making per image rather than inheriting.
  */
 export function ImagePlaceholder({
   slot, label = "Photography", ratio = "4 / 3", height, icon = "image", round, style,
+  src, alt, priority,
 }: {
   slot: string;
   label?: string;
@@ -114,7 +129,43 @@ export function ImagePlaceholder({
   icon?: string;
   round?: boolean;
   style?: CSSProperties;
+  /** The photograph. Absent until one is licensed and delivered. */
+  src?: string;
+  /** Required with `src`. `""` marks the image decorative. */
+  alt?: string;
+  /** Above the fold: load eagerly and at high priority. Everything else stays lazy. */
+  priority?: boolean;
 }) {
+  if (src) {
+    return (
+      <img
+        data-slot={slot}
+        src={src}
+        alt={alt ?? ""}
+        /*
+         * Lazy and low-priority unless the caller says otherwise. Most of these frames
+         * are far down long marketing pages, and the hero heading is the LCP element on
+         * every one of them — a campus photograph competing for that is a slower page
+         * for no benefit.
+         */
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
+        fetchPriority={priority ? "high" : "low"}
+        style={{
+          // Matches the placeholder's box exactly, so a frame does not resize on the day
+          // its photograph arrives and no layout shifts under it.
+          aspectRatio: height ? undefined : ratio,
+          height,
+          width: "100%",
+          objectFit: "cover",
+          borderRadius: round ? "var(--radius-circle)" : "var(--radius-lg)",
+          display: "block",
+          ...style,
+        }}
+      />
+    );
+  }
+
   return (
     <div data-slot={slot} style={{
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-3)",
