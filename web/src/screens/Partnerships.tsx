@@ -21,6 +21,7 @@
 import { Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, ASSETS } from "@/ds";
 import { go } from "@/app/router";
 import { PageBody, PageHero } from "./shared";
+import { useT } from "@/i18n/context";
 
 interface Track {
   route: string;
@@ -87,12 +88,13 @@ const TRACKS: Track[] = [
 ];
 
 export default function Partnerships() {
+  const t = useT();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
-        eyebrow="Partnerships"
-        title="Three ways to work with us"
-        lead="Agencies refer students. Representatives hold territories. Universities receive them. The terms differ, so each has its own page rather than one that is vague about all three."
+        eyebrow={t("Partnerships")}
+        title={t("Three ways to work with us")}
+        lead={t("Agencies refer students. Representatives hold territories. Universities receive them. The terms differ, so each has its own page rather than one that is vague about all three.")}
         actions={
           <Button size="lg" icon="message-circle" onClick={() => go("contact")}>
             Talk to the partnerships team
@@ -103,9 +105,9 @@ export default function Partnerships() {
       <PageBody>
         <ScrollReveal>
           <SectionHeading
-            eyebrow="Which one are you"
-            title="Start from the relationship, not the form"
-            lead="Each card says what the arrangement pays and who it is not for. The second line saves more time than the first."
+            eyebrow={t("Which one are you")}
+            title={t("Start from the relationship, not the form")}
+            lead={t("Each card says what the arrangement pays and who it is not for. The second line saves more time than the first.")}
           />
         </ScrollReveal>
 
@@ -172,8 +174,8 @@ export default function Partnerships() {
 
         <ScrollReveal>
           <CTABanner
-            eyebrow="Already working with us"
-            title="Sign in to the partner portal"
+            eyebrow={t("Already working with us")}
+            title={t("Sign in to the partner portal")}
             body="Your students, their stage, your commission and your payment status."
             primaryLabel="Partner Login"
             primaryHref="#/portal"

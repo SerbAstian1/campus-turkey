@@ -7,21 +7,23 @@ import { Badge, CTABanner, Card, Icon, ScrollReveal, Tag, ASSETS } from "@/ds";
 import { articles } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
 import { PageBody, PageHero } from "./shared";
+import { useT } from "@/i18n/context";
 import { CardGrid } from "@/components/CardGrid";
 
 export default function Resources() {
+  const t = useT();
   const [tag, setTag] = useState<string | null>(null);
   const tags = [...new Set(articles.map((r) => r.tag))];
   const list = articles.filter((r) => !tag || r.tag === tag);
 
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
-      <PageHero eyebrow="Resources" title="Guides, checklists and costs"
-        lead="Everything we send students, written down. Read before you apply, or ask us to walk you through it." />
+      <PageHero eyebrow={t("Resources")} title={t("Guides, checklists and costs")}
+        lead={t("Everything we send students, written down. Read before you apply, or ask us to walk you through it.")} />
 
       <PageBody>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)", alignItems: "center" }}>
-          <span className="ct-eyebrow" style={{ marginInlineEnd: "var(--space-2)" }}>Filter</span>
+          <span className="ct-eyebrow" style={{ marginInlineEnd: "var(--space-2)" }}>{t("Filter")}</span>
           {tags.map((t) => (
             <Tag key={t} selected={tag === t} onClick={() => setTag(tag === t ? null : t)}
               count={articles.filter((r) => r.tag === t).length}>{t}</Tag>
@@ -32,7 +34,7 @@ export default function Resources() {
           {list.map((r, i) => (
             <ScrollReveal key={r.slug} delay={i * 60} style={{ display: "flex" }}>
               <Card interactive href={`#/blog/${r.slug}`} padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                <ImagePlaceholder slot={`article-${r.slug}`} label="Article image, 16:9" ratio="16 / 9" />
+                <ImagePlaceholder slot={`article-${r.slug}`} label={t("Article image, 16:9")} ratio="16 / 9" />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-3)" }}>
                   <Badge tone="neutral">{r.tag}</Badge>
                   <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{r.read} read</span>
@@ -48,7 +50,7 @@ export default function Resources() {
         </CardGrid>
 
         <ScrollReveal>
-          <CTABanner eyebrow="Faster than reading" title="Ask us your question directly"
+          <CTABanner eyebrow={t("Faster than reading")} title={t("Ask us your question directly")}
             body="A person replies on WhatsApp, usually the same day."
             primaryLabel="Book a Consultation" primaryHref="#/contact" secondaryLabel="Apply Now" secondaryHref="#/apply" assetBase={ASSETS} />
         </ScrollReveal>

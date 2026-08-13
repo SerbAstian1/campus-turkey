@@ -23,14 +23,16 @@ import { services } from "@/content";
 import { go } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { PageBody, PageHero } from "./shared";
+import { useT } from "@/i18n/context";
 
 export default function Services() {
+  const t = useT();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
-        eyebrow="Services"
-        title="What we do beyond admissions"
-        lead="Four services, each run by the people who do the work. Every one of them starts with a conversation and a written scope before anybody pays anything."
+        eyebrow={t("Services")}
+        title={t("What we do beyond admissions")}
+        lead={t("Four services, each run by the people who do the work. Every one of them starts with a conversation and a written scope before anybody pays anything.")}
         actions={
           <>
             <Button size="lg" icon="message-circle" onClick={() => go("contact")}>
@@ -46,9 +48,9 @@ export default function Services() {
       <PageBody>
         <ScrollReveal>
           <SectionHeading
-            eyebrow="The four"
-            title="Pick the one you came for"
-            lead="Each page carries the full process, what is included, what is not, and indicative prices."
+            eyebrow={t("The four")}
+            title={t("Pick the one you came for")}
+            lead={t("Each page carries the full process, what is included, what is not, and indicative prices.")}
           />
         </ScrollReveal>
 
@@ -129,8 +131,8 @@ export default function Services() {
             style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", alignItems: "center", justifyContent: "space-between" }}
           >
             <div style={{ flex: "1 1 340px", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <span className="ct-eyebrow">And the main one</span>
-              <h3 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>University admissions</h3>
+              <span className="ct-eyebrow">{t("And the main one")}</span>
+              <h3 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{t("University admissions")}</h3>
               <p style={{ color: "var(--text-body)", lineHeight: "var(--lh-body)", margin: 0, maxWidth: "56ch" }}>
                 Placing students in Turkish universities is the largest thing we do, and it has
                 its own hub: tuition, scholarships, intakes and what a year actually costs.
@@ -144,8 +146,8 @@ export default function Services() {
 
         <ScrollReveal>
           <CTABanner
-            eyebrow="Not sure which"
-            title="Tell us what you need"
+            eyebrow={t("Not sure which")}
+            title={t("Tell us what you need")}
             body="Describe it in a sentence. We will say which service it is, or that it is not one we run."
             primaryLabel="Book a Consultation"
             primaryHref="#/contact"
