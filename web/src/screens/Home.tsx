@@ -78,32 +78,21 @@ function Hero({ onApply, onExplore }: { onApply: () => void; onExplore: () => vo
   return (
     <section style={{ position: "relative", minHeight: "min(94vh,880px)", display: "flex", flexDirection: "column", overflow: "hidden", paddingTop: 160, marginBottom: "calc(var(--overlap) * -1)", background: "var(--gradient-brand-deep)" }}>
       {/*
-        The hero reel, replacing the placeholder chip that stood here.
+        The hero reel. No map behind it and no poster: the video is the background, and
+        layering a still under something that covers it is a second download to hide.
+        While it loads, and under reduced motion, `--gradient-brand-deep` from the
+        section shows — the brand ground the hero was designed on, not an empty box.
 
-        `poster` is the map still that used to be the background: it paints immediately
-        while 6.4 MB of video is still arriving, so the hero is never a flat green box
-        on a slow connection. The video sits beneath the same two overlays as before, so
-        the white heading keeps its contrast over whatever frame happens to be showing —
-        that is what the gradients are for, and it is why they are not optional.
+        A poster would be reasonable later, but it has to be a frame from *this* reel;
+        reaching for other artwork is what put the map here in the first place. Supply
+        `assets/hero-poster.jpg` and it is a one-line change.
 
-        `muted` is what makes `autoPlay` legal: every browser blocks an unmuted autoplay,
-        and without it the video simply never starts. `playsInline` is the iOS half of
-        the same rule — without it Safari takes the video fullscreen on play.
+        `muted` is what makes `autoPlay` legal — every browser blocks an unmuted
+        autoplay, so without it the video simply never starts. `playsInline` is the iOS
+        half of the same rule; without it Safari goes fullscreen on play.
 
-        Decorative, so `aria-hidden`, no controls, and not in the tab order. Anyone using
-        a screen reader gets the heading, which carries the actual message.
-      */}
-      {/*
-        No `poster`, and no still behind it.
-
-        The map raster that used to fill this space is gone — the video replaces it, and
-        layering the old background under a video that covers it is just a second image
-        to download. While the video loads, and under reduced motion, what shows is
-        `--gradient-brand-deep` from the section itself: the brand ground the hero was
-        designed on, not an empty box.
-
-        If a poster is wanted later it should be a frame from this reel rather than
-        different artwork — supply `assets/hero-poster.jpg` and it is a one-line change.
+        Decorative: `aria-hidden`, no controls, out of the tab order. The heading carries
+        the message for anyone who cannot see this.
       */}
       {!reduceMotion && (
         <video
@@ -115,10 +104,27 @@ function Hero({ onApply, onExplore }: { onApply: () => void; onExplore: () => vo
           preload="metadata"
           aria-hidden="true"
           tabIndex={-1}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: .55 }}
+          /*
+           * Darkened at the source rather than veiled by an overlay.
+           *
+           * This used to be `opacity: .55` under a green wash — two layers doing one
+           * job, and the wash tinted the footage so every frame read as brand green
+           * rather than as a place. `brightness` lowers the exposure and leaves the
+           * colour alone, so the reel still looks like Türkiye.
+           *
+           * The value is set by contrast, not taste: the white display heading sits on
+           * top of this, and at full exposure it fails against the bright frames. 0.45
+           * holds it comfortably past AA across the reel.
+           */
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.45)" }}
         />
       )}
-      <span style={{ position: "absolute", inset: 0, background: "var(--surface-overlay-brand)" }} />
+      {/*
+        The green wash is gone at the client's request — the exposure above replaces it.
+        This bottom gradient stays: it is not decoration but the thing that keeps the
+        badge, heading and buttons legible where they actually sit, and removing it would
+        put white text over whatever the reel happens to be showing at that moment.
+      */}
       <span style={{ position: "absolute", inset: 0, background: "var(--gradient-protect-bottom)" }} />
       <div className="ct-container" style={{ position: "relative", zIndex: 2, marginTop: "auto", paddingBottom: "clamp(56px,8vw,110px)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
         <ScrollReveal style={{ display: "flex" }}><Badge tone="onDark" dot>{t("Applications open for the 2026 intake")}</Badge></ScrollReveal>
