@@ -12,10 +12,12 @@ import { getService, services } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
 import { go } from "@/app/router";
 import { IconCard, PageBody, PageHero, PriceTable, FaqLayout, splitStyle } from "./shared";
+import { useT } from "@/i18n/context";
 import { ErrorScreen } from "./Errors";
 import { CardGrid } from "@/components/CardGrid";
 
 export default function Service({ slug }: { slug: string }) {
+  const t = useT();
   const s = getService(slug);
   if (!s) return <ErrorScreen state="notFound" />;
 
@@ -41,15 +43,15 @@ export default function Service({ slug }: { slug: string }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal>
-            <SectionHeading eyebrow="How it works" title={`${s.title} step by step`}
-              lead="Five stages, and you always know which one you are in." />
+            <SectionHeading eyebrow={t("How it works")} title={t("{service} step by step", { service: s.title })}
+              lead={t("Five stages, and you always know which one you are in.")} />
           </ScrollReveal>
           <ScrollReveal delay={80}><TimelineTrack steps={s.steps} /></ScrollReveal>
         </div>
 
         <div className="ct-split" style={splitStyle}>
           <ScrollReveal style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <SectionHeading eyebrow="Scope" title="What is included, and what is not" />
+            <SectionHeading eyebrow={t("Scope")} title={t("What is included, and what is not")} />
             {s.includes.map((group, gi) => (
               <Card key={group.title} padding="var(--space-8)" surface={gi === 0 ? "tinted" : "plain"} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                 <h3 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>{group.title}</h3>
@@ -65,7 +67,7 @@ export default function Service({ slug }: { slug: string }) {
           </ScrollReveal>
 
           <ScrollReveal delay={80} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <SectionHeading eyebrow="Indicative prices" title="What people usually pay" />
+            <SectionHeading eyebrow={t("Indicative prices")} title={t("What people usually pay")} />
             <PriceTable columns={["Service", "Typical price", "Time needed"]} rows={s.pricing.map((p) => [p.item, p.price, p.note])} />
             <p style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)", margin: 0 }}>
               Indicative ranges from files we handled in the last twelve months. Your written quote is always specific to you.
@@ -75,7 +77,7 @@ export default function Service({ slug }: { slug: string }) {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          <ScrollReveal><SectionHeading eyebrow="Covered" title="What we arrange" /></ScrollReveal>
+          <ScrollReveal><SectionHeading eyebrow={t("Covered")} title={t("What we arrange")} /></ScrollReveal>
           <ScrollReveal delay={60} style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)" }}>
             {s.tags.map((t) => <Tag key={t}>{t}</Tag>)}
           </ScrollReveal>
@@ -83,7 +85,7 @@ export default function Service({ slug }: { slug: string }) {
 
         <ScrollReveal>
           <Card surface="inverse" padding="var(--space-10)" radius="var(--radius-xl)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <span className="ct-eyebrow" style={{ color: "var(--green-300)" }}>Why people trust this desk</span>
+            <span className="ct-eyebrow" style={{ color: "var(--green-300)" }}>{t("Why people trust this desk")}</span>
             <CardGrid min={220} gap="var(--space-5)">
               {s.trust.map((t) => (
                 <span key={t} style={{ display: "flex", gap: "var(--space-3)", color: "rgba(255,255,255,.9)", fontSize: "var(--fs-body-sm)" }}>
@@ -95,13 +97,13 @@ export default function Service({ slug }: { slug: string }) {
         </ScrollReveal>
 
         <FaqLayout heading={
-          <ScrollReveal><SectionHeading eyebrow="Questions" title={`${s.title} FAQs`} lead="Ask us anything else on WhatsApp." /></ScrollReveal>
+          <ScrollReveal><SectionHeading eyebrow={t("Questions")} title={t("{service} FAQs", { service: s.title })} lead={t("Ask us anything else on WhatsApp.")} /></ScrollReveal>
         }>
           <ScrollReveal delay={80}><Accordion items={s.faq} /></ScrollReveal>
         </FaqLayout>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          <ScrollReveal><SectionHeading eyebrow="Other services" title="What else we handle" /></ScrollReveal>
+          <ScrollReveal><SectionHeading eyebrow={t("Other services")} title={t("What else we handle")} /></ScrollReveal>
           <CardGrid min={240} gap="var(--space-6)">
             {others.map((o, i) => (
               <ScrollReveal key={o.slug} delay={i * 60} style={{ display: "flex" }}>
@@ -121,16 +123,16 @@ export default function Service({ slug }: { slug: string }) {
         <ScrollReveal>
           <Card surface="tinted" padding="var(--space-10)" radius="var(--radius-xl)" style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-8)", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ maxWidth: 520 }}>
-              <span className="ct-eyebrow">Remember</span>
-              <h3 style={{ fontSize: "var(--fs-h2)", margin: "var(--space-2) 0 var(--space-3)" }}>Education is our core service</h3>
-              <p style={{ color: "var(--text-body)", margin: 0 }}>If a family member wants to study in Türkiye, we handle that too, on the same file.</p>
+              <span className="ct-eyebrow">{t("Remember")}</span>
+              <h3 style={{ fontSize: "var(--fs-h2)", margin: "var(--space-2) 0 var(--space-3)" }}>{t("Education is our core service")}</h3>
+              <p style={{ color: "var(--text-body)", margin: 0 }}>{t("If a family member wants to study in Türkiye, we handle that too, on the same file.")}</p>
             </div>
-            <Button variant="primary" size="lg" onClick={() => go("study")}>See Study in Türkiye</Button>
+            <Button variant="primary" size="lg" onClick={() => go("study")}>{t("See Study in Türkiye")}</Button>
           </Card>
         </ScrollReveal>
 
         <ScrollReveal>
-          <CTABanner eyebrow="Talk to us" title={`Get a written plan for ${s.title.toLowerCase()}`}
+          <CTABanner eyebrow={t("Talk to us")} title={t("Get a written plan for {service}", { service: s.title.toLowerCase() })}
             body="Tell us what you need. You get a clear scope and a price before you travel."
             primaryLabel="Book a Consultation" primaryHref="#/contact" secondaryLabel="Apply Now" secondaryHref="#/apply" assetBase={ASSETS} />
         </ScrollReveal>

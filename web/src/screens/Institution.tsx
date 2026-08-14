@@ -13,10 +13,12 @@ import { getInstitution } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
 import { go } from "@/app/router";
 import { IconCard, PageBody, PageHero, splitStyle } from "./shared";
+import { useT } from "@/i18n/context";
 import { ErrorScreen } from "./Errors";
 import { CardGrid } from "@/components/CardGrid";
 
 export default function Institution({ slug }: { slug: string }) {
+  const t = useT();
   const inst = getInstitution(slug);
   if (!inst) return <ErrorScreen state="notFound" />;
 
@@ -26,7 +28,7 @@ export default function Institution({ slug }: { slug: string }) {
         actions={
           <>
             <Button variant="onDark" size="lg" onClick={() => go("contact")}>{inst.cta}</Button>
-            <Button variant="outlineOnDark" size="lg" icon="handshake" onClick={() => go("partners")}>Partnership terms</Button>
+            <Button variant="outlineOnDark" size="lg" icon="handshake" onClick={() => go("partners")}>{t("Partnership terms")}</Button>
           </>
         } />
 
@@ -45,7 +47,7 @@ export default function Institution({ slug }: { slug: string }) {
 
         <div className="ct-split" style={splitStyle}>
           <ScrollReveal style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <SectionHeading eyebrow="Scope of work" title="What we deliver" />
+            <SectionHeading eyebrow={t("Scope of work")} title={t("What we deliver")} />
             <Card padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               {inst.list.map((l) => (
                 <span key={l} style={{ display: "flex", gap: "var(--space-3)", fontSize: "var(--fs-body-sm)", color: "var(--text-body)" }}>
@@ -60,7 +62,7 @@ export default function Institution({ slug }: { slug: string }) {
         </div>
 
         <ScrollReveal>
-          <CTABanner eyebrow="Work with us" title={inst.cta}
+          <CTABanner eyebrow={t("Work with us")} title={inst.cta}
             body="A 30 minute call is enough to see whether this fits. We come prepared with numbers."
             primaryLabel="Book a Consultation" primaryHref="#/contact" secondaryLabel="Become a Partner" secondaryHref="#/partners" assetBase={ASSETS} />
         </ScrollReveal>
