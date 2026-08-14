@@ -9,7 +9,7 @@
  */
 
 import type { MetadataRoute } from "next";
-import { db } from "@/server/lib/db";
+import { universities } from "@contracts/universities";
 import { services } from "@contracts/services";
 import { articles } from "@contracts/articles";
 import { institutions } from "@contracts/institutions";
@@ -52,7 +52,7 @@ export const dynamic = "force-static";
 /** Rebuilt daily. The content is static today; this is what makes it not stay static. */
 export const revalidate = 86400;
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
   /**
@@ -96,25 +96,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     );
   }
 
-  /*
-   * Read from the database, not from `content/universities.ts`.
-   *
-   * The pages are generated from Postgres — `generateStaticParams` queries it — so a
-   * sitemap built from the static file advertises whatever that file happens to say.
-   * The two diverge the moment a university arrives through the importer or an admin
-   * edit: either the page exists and is never listed, or the sitemap advertises a URL
-   * that `dynamicParams = false` answers with a 404. One source, one answer.
-   *
-   * PUBLISHED only, matching `generateStaticParams`. A draft has no page, and listing
-   * one is the same soft-404 this file already refuses to emit for moved routes.
-   */
-  const published = await db.university.findMany({
-    where: { status: "PUBLISHED" },
-    select: { slug: true },
-    orderBy: { slug: "asc" },
-  });
-
-  const universityRoutes = published.map((u) =>
+  const universityRoutes = universities.map((u) =>
     entry(`/universities/${u.slug}`, now, "monthly", 0.8),
   );
 
