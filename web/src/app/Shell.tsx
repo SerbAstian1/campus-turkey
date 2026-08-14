@@ -215,6 +215,34 @@ export function Shell({ children }: { children: ReactNode }) {
         onLangChange={setLanguage}
         assetBase={ASSETS}
         legal="© 2026 Campus Turkey. Your guide to study in Turkey."
+        /*
+         * The footer photograph, darkened.
+         *
+         * Set through `style` rather than by editing the design system: `Footer`
+         * spreads `...style` last over its own `background`, so this is the seam the
+         * component already offers and the vendored bundle stays untouched.
+         *
+         * Three layers, painted front to back:
+         *   1. a green-900 wash at 82%, which is what reduces the exposure
+         *   2. the photograph, covering
+         *   3. `--gradient-brand-deep`, the original background, still there if the
+         *      image 404s so the footer degrades to exactly what it was before
+         *
+         * A wash rather than `filter: brightness()`. The hero could use a filter
+         * because it sits on a `<video>` element with nothing inside it; a filter here
+         * would apply to the whole `<footer>` and dim the links, headings and legal
+         * line along with the picture — the opposite of legible.
+         *
+         * 82% is set by contrast, not taste. The footer carries white body text and
+         * link labels at `--fs-body-sm`, and the photograph has bright regions; below
+         * roughly 0.78 the small text starts failing AA against them.
+         */
+        style={{
+          background:
+            `linear-gradient(rgba(10, 44, 30, 0.82), rgba(10, 44, 30, 0.82)), ` +
+            `url(${ASSETS}/footer-image.jpg) center / cover no-repeat, ` +
+            `var(--gradient-brand-deep)`,
+        }}
       />
       <WhatsAppAction label={t("Chat on WhatsApp")} fixed />
 
