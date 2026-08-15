@@ -15,8 +15,25 @@ import type { Article, Service } from "@contracts/types";
 import {
   BCP47, DEFAULT_LOCALE, LOCALES, localePath, type Locale,
 } from "@/i18n/locales";
+import { env } from "./config";
 
-const ORIGIN = process.env["SITE_ORIGIN"] ?? "https://campusturkey.com";
+/**
+ * The public origin, from the one validated source.
+ *
+ * This read used to be `process.env["SITE_ORIGIN"] ?? "https://campusturkey.com"`, and
+ * both halves of that were wrong. It bypassed `config.ts`, which is what enforces that
+ * the origin is a URL and is https in production — so the check that exists to catch a
+ * bad origin could not see the value actually being used. And the fallback was a domain
+ * this project does not own: with `SITE_ORIGIN` absent from the *build* environment, a
+ * build would succeed and bake `campusturkey.com` into every canonical, every `hreflang`
+ * pair and all 918 sitemap rows, pointing the whole site's search presence at somebody
+ * else. Silently, because a default is indistinguishable from a real value once set.
+ *
+ * There is deliberately no fallback now. `SITE_ORIGIN` is required in `config.ts`, so a
+ * missing one fails at boot with a named variable, which is the loud version of the same
+ * problem and the one that gets fixed in a minute rather than a quarter.
+ */
+const ORIGIN = env.SITE_ORIGIN;
 
 const SITE_NAME = "Campus Turkey";
 const DEFAULT_DESCRIPTION =

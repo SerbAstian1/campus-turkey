@@ -88,7 +88,11 @@ jobs:
           # "The build needs a real database".
           DATABASE_URL: ${{ secrets.CI_DATABASE_URL }}
           DIRECT_DATABASE_URL: ${{ secrets.CI_DIRECT_DATABASE_URL }}
-          SITE_ORIGIN: https://campusturkey.com
+          # Not shape-only, unlike most of the placeholders below. `next build` renders
+          # the canonicals, the `hreflang` set and all 918 sitemap rows, so whatever is
+          # set here is written into the output rather than merely satisfying a guard.
+          # It must be the real production origin.
+          SITE_ORIGIN: https://campusturkey.org
           SESSION_SECRET: ci-placeholder-secret-at-least-32-chars-long
           NODE_ENV: production
           SENTRY_DSN: https://placeholder@o0.ingest.sentry.io/0
@@ -111,7 +115,7 @@ jobs:
           S3_ENDPOINT: https://s3.eu-west-2.amazonaws.com
           MAIL_PROVIDER: resend
           MAIL_API_KEY: placeholder
-          MAIL_FROM: no-reply@campusturkey.com
+          MAIL_FROM: no-reply@campusturkey.org
           # Inlined into the browser bundle at build time, so it has to be present for
           # the build and not only at runtime. A placeholder is correct here: CI never
           # loads a tile, and the boot check only asserts the variable exists. The real

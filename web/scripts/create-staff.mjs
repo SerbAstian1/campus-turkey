@@ -6,8 +6,8 @@
  * consequence is that the first staff account has to be made deliberately, and this is
  * the deliberate way.
  *
- *   node scripts/create-staff.mjs finance@campusturkey.com FINANCE
- *   node scripts/create-staff.mjs boss@campusturkey.com ADMIN "Elif Demir"
+ *   node scripts/create-staff.mjs finance@campusturkey.org FINANCE
+ *   node scripts/create-staff.mjs boss@campusturkey.org ADMIN "Elif Demir"
  *
  * Roles:
  *   SUPPORT  read the queues; cannot move money

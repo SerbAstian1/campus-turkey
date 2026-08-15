@@ -89,7 +89,7 @@ Check `MAINTENANCE_MODE` first — it is the cheapest possible explanation and i
 sometimes the answer.
 
 ```bash
-curl -sS -D- -o /dev/null https://campusturkey.com/api/health
+curl -sS -D- -o /dev/null https://campusturkey.org/api/health
 ```
 
 - **`/api/health` returns 200 but pages 503** → maintenance mode is on. Set it off.

@@ -125,10 +125,10 @@ renames a column in the same deploy as the code change will break during rollout
 Not "the dashboard is green":
 
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' https://campusturkey.com/api/health   # 200
-curl -sS -o /dev/null -w '%{http_code}\n' https://campusturkey.com/            # 200
-curl -sS -o /dev/null -w '%{http_code}\n' https://campusturkey.com/no-such-page # 404, not 200
-curl -sS https://campusturkey.com/sitemap.xml | head -5                        # real XML
+curl -sS -o /dev/null -w '%{http_code}\n' https://campusturkey.org/api/health   # 200
+curl -sS -o /dev/null -w '%{http_code}\n' https://campusturkey.org/            # 200
+curl -sS -o /dev/null -w '%{http_code}\n' https://campusturkey.org/no-such-page # 404, not 200
+curl -sS https://campusturkey.org/sitemap.xml | head -5                        # real XML
 ```
 
 The 404 check matters more than it looks: a soft 404 is the specific regression the
