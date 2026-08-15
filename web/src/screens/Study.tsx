@@ -10,25 +10,31 @@ import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, FaqLayout } from "./shared";
 import { CardGrid } from "@/components/CardGrid";
 
-const WHY = [
-  { icon: "wallet", title: "Cost you can plan for", body: "Public tuition from $600 a year and living costs from $350 a month. We give you the full number before you commit." },
-  { icon: "globe", title: "Degrees recognised worldwide", body: "Turkish universities sit in global rankings and follow the European credit system, so your degree travels." },
-  { icon: "languages", title: "Study in English", body: "Hundreds of programs are taught fully in English. Turkish-taught programs come with a preparatory language year." },
-  { icon: "plane-landing", title: "Straightforward visas", body: "Student visas are issued on an acceptance letter. We prepare the file and book the appointment." },
-  { icon: "map-pinned", title: "40 cities to choose from", body: "Istanbul, Ankara, Izmir, Antalya and beyond. Coastal, capital or campus town, whichever suits you." },
-  { icon: "users", title: "300,000 international students", body: "You will not be the only one from your country. We introduce you before you fly." },
-];
+/** A hook, not a module constant — see the note in About.tsx. */
+function useWhy() {
+  const t = useT();
+
+  return [
+    { icon: "wallet", title: t("Cost you can plan for"), body: t("Public tuition from $600 a year and living costs from $350 a month. We give you the full number before you commit.") },
+    { icon: "globe", title: t("Degrees recognised worldwide"), body: t("Turkish universities sit in global rankings and follow the European credit system, so your degree travels.") },
+    { icon: "languages", title: t("Study in English"), body: t("Hundreds of programs are taught fully in English. Turkish-taught programs come with a preparatory language year.") },
+    { icon: "plane-landing", title: t("Straightforward visas"), body: t("Student visas are issued on an acceptance letter. We prepare the file and book the appointment.") },
+    { icon: "map-pinned", title: t("40 cities to choose from"), body: t("Istanbul, Ankara, Izmir, Antalya and beyond. Coastal, capital or campus town, whichever suits you.") },
+    { icon: "users", title: t("300,000 international students"), body: t("You will not be the only one from your country. We introduce you before you fly.") },
+  ];
+}
 
 export default function Study() {
   const href = useHref();
   const t = useT();
+  const why = useWhy();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
         badge={t("Applications open for the 2026 intake")}
-        eyebrow="Our core service"
-        title="Study in Türkiye"
-        lead="Admission, scholarships, visa and arrival, handled by one team. You get real tuition figures and real deadlines before you decide anything."
+        eyebrow={t("Our core service")}
+        title={t("Study in Türkiye")}
+        lead={t("Admission, scholarships, visa and arrival, handled by one team. You get real tuition figures and real deadlines before you decide anything.")}
         actions={
           <>
             <Button variant="onDark" size="lg" onClick={() => go("apply")}>{t("Apply Now")}</Button>
@@ -40,11 +46,11 @@ export default function Study() {
       <PageBody>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal>
-            <SectionHeading eyebrow="Why Türkiye" title="Six reasons students choose it"
-              lead="Quality education at a cost that works, in a country that already hosts hundreds of thousands of international students." />
+            <SectionHeading eyebrow={t("Why Türkiye")} title={t("Six reasons students choose it")}
+              lead={t("Quality education at a cost that works, in a country that already hosts hundreds of thousands of international students.")} />
           </ScrollReveal>
           <CardGrid min={260} gap="var(--space-6)">
-            {WHY.map((w, i) => (
+            {why.map((w, i) => (
               <ScrollReveal key={w.title} delay={i * 60} style={{ display: "flex" }}><IconCard {...w} /></ScrollReveal>
             ))}
           </CardGrid>
@@ -52,13 +58,13 @@ export default function Study() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", alignItems: "flex-end", justifyContent: "space-between" }}>
-            <SectionHeading eyebrow="Scholarships" title="What you can actually get"
-              lead="Four routes to a lower fee. We tell you which ones you qualify for before you spend anything." />
+            <SectionHeading eyebrow={t("Scholarships")} title={t("What you can actually get")}
+              lead={t("Four routes to a lower fee. We tell you which ones you qualify for before you spend anything.")} />
             {/* Out to the spoke, not to the form. The hub's job is to route; sending
                 somebody straight to "apply" from a section they are still reading skips
                 the page that answers what they were reading it for. */}
             <Button variant="secondary" icon="arrow-right" onClick={() => go("study-in-turkiye/scholarships")}>
-              Compare all four
+              {t("Compare all four")}
             </Button>
           </ScrollReveal>
           <CardGrid min={280} gap="var(--space-6)">
@@ -67,11 +73,11 @@ export default function Study() {
                 <Card padding="var(--space-8)" surface={i === 0 ? "tinted" : "plain"} style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-4)", alignItems: "flex-start" }}>
                     <h3 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{s.name}</h3>
-                    {i === 0 ? <Badge tone="brand" icon="award">Full ride</Badge> : null}
+                    {i === 0 ? <Badge tone="brand" icon="award">{t("Full ride")}</Badge> : null}
                   </div>
                   <p style={{ color: "var(--text-body)", margin: 0 }}>{s.who}</p>
                   <BrandDivider />
-                  {([["Covers", s.covers], ["Timing", s.when], ["Your odds", s.competitive]] as const).map(([k, v]) => (
+                  {([[t("Covers"), s.covers], [t("Timing"), s.when], [t("Your odds"), s.competitive]] as const).map(([k, v]) => (
                     <div key={k} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                       <span className="ct-eyebrow">{k}</span>
                       <span style={{ fontSize: "var(--fs-body-sm)", color: "var(--text-body)" }}>{v}</span>
@@ -85,10 +91,10 @@ export default function Study() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", alignItems: "flex-end", justifyContent: "space-between" }}>
-            <SectionHeading eyebrow="Application process" title="What happens, in order"
-              lead="Five steps from first message to first week on campus." />
+            <SectionHeading eyebrow={t("Application process")} title={t("What happens, in order")}
+              lead={t("Five steps from first message to first week on campus.")} />
             <Button variant="secondary" icon="arrow-right" onClick={() => go("study-in-turkiye/application-process")}>
-              What to have ready
+              {t("What to have ready")}
             </Button>
           </ScrollReveal>
           <ScrollReveal delay={80}><TimelineTrack steps={journey} /></ScrollReveal>
@@ -96,10 +102,10 @@ export default function Study() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", alignItems: "flex-end", justifyContent: "space-between" }}>
-            <SectionHeading eyebrow="Student life" title="What a month actually costs"
-              lead="Real figures from students we placed this year. Budget about $350 to $550 a month in most cities." />
+            <SectionHeading eyebrow={t("Student life")} title={t("What a month actually costs")}
+              lead={t("Real figures from students we placed this year. Budget about $350 to $550 a month in most cities.")} />
             <Button variant="secondary" icon="arrow-right" onClick={() => go("study-in-turkiye/student-life")}>
-              See it added up
+              {t("See it added up")}
             </Button>
           </ScrollReveal>
           <CardGrid min={250} gap="var(--space-6)">
@@ -121,23 +127,23 @@ export default function Study() {
               frame of that animation. */}
           <ScrollReveal delay={80}>
             <CardGrid min={240} gap="var(--space-6)">
-              <ImagePlaceholder slot="study-housing" label="Dormitory or student housing" ratio="4 / 3" />
-              <ImagePlaceholder slot="study-campus" label="Campus life, students outdoors" ratio="4 / 3" />
-              <ImagePlaceholder slot="study-city" label="City street, everyday costs" ratio="4 / 3" />
+              <ImagePlaceholder slot="study-housing" label={t("Dormitory or student housing")} ratio="4 / 3" />
+              <ImagePlaceholder slot="study-campus" label={t("Campus life, students outdoors")} ratio="4 / 3" />
+              <ImagePlaceholder slot="study-city" label={t("City street, everyday costs")} ratio="4 / 3" />
             </CardGrid>
           </ScrollReveal>
         </div>
 
         <FaqLayout heading={
-          <ScrollReveal><SectionHeading eyebrow="Questions" title="Student FAQs" lead="Anything else, message us on WhatsApp." /></ScrollReveal>
+          <ScrollReveal><SectionHeading eyebrow={t("Questions")} title={t("Student FAQs")} lead={t("Anything else, message us on WhatsApp.")} /></ScrollReveal>
         }>
           <ScrollReveal delay={80}><Accordion items={generalFaq} /></ScrollReveal>
         </FaqLayout>
 
         <ScrollReveal>
-          <CTABanner eyebrow="Next step" title="Apply for the 2026 intake"
-            body="One short form. We reply with a shortlist, real tuition and the scholarships you qualify for."
-            primaryLabel="Apply Now" primaryHref={href("apply")} secondaryLabel="Book a Consultation" secondaryHref={href("contact")} assetBase={ASSETS} />
+          <CTABanner eyebrow={t("Next step")} title={t("Apply for the 2026 intake")}
+            body={t("One short form. We reply with a shortlist, real tuition and the scholarships you qualify for.")}
+            primaryLabel={t("Apply Now")} primaryHref={href("apply")} secondaryLabel={t("Book a Consultation")} secondaryHref={href("contact")} assetBase={ASSETS} />
         </ScrollReveal>
       </PageBody>
     </div>

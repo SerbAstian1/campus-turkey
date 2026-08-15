@@ -22,6 +22,7 @@
 
 import { Accordion, Badge, BrandDivider, Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, ASSETS } from "@/ds";
 import { generalFaq, scholarships } from "@/content";
+import { useT } from "@/i18n/context";
 import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { FaqLayout, PageBody, PageHero } from "../shared";
@@ -33,19 +34,20 @@ const MONEY_FAQ = generalFaq.filter((item) =>
 
 export default function Scholarships() {
   const href = useHref();
+  const t = useT();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
-        eyebrow="Study in Türkiye"
-        title="Scholarships, and what you actually qualify for"
-        lead="Four routes to a lower fee. One is a full ride and highly competitive; the other three are realistic for most good students. We tell you which before you spend anything."
+        eyebrow={t("Study in Türkiye")}
+        title={t("Scholarships, and what you actually qualify for")}
+        lead={t("Four routes to a lower fee. One is a full ride and highly competitive; the other three are realistic for most good students. We tell you which before you spend anything.")}
         actions={
           <>
             <Button variant="onDark" size="lg" onClick={() => go("apply")}>
-              Check my eligibility
+              {t("Check my eligibility")}
             </Button>
             <Button variant="outlineOnDark" size="lg" icon="graduation-cap" onClick={() => go("study-in-turkiye")}>
-              Back to Study in Türkiye
+              {t("Back to Study in Türkiye")}
             </Button>
           </>
         }
@@ -55,9 +57,9 @@ export default function Scholarships() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal>
             <SectionHeading
-              eyebrow="Side by side"
-              title="Which one applies to you"
-              lead="The odds column is the one to read first. It is written plainly rather than encouragingly."
+              eyebrow={t("Side by side")}
+              title={t("Which one applies to you")}
+              lead={t("The odds column is the one to read first. It is written plainly rather than encouragingly.")}
             />
           </ScrollReveal>
 
@@ -67,7 +69,7 @@ export default function Scholarships() {
             <div style={{ overflowX: "auto" }}>
               <Card padding="0" style={{ overflow: "hidden", minWidth: 640 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1.6fr 1fr 1fr" }}>
-                  {["Scholarship", "Covers", "When to apply", "Your odds"].map((column) => (
+                  {[t("Scholarship"), t("Covers"), t("When to apply"), t("Your odds")].map((column) => (
                     <span
                       key={column}
                       className="ct-eyebrow"
@@ -109,7 +111,7 @@ export default function Scholarships() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal>
-            <SectionHeading eyebrow="In detail" title="What each one is" />
+            <SectionHeading eyebrow={t("In detail")} title={t("What each one is")} />
           </ScrollReveal>
 
           <CardGrid min={280} gap="var(--space-6)">
@@ -122,15 +124,15 @@ export default function Scholarships() {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-4)", alignItems: "flex-start" }}>
                     <h2 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{scholarship.name}</h2>
-                    {index === 0 ? <Badge tone="brand" icon="award">Full ride</Badge> : null}
+                    {index === 0 ? <Badge tone="brand" icon="award">{t("Full ride")}</Badge> : null}
                   </div>
                   <p style={{ color: "var(--text-body)", margin: 0 }}>{scholarship.who}</p>
                   <BrandDivider />
                   {(
                     [
-                      ["Covers", scholarship.covers],
-                      ["Timing", scholarship.when],
-                      ["Your odds", scholarship.competitive],
+                      [t("Covers"), scholarship.covers],
+                      [t("Timing"), scholarship.when],
+                      [t("Your odds"), scholarship.competitive],
                     ] as const
                   ).map(([label, value]) => (
                     <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -151,15 +153,13 @@ export default function Scholarships() {
           >
             <Icon name="info" size={20} color="var(--green-600)" />
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-              <h2 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>What none of them cover</h2>
+              <h2 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>{t("What none of them cover")}</h2>
               <p style={{ color: "var(--text-body)", lineHeight: "var(--lh-body)", margin: 0, maxWidth: "62ch" }}>
-                A scholarship reduces tuition. It does not remove the cost of living, which runs
-                about $350 to $550 a month in most cities, and only Türkiye Bursları includes
-                accommodation and flights. Budget for both before you accept an offer.
+                {t("A scholarship reduces tuition. It does not remove the cost of living, which runs about $350 to $550 a month in most cities, and only Türkiye Bursları includes accommodation and flights. Budget for both before you accept an offer.")}
               </p>
               <span>
                 <Button variant="secondary" icon="arrow-right" onClick={() => go("study-in-turkiye/student-life")}>
-                  What a month costs
+                  {t("What a month costs")}
                 </Button>
               </span>
             </div>
@@ -170,7 +170,7 @@ export default function Scholarships() {
           <FaqLayout
             heading={
               <ScrollReveal>
-                <SectionHeading eyebrow="Questions" title="Money questions" lead="Anything else, message us on WhatsApp." />
+                <SectionHeading eyebrow={t("Questions")} title={t("Money questions")} lead={t("Anything else, message us on WhatsApp.")} />
               </ScrollReveal>
             }
           >
@@ -182,12 +182,12 @@ export default function Scholarships() {
 
         <ScrollReveal>
           <CTABanner
-            eyebrow="Next step"
-            title="Find out what you qualify for"
-            body="One short form. We reply with a shortlist, real tuition and the scholarships that apply to your grades and your country."
-            primaryLabel="Apply Now"
+            eyebrow={t("Next step")}
+            title={t("Find out what you qualify for")}
+            body={t("One short form. We reply with a shortlist, real tuition and the scholarships that apply to your grades and your country.")}
+            primaryLabel={t("Apply Now")}
             primaryHref={href("apply")}
-            secondaryLabel="Book a Consultation"
+            secondaryLabel={t("Book a Consultation")}
             secondaryHref={href("contact")}
             assetBase={ASSETS}
           />

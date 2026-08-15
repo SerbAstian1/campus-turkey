@@ -17,6 +17,7 @@
 
 import { Accordion, Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, TimelineTrack, ASSETS } from "@/ds";
 import { generalFaq, journey } from "@/content";
+import { useT } from "@/i18n/context";
 import { go, useHref } from "@/app/router";
 import { FaqLayout, PageBody, PageHero } from "../shared";
 
@@ -27,56 +28,60 @@ import { FaqLayout, PageBody, PageHero } from "../shared";
  * single list of eleven documents reads as eleven things needed today — which is both
  * wrong and the most common reason someone closes the page.
  */
-const READY: { step: string; heading: string; items: string[]; note?: string }[] = [
-  {
-    step: "Step 1",
-    heading: "Nothing yet",
-    items: ["Your name and how to reach you", "The subject you want to study", "Roughly when you want to start"],
-    note: "No documents at this stage, and nothing to pay.",
-  },
-  {
-    step: "Step 2",
-    heading: "Your results",
-    items: [
-      "High school transcript, or degree transcript for a master's",
-      "Your grades as they stand. Predicted grades are fine here",
-      "Any English or Turkish language certificate you already hold",
-    ],
-    note: "These decide the shortlist. Send what you have; a missing certificate does not stop this step.",
-  },
-  {
-    step: "Step 3",
-    heading: "The application file",
-    items: [
-      "Passport, valid for the whole of your first year",
-      "Certified transcript and school leaving certificate",
-      "Passport photographs to the university's specification",
-      "Language certificate, where the program requires one",
-    ],
-    note: "We tell you which of these need translation and certification before you pay for either.",
-  },
-  {
-    step: "Step 4",
-    heading: "The visa file",
-    items: [
-      "Your acceptance letter, which we obtain",
-      "Proof of funds in the amount the consulate asks for",
-      "Health insurance, which is mandatory and costs about $60 a year",
-      "Your visa appointment booking",
-    ],
-    note: "You only pay after your student visa is approved.",
-  },
-  {
-    step: "Step 5",
-    heading: "On arrival",
-    items: [
-      "Residence permit application, within your first month",
-      "Bank account and a local phone line",
-      "University registration in person",
-    ],
-    note: "Airport pickup, accommodation and your first week are arranged before you travel.",
-  },
-];
+function useReady(): { step: string; heading: string; items: string[]; note?: string }[] {
+  const t = useT();
+
+  return [
+    {
+      step: t("Step 1"),
+      heading: t("Nothing yet"),
+      items: [t("Your name and how to reach you"), t("The subject you want to study"), t("Roughly when you want to start")],
+      note: t("No documents at this stage, and nothing to pay."),
+    },
+    {
+      step: t("Step 2"),
+      heading: t("Your results"),
+      items: [
+        t("High school transcript, or degree transcript for a master's"),
+        t("Your grades as they stand. Predicted grades are fine here"),
+        t("Any English or Turkish language certificate you already hold"),
+      ],
+      note: t("These decide the shortlist. Send what you have; a missing certificate does not stop this step."),
+    },
+    {
+      step: t("Step 3"),
+      heading: t("The application file"),
+      items: [
+        t("Passport, valid for the whole of your first year"),
+        t("Certified transcript and school leaving certificate"),
+        t("Passport photographs to the university's specification"),
+        t("Language certificate, where the program requires one"),
+      ],
+      note: t("We tell you which of these need translation and certification before you pay for either."),
+    },
+    {
+      step: t("Step 4"),
+      heading: t("The visa file"),
+      items: [
+        t("Your acceptance letter, which we obtain"),
+        t("Proof of funds in the amount the consulate asks for"),
+        t("Health insurance, which is mandatory and costs about $60 a year"),
+        t("Your visa appointment booking"),
+      ],
+      note: t("You only pay after your student visa is approved."),
+    },
+    {
+      step: t("Step 5"),
+      heading: t("On arrival"),
+      items: [
+        t("Residence permit application, within your first month"),
+        t("Bank account and a local phone line"),
+        t("University registration in person"),
+      ],
+      note: t("Airport pickup, accommodation and your first week are arranged before you travel."),
+    },
+  ];
+}
 
 /** The process questions from the shared FAQ. The money ones live on the scholarships page. */
 const PROCESS_FAQ = generalFaq.filter((item) =>
@@ -85,19 +90,21 @@ const PROCESS_FAQ = generalFaq.filter((item) =>
 
 export default function ApplicationProcess() {
   const href = useHref();
+  const t = useT();
+  const ready = useReady();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
-        eyebrow="Study in Türkiye"
-        title="How to apply, and what to have ready"
-        lead="Five steps from first message to first week on campus. This page says what happens at each one and which documents you need before it, so nothing arrives as a surprise."
+        eyebrow={t("Study in Türkiye")}
+        title={t("How to apply, and what to have ready")}
+        lead={t("Five steps from first message to first week on campus. This page says what happens at each one and which documents you need before it, so nothing arrives as a surprise.")}
         actions={
           <>
             <Button variant="onDark" size="lg" onClick={() => go("apply")}>
-              Start step one
+              {t("Start step one")}
             </Button>
             <Button variant="outlineOnDark" size="lg" icon="graduation-cap" onClick={() => go("study-in-turkiye")}>
-              Back to Study in Türkiye
+              {t("Back to Study in Türkiye")}
             </Button>
           </>
         }
@@ -106,7 +113,7 @@ export default function ApplicationProcess() {
       <PageBody>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal>
-            <SectionHeading eyebrow="The route" title="What happens, in order" />
+            <SectionHeading eyebrow={t("The route")} title={t("What happens, in order")} />
           </ScrollReveal>
           <ScrollReveal delay={80}>
             <TimelineTrack steps={journey} />
@@ -116,14 +123,14 @@ export default function ApplicationProcess() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal>
             <SectionHeading
-              eyebrow="Documents"
-              title="What to have ready, and when"
-              lead="Grouped by step rather than as one list. Eleven documents in a single column reads as eleven things needed today, which is not true of any of them."
+              eyebrow={t("Documents")}
+              title={t("What to have ready, and when")}
+              lead={t("Grouped by step rather than as one list. Eleven documents in a single column reads as eleven things needed today, which is not true of any of them.")}
             />
           </ScrollReveal>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-            {READY.map((group, index) => {
+            {ready.map((group, index) => {
               const step = journey[index];
               return (
                 <ScrollReveal key={group.step} delay={index * 60}>
@@ -176,7 +183,7 @@ export default function ApplicationProcess() {
           <FaqLayout
             heading={
               <ScrollReveal>
-                <SectionHeading eyebrow="Questions" title="About the process" lead="Anything else, message us on WhatsApp." />
+                <SectionHeading eyebrow={t("Questions")} title={t("About the process")} lead={t("Anything else, message us on WhatsApp.")} />
               </ScrollReveal>
             }
           >
@@ -188,12 +195,12 @@ export default function ApplicationProcess() {
 
         <ScrollReveal>
           <CTABanner
-            eyebrow="Next step"
-            title="Send us step one"
-            body="Your name, the subject and roughly when. No documents, nothing to pay, and a shortlist back with real tuition."
-            primaryLabel="Apply Now"
+            eyebrow={t("Next step")}
+            title={t("Send us step one")}
+            body={t("Your name, the subject and roughly when. No documents, nothing to pay, and a shortlist back with real tuition.")}
+            primaryLabel={t("Apply Now")}
             primaryHref={href("apply")}
-            secondaryLabel="Book a Consultation"
+            secondaryLabel={t("Book a Consultation")}
             secondaryHref={href("contact")}
             assetBase={ASSETS}
           />

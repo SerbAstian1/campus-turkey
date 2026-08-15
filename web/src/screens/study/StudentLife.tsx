@@ -18,6 +18,7 @@
 
 import { Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, ASSETS } from "@/ds";
 import { studentLife } from "@/content";
+import { useT } from "@/i18n/context";
 import { ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
@@ -30,31 +31,44 @@ import { PageBody, PageHero } from "../shared";
  * grocery budget, the $8 transport card and the $60 annual insurance divided across
  * twelve months. Stated as a table because the question is arithmetic.
  */
-const BUDGET: { item: string; dorm: string; flat: string }[] = [
-  { item: "Housing", dorm: "$60 – $150", flat: "$200 – $350" },
-  { item: "Food and groceries", dorm: "$130", flat: "$130" },
-  { item: "Transport card", dorm: "$8", flat: "$8" },
-  { item: "Health insurance", dorm: "$5", flat: "$5" },
-  { item: "Phone and data", dorm: "$10", flat: "$10" },
-];
+/**
+ * A hook, not a module constant — see the note in About.tsx.
+ *
+ * Only the row label is translated. The figures are currency and stay as they are:
+ * they carry no letters, so the completeness gate treats them as protected rather than
+ * as seventeen translations somebody has to supply and keep in step.
+ */
+function useBudget(): { item: string; dorm: string; flat: string }[] {
+  const t = useT();
+
+  return [
+    { item: t("Housing"), dorm: "$60 – $150", flat: "$200 – $350" },
+    { item: t("Food and groceries"), dorm: "$130", flat: "$130" },
+    { item: t("Transport card"), dorm: "$8", flat: "$8" },
+    { item: t("Health insurance"), dorm: "$5", flat: "$5" },
+    { item: t("Phone and data"), dorm: "$10", flat: "$10" },
+  ];
+}
 
 const TOTALS = { dorm: "$213 – $303", flat: "$353 – $503" };
 
 export default function StudentLife() {
   const href = useHref();
+  const t = useT();
+  const budget = useBudget();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
-        eyebrow="Study in Türkiye"
-        title="What a month actually costs"
-        lead="Real figures from students we placed this year, added up two ways: a state dormitory and a shared private flat. Both totals are below what most students expect."
+        eyebrow={t("Study in Türkiye")}
+        title={t("What a month actually costs")}
+        lead={t("Real figures from students we placed this year, added up two ways: a state dormitory and a shared private flat. Both totals are below what most students expect.")}
         actions={
           <>
             <Button variant="onDark" size="lg" onClick={() => go("apply")}>
-              Get my full costing
+              {t("Get my full costing")}
             </Button>
             <Button variant="outlineOnDark" size="lg" icon="graduation-cap" onClick={() => go("study-in-turkiye")}>
-              Back to Study in Türkiye
+              {t("Back to Study in Türkiye")}
             </Button>
           </>
         }
@@ -64,9 +78,9 @@ export default function StudentLife() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal>
             <SectionHeading
-              eyebrow="The arithmetic"
-              title="A month, added up"
-              lead="Housing is the only line that moves much. Everything else is close to fixed wherever you live."
+              eyebrow={t("The arithmetic")}
+              title={t("A month, added up")}
+              lead={t("Housing is the only line that moves much. Everything else is close to fixed wherever you live.")}
             />
           </ScrollReveal>
 
@@ -74,7 +88,7 @@ export default function StudentLife() {
             <div style={{ overflowX: "auto" }}>
               <Card padding="0" style={{ overflow: "hidden", minWidth: 520 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr" }}>
-                  {["Per month", "State dormitory", "Shared private flat"].map((column) => (
+                  {[t("Per month"), t("State dormitory"), t("Shared private flat")].map((column) => (
                     <span
                       key={column}
                       className="ct-eyebrow"
@@ -88,7 +102,7 @@ export default function StudentLife() {
                     </span>
                   ))}
 
-                  {BUDGET.map((row) =>
+                  {budget.map((row) =>
                     [row.item, row.dorm, row.flat].map((cell, column) => (
                       <span
                         key={`${row.item}-${column}`}
@@ -107,7 +121,7 @@ export default function StudentLife() {
                     )),
                   )}
 
-                  {["Total", TOTALS.dorm, TOTALS.flat].map((cell, column) => (
+                  {[t("Total"), TOTALS.dorm, TOTALS.flat].map((cell, column) => (
                     <span
                       key={`total-${column}`}
                       style={{
@@ -131,16 +145,14 @@ export default function StudentLife() {
 
           <ScrollReveal delay={80}>
             <p style={{ color: "var(--text-muted)", fontSize: "var(--fs-body-sm)", lineHeight: "var(--lh-body)", maxWidth: "68ch", margin: 0 }}>
-              Tuition is not in this table. Public programs run $600 to $2,000 a year and are
-              billed by the university, not monthly. A scholarship changes that number rather
-              than any of these.
+              {t("Tuition is not in this table. Public programs run $600 to $2,000 a year and are billed by the university, not monthly. A scholarship changes that number rather than any of these.")}
             </p>
           </ScrollReveal>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal>
-            <SectionHeading eyebrow="Line by line" title="What the money buys" />
+            <SectionHeading eyebrow={t("Line by line")} title={t("What the money buys")} />
           </ScrollReveal>
 
           <CardGrid min={250} gap="var(--space-6)">
@@ -165,21 +177,21 @@ export default function StudentLife() {
               frame of that animation. */}
           <ScrollReveal delay={80}>
             <CardGrid min={240} gap="var(--space-6)">
-              <ImagePlaceholder slot="study-housing" label="Dormitory or student housing" ratio="4 / 3" />
-              <ImagePlaceholder slot="study-campus" label="Campus life, students outdoors" ratio="4 / 3" />
-              <ImagePlaceholder slot="study-city" label="City street, everyday costs" ratio="4 / 3" />
+              <ImagePlaceholder slot="study-housing" label={t("Dormitory or student housing")} ratio="4 / 3" />
+              <ImagePlaceholder slot="study-campus" label={t("Campus life, students outdoors")} ratio="4 / 3" />
+              <ImagePlaceholder slot="study-city" label={t("City street, everyday costs")} ratio="4 / 3" />
             </CardGrid>
           </ScrollReveal>
         </div>
 
         <ScrollReveal>
           <CTABanner
-            eyebrow="Next step"
-            title="Get the number for your city and program"
-            body="Tuition, housing and living costs for the universities you are actually considering, in one document."
-            primaryLabel="Apply Now"
+            eyebrow={t("Next step")}
+            title={t("Get the number for your city and program")}
+            body={t("Tuition, housing and living costs for the universities you are actually considering, in one document.")}
+            primaryLabel={t("Apply Now")}
             primaryHref={href("apply")}
-            secondaryLabel="Book a Consultation"
+            secondaryLabel={t("Book a Consultation")}
             secondaryHref={href("contact")}
             assetBase={ASSETS}
           />
