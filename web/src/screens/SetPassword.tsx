@@ -24,6 +24,7 @@ import { useState, type FormEvent } from "react";
 import { BrandDivider, Button, Icon, Input, Logo, ASSETS } from "@/ds";
 import { go } from "@/app/router";
 import { requestSetupCode, setPasswordWithCode, signInWithPassword } from "@/features/auth/client";
+import { useT } from "@/i18n/context";
 
 /** Better Auth is configured with `minPasswordLength: 12`. Stated here so the field can
  *  say so before the server refuses, rather than after. */
@@ -32,6 +33,7 @@ const MIN_PASSWORD = 12;
 type Step = "password" | "code" | "done";
 
 export default function SetPassword() {
+  const t = useT();
   const [step, setStep] = useState<Step>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,8 +44,8 @@ export default function SetPassword() {
   const [error, setError] = useState<string | null>(null);
 
   const passwordProblem = (): string | null => {
-    if (password.length < MIN_PASSWORD) return `Use at least ${MIN_PASSWORD} characters.`;
-    if (password !== confirm) return "The two passwords do not match.";
+    if (password.length < MIN_PASSWORD) return t("Use at least {count} characters.", { count: MIN_PASSWORD });
+    if (password !== confirm) return t("The two passwords do not match.");
     return null;
   };
 
@@ -105,21 +107,20 @@ export default function SetPassword() {
 
           {step === "done" ? (
             <>
-              <h1 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Your password is set</h1>
+              <h1 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{t("Your password is set")}</h1>
               <BrandDivider style={{ maxWidth: 200 }} />
               <p style={{ margin: 0, color: "var(--text-body)" }}>
-                You can sign in now with your email and the password you just chose.
+                {t("You can sign in now with your email and the password you just chose.")}
               </p>
               <Button variant="primary" size="lg" fullWidth onClick={() => go("portal")}>
-                Go to sign in
+                {t("Go to sign in")}
               </Button>
             </>
           ) : (
             <>
-              <h1 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Set your password</h1>
+              <h1 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{t("Set your password")}</h1>
               <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
-                Campus Turkey has approved your account. Choose a password, then confirm the
-                code we email you. You will not leave this page.
+                {t("Campus Turkey has approved your account. Choose a password, then confirm the code we email you. You will not leave this page.")}
               </p>
 
               <form
@@ -127,18 +128,18 @@ export default function SetPassword() {
                 style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}
               >
                 <Input
-                  id="sp-email" label="Email address" type="email" icon="mail"
+                  id="sp-email" label={t("Email address")} type="email" icon="mail"
                   placeholder="you@agency.com" required autoComplete="username"
                   value={email} onChange={(e) => setEmail(e.target.value)}
                 />
                 <Input
-                  id="sp-pass" label="New password" type="password" icon="lock"
-                  hint={`At least ${MIN_PASSWORD} characters.`}
+                  id="sp-pass" label={t("New password")} type="password" icon="lock"
+                  hint={t("At least {count} characters.", { count: MIN_PASSWORD })}
                   placeholder="••••••••••••" required autoComplete="new-password"
                   value={password} onChange={(e) => setPassword(e.target.value)}
                 />
                 <Input
-                  id="sp-confirm" label="Confirm password" type="password" icon="lock"
+                  id="sp-confirm" label={t("Confirm password")} type="password" icon="lock"
                   placeholder="••••••••••••" required autoComplete="new-password"
                   value={confirm} onChange={(e) => setConfirm(e.target.value)}
                 />
@@ -147,8 +148,8 @@ export default function SetPassword() {
                   <>
                     <BrandDivider style={{ maxWidth: 160 }} />
                     <Input
-                      id="sp-code" label="Confirmation code" icon="shield"
-                      hint="Six digits. It expires in ten minutes and can be used once."
+                      id="sp-code" label={t("Confirmation code")} icon="shield"
+                      hint={t("Six digits. It expires in ten minutes and can be used once.")}
                       placeholder="123456" required inputMode="numeric" autoComplete="one-time-code"
                       value={code} onChange={(e) => { setCode(e.target.value); setAutofilled(false); }}
                     />
@@ -160,13 +161,12 @@ export default function SetPassword() {
                       <span style={{ display: "flex", gap: "var(--space-2)", alignItems: "flex-start", fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
                         <Icon name="info" size={14} />
                         <span>
-                          Filled in for you because no email provider is configured on this
-                          environment. On the live site this arrives by email only.
+                          {t("Filled in for you because no email provider is configured on this environment. On the live site this arrives by email only.")}
                         </span>
                       </span>
                     ) : (
                       <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
-                        We have emailed your code. It can take a moment to arrive.
+                        {t("We have emailed your code. It can take a moment to arrive.")}
                       </span>
                     )}
                   </>
@@ -180,10 +180,10 @@ export default function SetPassword() {
 
                 <Button variant="primary" size="lg" fullWidth type="submit" disabled={busy}>
                   {busy
-                    ? "Working…"
+                    ? t("Working…")
                     : step === "password"
-                      ? "Send my code"
-                      : "Confirm and sign in"}
+                      ? t("Send my code")
+                      : t("Confirm and sign in")}
                 </Button>
 
                 {step === "code" ? (
@@ -191,7 +191,7 @@ export default function SetPassword() {
                     variant="ghost" type="button" disabled={busy}
                     onClick={(e) => { setStep("password"); void askForCode(e as unknown as FormEvent); }}
                   >
-                    Send another code
+                    {t("Send another code")}
                   </Button>
                 ) : null}
               </form>

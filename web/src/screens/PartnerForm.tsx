@@ -14,11 +14,20 @@ import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
 import { useLeadSubmit } from "@/features/leads/submit";
 import { CaptchaField } from "@/features/leads/captcha";
+import { useT } from "@/i18n/context";
+import { useTranslatedOptions } from "@/i18n/options";
+
+/**
+ * Canonical English, hoisted so `useTranslatedOptions` can memoise on array identity.
+ * The stored value reaches the staff inbox and must not be translated.
+ */
+const VOLUMES = ["Under 10", "10 to 50", "50 to 200", "Over 200"] as const;
 
 export function PartnerForm({
-  kinds, submitLabel = "Submit registration", intro, leadKind = "PARTNER",
+  kinds, submitLabel, intro, leadKind = "PARTNER",
 }: {
-  kinds: string[];
+  kinds: readonly string[];
+  /** Defaults to "Submit registration", translated — a default parameter cannot call `t()`. */
   submitLabel?: string;
   intro?: string;
   /**
@@ -28,6 +37,9 @@ export function PartnerForm({
    */
   leadKind?: "PARTNER" | "REPRESENTATIVE";
 }) {
+  const t = useT();
+  const kindOptions = useTranslatedOptions(kinds);
+  const volumes = useTranslatedOptions(VOLUMES);
   const [form, setForm] = useState({
     org: "", kind: "", country: "", name: "", email: "", phone: "", volume: "", terms: true,
   });
@@ -49,13 +61,13 @@ export function PartnerForm({
       {sent ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-5)", textAlign: "center", padding: "var(--space-6) 0" }}>
           <BrandMark size={80} />
-          <Badge tone="brand" icon="check">Registration received</Badge>
-          <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Welcome{form.org ? `, ${form.org}` : ""}.</h3>
+          <Badge tone="brand" icon="check">{t("Registration received")}</Badge>
+          <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{form.org ? t("Welcome, {org}.", { org: form.org }) : t("Welcome.")}</h3>
           <BrandDivider style={{ maxWidth: 220 }} />
-          <p style={{ maxWidth: 460, color: "var(--text-body)" }}>Your agreement and portal login are on the way. Expect a call from your named contact within one working day.</p>
+          <p style={{ maxWidth: 460, color: "var(--text-body)" }}>{t("Your agreement and portal login are on the way. Expect a call from your named contact within one working day.")}</p>
           <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap", justifyContent: "center" }}>
-            <Button variant="primary" icon="log-in" onClick={() => go("portal")}>Go to the portal</Button>
-            <Button variant="secondary" onClick={reset}>Register another office</Button>
+            <Button variant="primary" icon="log-in" onClick={() => go("portal")}>{t("Go to the portal")}</Button>
+            <Button variant="secondary" onClick={reset}>{t("Register another office")}</Button>
           </div>
         </div>
       ) : (
@@ -79,16 +91,20 @@ export function PartnerForm({
           }}
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-5)" }}>
           {intro ? <p style={{ gridColumn: "span 2", margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>{intro}</p> : null}
-          <Input id="p-org" label="Organisation name" icon="building-2" placeholder="Bright Futures Education" required value={form.org} onChange={set("org")} style={{ gridColumn: "span 2" }} />
-          <Select id="p-kind" label="You are a" required options={kinds} value={form.kind} onChange={set("kind")} />
-          <Input id="p-country" label="Country you cover" icon="globe" placeholder="Nigeria" required value={form.country} onChange={set("country")} />
-          <Input id="p-name" label="Contact person" icon="user" placeholder="Full name" required value={form.name} onChange={set("name")} />
-          <Input id="p-email" label="Work email" type="email" icon="mail" placeholder="you@agency.com" required value={form.email} onChange={set("email")} />
-          <Input id="p-phone" label="WhatsApp number" icon="phone" hint="Include your country code." value={form.phone} onChange={set("phone")} />
-          <Select id="p-volume" label="Students per year" options={["Under 10", "10 to 50", "50 to 200", "Over 200"]} value={form.volume} onChange={set("volume")} />
+          <Input id="p-org" label={t("Organisation name")} icon="building-2" placeholder={t("Bright Futures Education")} required value={form.org} onChange={set("org")} style={{ gridColumn: "span 2" }} />
+          <Select id="p-kind" label={t("You are a")} required options={kindOptions.options}
+            value={kindOptions.display(form.kind)}
+            onChange={(e) => setForm((f) => ({ ...f, kind: kindOptions.toEnglish(e.target.value) }))} />
+          <Input id="p-country" label={t("Country you cover")} icon="globe" placeholder={t("Nigeria")} required value={form.country} onChange={set("country")} />
+          <Input id="p-name" label={t("Contact person")} icon="user" placeholder={t("Full name")} required value={form.name} onChange={set("name")} />
+          <Input id="p-email" label={t("Work email")} type="email" icon="mail" placeholder="you@agency.com" required value={form.email} onChange={set("email")} />
+          <Input id="p-phone" label={t("WhatsApp number")} icon="phone" hint={t("Include your country code.")} value={form.phone} onChange={set("phone")} />
+          <Select id="p-volume" label={t("Students per year")} options={volumes.options}
+            value={volumes.display(form.volume)}
+            onChange={(e) => setForm((f) => ({ ...f, volume: volumes.toEnglish(e.target.value) }))} />
           <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-            <Checkbox id="p-terms" label="I agree to the partner terms and commission schedule"
-              description="You can read both before signing. Nothing is binding until you do." checked={form.terms} onChange={set("terms")} />
+            <Checkbox id="p-terms" label={t("I agree to the partner terms and commission schedule")}
+              description={t("You can read both before signing. Nothing is binding until you do.")} checked={form.terms} onChange={set("terms")} />
             {state.status === "failed" ? (
               <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
                 <Icon name="alert-circle" size={16} />{state.message}
@@ -100,7 +116,7 @@ export function PartnerForm({
             <CaptchaField />
 
             <Button variant="primary" size="lg" type="submit" disabled={state.status === "sending"}>
-              {state.status === "sending" ? "Sending…" : submitLabel}
+              {state.status === "sending" ? t("Sending…") : (submitLabel ?? t("Submit registration"))}
             </Button>
           </div>
         </form>

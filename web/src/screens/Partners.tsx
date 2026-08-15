@@ -8,6 +8,18 @@ import { scrollToId } from "@/components/Common";
 import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero } from "./shared";
 import { PartnerForm } from "./PartnerForm";
+
+/**
+ * Canonical English, hoisted out of the JSX.
+ *
+ * Two reasons, and the second is the one that bites. These reach the staff inbox inside
+ * the lead message, so the stored value must stay English however the label is shown.
+ * And `useTranslatedOptions` memoises on array identity — declared inline it was a new
+ * array on every render, rebuilding the lookup on every keystroke in the form.
+ */
+const PARTNER_KINDS = [
+  "Education agency", "Independent consultant", "University", "Hospital or clinic", "Chamber of commerce",
+] as const;
 import { CardGrid } from "@/components/CardGrid";
 import { useT } from "@/i18n/context";
 
@@ -65,7 +77,7 @@ export default function Partners() {
               </div>
             ))}
           </div>
-          <PartnerForm kinds={["Education agency", "Independent consultant", "University", "Hospital or clinic", "Chamber of commerce"]} />
+          <PartnerForm kinds={PARTNER_KINDS} />
         </div>
 
         <ScrollReveal>

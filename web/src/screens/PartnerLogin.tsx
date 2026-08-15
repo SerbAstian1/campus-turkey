@@ -13,9 +13,32 @@ import { BrandDivider, Button, Checkbox, Icon, Input, Logo, Select, ASSETS } fro
 import { go, useHref } from "@/app/router";
 import { signInWithPassword } from "@/features/auth/client";
 import { useLeadSubmit } from "@/features/leads/submit";
+import { useT } from "@/i18n/context";
+import { useTranslatedOptions } from "@/i18n/options";
+
+/**
+ * Canonical English, because this value is submitted with the lead and read by staff.
+ * Hoisted for `useTranslatedOptions`, which memoises on array identity.
+ */
+const PARTNER_KINDS = ["Education agency", "Consultant", "University", "Country representative"] as const;
+
+/** A hook, not a constant — see the note in About.tsx. */
+function usePortalBenefits(): string[] {
+  const t = useT();
+
+  return [
+    t("Track every student you refer"),
+    t("See commission and payment status"),
+    t("Download university brochures and price lists"),
+    t("Register new applicants in one form"),
+  ];
+}
 
 export default function PartnerLogin() {
   const href = useHref();
+  const t = useT();
+  const benefits = usePortalBenefits();
+  const kinds = useTranslatedOptions(PARTNER_KINDS);
   const [tab, setTab] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -77,12 +100,13 @@ export default function PartnerLogin() {
     <div style={{ minHeight: "100dvh", display: "grid", gridTemplateColumns: "1.05fr 1fr" }}>
       <div style={{ background: "var(--gradient-brand-deep)", padding: "var(--section-y) var(--gutter)", display: "flex", flexDirection: "column", gap: "var(--space-8)", justifyContent: "center" }}>
         <Logo variant="lockup" theme="reversed" height={96} assetBase={ASSETS} />
-        <h1 style={{ color: "var(--white)", fontSize: "var(--fs-h1)", lineHeight: "var(--lh-display)", maxWidth: 460, margin: 0 }}>Partner and representative portal</h1>
+        <h1 style={{ color: "var(--white)", fontSize: "var(--fs-h1)", lineHeight: "var(--lh-display)", maxWidth: 460, margin: 0 }}>{t("Partner and representative portal")}</h1>
         <BrandDivider theme="dark" style={{ maxWidth: 280 }} />
         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "var(--space-3)", maxWidth: 420 }}>
-          {["Track every student you refer", "See commission and payment status", "Download university brochures and price lists", "Register new applicants in one form"].map((t) => (
-            <li key={t} style={{ display: "flex", gap: "var(--space-3)", color: "rgba(255,255,255,.88)", fontSize: "var(--fs-body)" }}>
-              <Icon name="check" size={18} color="var(--green-300)" strokeWidth={2.5} />{t}
+          {/* `benefit`, not `t` — the parameter shadowed the translator. */}
+          {benefits.map((benefit) => (
+            <li key={benefit} style={{ display: "flex", gap: "var(--space-3)", color: "rgba(255,255,255,.88)", fontSize: "var(--fs-body)" }}>
+              <Icon name="check" size={18} color="var(--green-300)" strokeWidth={2.5} />{benefit}
             </li>
           ))}
         </ul>
@@ -91,7 +115,7 @@ export default function PartnerLogin() {
       <div style={{ background: "var(--surface-page)", padding: "var(--section-y) var(--gutter)", display: "flex", alignItems: "center" }}>
         <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
           <div style={{ display: "flex", gap: 4, padding: 4, borderRadius: "var(--radius-pill)", background: "var(--surface-subtle)", border: "1px solid var(--border-subtle)" }}>
-            {([["login", "Partner login"], ["register", "Register"]] as const).map(([k, label]) => (
+            {([["login", t("Partner login")], ["register", t("Register")]] as const).map(([k, label]) => (
               <button key={k} type="button" onClick={() => setTab(k)} style={{
                 flex: 1, height: 40, border: "none", borderRadius: "var(--radius-pill)", cursor: "pointer",
                 fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-medium)",
@@ -104,19 +128,19 @@ export default function PartnerLogin() {
 
           {tab === "login" ? (
             <>
-              <h3 style={{ fontSize: "var(--fs-h2)" }}>Welcome back</h3>
+              <h3 style={{ fontSize: "var(--fs-h2)" }}>{t("Welcome back")}</h3>
               {/* A real form, so Enter submits and password managers recognise it —
                   both of which a pair of inputs beside a button does not give you. */}
               <form onSubmit={signIn} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-                <Input id="p-email" label="Email address" type="email" icon="mail" placeholder="agency@example.com"
+                <Input id="p-email" label={t("Email address")} type="email" icon="mail" placeholder="agency@example.com"
                   required autoComplete="username" value={email}
                   onChange={(e) => setEmail(e.target.value)} />
-                <Input id="p-pass" label="Password" type="password" icon="lock" placeholder="••••••••"
+                <Input id="p-pass" label={t("Password")} type="password" icon="lock" placeholder="••••••••"
                   required autoComplete="current-password" value={password}
                   onChange={(e) => setPassword(e.target.value)} />
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)" }}>
-                  <Checkbox id="p-remember" label="Keep me signed in" checked onChange={() => {}} />
-                  <a href={href("contact")} style={{ fontSize: "var(--fs-body-sm)" }}>Forgot password</a>
+                  <Checkbox id="p-remember" label={t("Keep me signed in")} checked onChange={() => {}} />
+                  <a href={href("contact")} style={{ fontSize: "var(--fs-body-sm)" }}>{t("Forgot password")}</a>
                 </div>
 
                 {error ? (
@@ -126,7 +150,7 @@ export default function PartnerLogin() {
                 ) : null}
 
                 <Button variant="primary" size="lg" fullWidth type="submit" disabled={signingIn}>
-                  {signingIn ? "Signing in…" : "Sign in"}
+                  {signingIn ? t("Signing in…") : t("Sign in")}
                 </Button>
               </form>
             </>
@@ -134,45 +158,44 @@ export default function PartnerLogin() {
             <>
               {registered.status === "sent" ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-                  <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Application received</h3>
+                  <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{t("Application received")}</h3>
                   <p style={{ margin: 0, color: "var(--text-body)" }}>
-                    We have your details. Someone reviews every application by hand, and your
-                    named contact will call within one working day.
+                    {t("We have your details. Someone reviews every application by hand, and your named contact will call within one working day.")}
                   </p>
                   <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "var(--fs-body-sm)" }}>
-                    Your login is created after that call. You cannot sign in yet, and this
-                    form has not made you a password.
+                    {t("Your login is created after that call. You cannot sign in yet, and this form has not made you a password.")}
                   </p>
                   <Button variant="secondary" size="lg" fullWidth onClick={() => setTab("login")}>
-                    Back to sign in
+                    {t("Back to sign in")}
                   </Button>
                 </div>
               ) : (
                 <form onSubmit={register} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-                  <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Become a partner</h3>
+                  <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{t("Become a partner")}</h3>
                   {/* Says what this does before anything is typed. The previous version
                       was headed "Create partner account" above a button that only
                       navigated — so an applicant reasonably believed they had an account,
                       and then could not sign in. */}
                   <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
-                    This sends an application. Campus Turkey reviews it and creates your
-                    login. Accounts are not opened automatically.
+                    {t("This sends an application. Campus Turkey reviews it and creates your login. Accounts are not opened automatically.")}
                   </p>
 
-                  <Input id="r-org" label="Organisation name" icon="building-2"
-                    placeholder="Bright Futures Education" required
+                  <Input id="r-org" label={t("Organisation name")} icon="building-2"
+                    placeholder={t("Bright Futures Education")} required
                     value={reg.org} onChange={setReg("org")} />
-                  <Input id="r-name" label="Your full name" icon="user"
-                    placeholder="Amina Yusuf" required autoComplete="name"
+                  <Input id="r-name" label={t("Your full name")} icon="user"
+                    placeholder={t("Amina Yusuf")} required autoComplete="name"
                     value={reg.name} onChange={setReg("name")} />
-                  <Select id="r-kind" label="You are a"
-                    options={["Education agency", "Consultant", "University", "Country representative"]}
-                    required value={reg.volume} onChange={setReg("volume")} />
-                  <Input id="r-email" label="Work email" type="email" icon="mail"
+                  <Select id="r-kind" label={t("You are a")}
+                    options={kinds.options}
+                    value={kinds.display(reg.volume)}
+                    onChange={(e) => setRegState((f) => ({ ...f, volume: kinds.toEnglish(e.target.value) }))}
+                    required />
+                  <Input id="r-email" label={t("Work email")} type="email" icon="mail"
                     placeholder="you@agency.com" required autoComplete="email"
                     value={reg.email} onChange={setReg("email")} />
 
-                  <Checkbox id="r-terms" label="I agree to the partner terms"
+                  <Checkbox id="r-terms" label={t("I agree to the partner terms")}
                     checked={reg.terms}
                     onChange={(e) => setReg("terms")(e as never)} />
 
@@ -184,14 +207,14 @@ export default function PartnerLogin() {
 
                   <Button variant="primary" size="lg" fullWidth type="submit"
                     disabled={registered.status === "sending"}>
-                    {registered.status === "sending" ? "Sending…" : "Send application"}
+                    {registered.status === "sending" ? t("Sending…") : t("Send application")}
                   </Button>
                 </form>
               )}
             </>
           )}
 
-          <Button variant="ghost" icon="arrow-left" onClick={() => go("home")}>Back to the website</Button>
+          <Button variant="ghost" icon="arrow-left" onClick={() => go("home")}>{t("Back to the website")}</Button>
         </div>
       </div>
     </div>
