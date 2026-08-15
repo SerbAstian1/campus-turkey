@@ -22,6 +22,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { BrandDivider, Button, Card, Icon, Input, Logo, ASSETS } from "@/ds";
 import { go } from "@/app/router";
+import { useT } from "@/i18n/context";
 import {
   referStudent, useReferredStudents, useRepresentativeProfile, when,
   type ReferredStudent, type Stage,
@@ -29,30 +30,42 @@ import {
 
 type View = "dashboard" | "students" | "profile";
 
-const NAV: { key: View; label: string; icon: string }[] = [
-  { key: "dashboard", label: "Dashboard", icon: "layout-dashboard" },
-  { key: "students", label: "My Students", icon: "users" },
-  { key: "profile", label: "Profile", icon: "user" },
-];
-
 /** Stages that mean the application is live and moving. */
 const ACTIVE: Stage[] = ["DOCUMENTS", "SUBMITTED", "OFFER", "VISA"];
 /** Stages where the representative is the blocker, not Campus Turkey. */
 const NEEDS_ACTION: Stage[] = ["ENQUIRY", "DOCUMENTS"];
 
-const STAGE_LABEL: Record<Stage, string> = {
-  ENQUIRY: "Enquiry",
-  DOCUMENTS: "Documents",
-  SUBMITTED: "Submitted",
-  OFFER: "Offer",
-  VISA: "Visa",
-  REGISTERED: "Registered",
-};
+/**
+ * The stage names a representative reads, keyed by the enum the API sends.
+ *
+ * A hook rather than a constant, and written out as literal `t()` calls, because the
+ * extractor collects string literals: `t(STAGE_LABEL[stage])` would render translated
+ * and never put "Enquiry" in the catalogue for anyone to translate.
+ */
+function useStageLabels(): Record<Stage, string> {
+  const t = useT();
+
+  return {
+    ENQUIRY: t("Enquiry"),
+    DOCUMENTS: t("Documents"),
+    SUBMITTED: t("Submitted"),
+    OFFER: t("Offer"),
+    VISA: t("Visa"),
+    REGISTERED: t("Registered"),
+  };
+}
 
 export default function RepresentativePortal() {
+  const t = useT();
   const [view, setView] = useState<View>("dashboard");
   const profile = useRepresentativeProfile();
   const students = useReferredStudents();
+
+  const nav: { key: View; label: string; icon: string }[] = [
+    { key: "dashboard", label: t("Dashboard"), icon: "layout-dashboard" },
+    { key: "students", label: t("My Students"), icon: "users" },
+    { key: "profile", label: t("Profile"), icon: "user" },
+  ];
 
   const counts = useMemo(() => {
     const items = students.status === "ready" ? students.items : [];
@@ -87,10 +100,10 @@ export default function RepresentativePortal() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
           <span style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-micro)", letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,.62)" }}>
-            Representative
+            {t("Representative")}
           </span>
           <span style={{ color: "var(--white)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-medium)" }}>
-            {profile?.fullName ?? "Your account"}
+            {profile?.fullName ?? t("Your account")}
           </span>
           {/* The territory is the agreement. Shown permanently, because every question a
               representative has about what they may claim is answered by it. */}
@@ -104,7 +117,7 @@ export default function RepresentativePortal() {
         <BrandDivider theme="dark" />
 
         <nav style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const active = item.key === view;
             return (
               <button
@@ -129,7 +142,7 @@ export default function RepresentativePortal() {
 
         <a href="/portal" style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)", color: "rgba(255,255,255,.7)", fontSize: "var(--fs-body-sm)", fontFamily: "var(--font-ui)" }}>
           <Icon name="log-out" size={16} />
-          Sign out
+          {t("Sign out")}
         </a>
       </aside>
 
@@ -164,18 +177,20 @@ function Dashboard({
   students: ReturnType<typeof useReferredStudents>;
   onRefer: () => void;
 }) {
+  const t = useT();
+
   const tiles = [
-    { label: "Students referred", value: counts.referred, note: "Everyone you have registered." },
-    { label: "Active applications", value: counts.active, note: "Moving through documents, offers and visas." },
-    { label: "Admissions", value: counts.admitted, note: "Registered at a university." },
-    { label: "Action required", value: counts.actionRequired, note: "Waiting on something from you." },
+    { label: t("Students referred"), value: counts.referred, note: t("Everyone you have registered.") },
+    { label: t("Active applications"), value: counts.active, note: t("Moving through documents, offers and visas.") },
+    { label: t("Admissions"), value: counts.admitted, note: t("Registered at a university.") },
+    { label: t("Action required"), value: counts.actionRequired, note: t("Waiting on something from you.") },
   ];
 
   return (
     <>
       <Heading
-        title="Dashboard"
-        lead="Everyone you have referred, and where each of them has reached."
+        title={t("Dashboard")}
+        lead={t("Everyone you have referred, and where each of them has reached.")}
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-5)", marginBottom: "var(--space-8)" }}>
@@ -200,11 +215,13 @@ function Dashboard({
 }
 
 function Students({ students }: { students: ReturnType<typeof useReferredStudents> }) {
+  const t = useT();
+
   return (
     <>
       <Heading
-        title="My Students"
-        lead="Register a student here and track them from enquiry to registration."
+        title={t("My Students")}
+        lead={t("Register a student here and track them from enquiry to registration.")}
       />
       <ReferForm onDone={students.status === "ready" ? students.reload : () => {}} />
       <div style={{ marginTop: "var(--space-8)" }}>
@@ -221,8 +238,10 @@ function StudentList({
   students: ReturnType<typeof useReferredStudents>;
   emptyAction?: () => void;
 }) {
+  const t = useT();
+
   if (students.status === "loading") {
-    return <p style={{ color: "var(--text-muted)" }}>Loading your students…</p>;
+    return <p style={{ color: "var(--text-muted)" }}>{t("Loading your students…")}</p>;
   }
 
   if (students.status === "failed") {
@@ -232,7 +251,7 @@ function StudentList({
           <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>
             <Icon name="alert-circle" size={16} />{students.message}
           </span>
-          <Button variant="secondary" size="md" onClick={students.reload}>Try again</Button>
+          <Button variant="secondary" size="md" onClick={students.reload}>{t("Try again")}</Button>
         </div>
       </Card>
     );
@@ -243,12 +262,12 @@ function StudentList({
     return (
       <Card padding="var(--space-8)" radius="var(--radius-lg)">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", alignItems: "flex-start", maxWidth: "48ch" }}>
-          <h3 style={{ margin: 0, fontSize: "var(--fs-h3)", color: "var(--text-heading)" }}>No students yet.</h3>
+          <h3 style={{ margin: 0, fontSize: "var(--fs-h3)", color: "var(--text-heading)" }}>{t("No students yet.")}</h3>
           <p style={{ margin: 0, color: "var(--text-body)" }}>
-            Register a student to start tracking their progress.
+            {t("Register a student to start tracking their progress.")}
           </p>
           {emptyAction ? (
-            <Button variant="primary" size="md" onClick={emptyAction}>Register Student</Button>
+            <Button variant="primary" size="md" onClick={emptyAction}>{t("Register Student")}</Button>
           ) : null}
         </div>
       </Card>
@@ -263,6 +282,8 @@ function StudentList({
 }
 
 function StudentRow({ student }: { student: ReferredStudent }) {
+  const stageLabels = useStageLabels();
+
   return (
     <Card padding="var(--space-6)" radius="var(--radius-lg)" elevation="sm">
       <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-5)", alignItems: "flex-start" }}>
@@ -281,7 +302,7 @@ function StudentRow({ student }: { student: ReferredStudent }) {
             background: "var(--green-050)", border: "1px solid var(--green-100)",
             borderRadius: "var(--radius-pill)", padding: "3px 10px",
           }}>
-            {STAGE_LABEL[student.stage]}
+            {stageLabels[student.stage]}
           </span>
           <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", fontFamily: "var(--font-ui)" }}>
             {when(student.updatedAt)}
@@ -300,6 +321,7 @@ function StudentRow({ student }: { student: ReferredStudent }) {
  * content files would have to be rebuilt a week later against the API.
  */
 function ReferForm({ onDone }: { onDone: () => void }) {
+  const t = useT();
   const [form, setForm] = useState({ name: "", universityName: "", program: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -338,16 +360,16 @@ function ReferForm({ onDone }: { onDone: () => void }) {
     <Card padding="var(--space-8)" radius="var(--radius-lg)" elevation="sm">
       <form onSubmit={submit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-5)" }}>
         <h3 style={{ gridColumn: "span 2", margin: 0, fontSize: "var(--fs-h3)", color: "var(--text-heading)" }}>
-          Register a student
+          {t("Register a student")}
         </h3>
 
-        <Input id="rs-name" label="Student's full name" icon="user" required
-          placeholder="Amina Yusuf" value={form.name} onChange={set("name")}
+        <Input id="rs-name" label={t("Student's full name")} icon="user" required
+          placeholder={t("Amina Yusuf")} value={form.name} onChange={set("name")}
           style={{ gridColumn: "span 2" }} />
-        <Input id="rs-uni" label="University" icon="building-2" required
-          placeholder="Akdeniz University" value={form.universityName} onChange={set("universityName")} />
-        <Input id="rs-prog" label="Programme" required
-          placeholder="Dentistry" value={form.program} onChange={set("program")} />
+        <Input id="rs-uni" label={t("University")} icon="building-2" required
+          placeholder={t("Akdeniz University")} value={form.universityName} onChange={set("universityName")} />
+        <Input id="rs-prog" label={t("Programme")} required
+          placeholder={t("Dentistry")} value={form.program} onChange={set("program")} />
 
         <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           {error ? (
@@ -358,11 +380,11 @@ function ReferForm({ onDone }: { onDone: () => void }) {
           {done && !error ? (
             <span style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
               <Icon name="check" size={16} color="var(--green-600)" />
-              Registered. They appear in your list below.
+              {t("Registered. They appear in your list below.")}
             </span>
           ) : null}
           <Button variant="primary" size="lg" type="submit" disabled={busy}>
-            {busy ? "Registering…" : "Register Student"}
+            {busy ? t("Registering…") : t("Register Student")}
           </Button>
         </div>
       </form>
@@ -371,25 +393,26 @@ function ReferForm({ onDone }: { onDone: () => void }) {
 }
 
 function Profile() {
+  const t = useT();
   const profile = useRepresentativeProfile();
 
-  if (!profile) return <p style={{ color: "var(--text-muted)" }}>Loading your profile…</p>;
+  if (!profile) return <p style={{ color: "var(--text-muted)" }}>{t("Loading your profile…")}</p>;
 
   const rows: [string, string][] = [
-    ["Name", profile.fullName],
-    ["Organisation", profile.organizationName ?? "Not given"],
-    ["Country", profile.country],
-    ["Territory", profile.territory ?? "Not set"],
-    ["Email", profile.email],
-    ["Phone", profile.phone ?? "Not given"],
-    ["Representative since", when(profile.since)],
+    [t("Name"), profile.fullName],
+    [t("Organisation"), profile.organizationName ?? t("Not given")],
+    [t("Country"), profile.country],
+    [t("Territory"), profile.territory ?? t("Not set")],
+    [t("Email"), profile.email],
+    [t("Phone"), profile.phone ?? t("Not given")],
+    [t("Representative since"), when(profile.since)],
   ];
 
   return (
     <>
       <Heading
-        title="Profile"
-        lead="Your details as Campus Turkey holds them. Ask your named contact to change your territory."
+        title={t("Profile")}
+        lead={t("Your details as Campus Turkey holds them. Ask your named contact to change your territory.")}
       />
       <Card padding="var(--space-8)" radius="var(--radius-lg)" elevation="sm">
         <dl style={{ display: "grid", gridTemplateColumns: "minmax(140px,auto) 1fr", gap: "var(--space-4) var(--space-6)", margin: 0 }}>
@@ -402,7 +425,7 @@ function Profile() {
         </dl>
       </Card>
       <div style={{ marginTop: "var(--space-6)" }}>
-        <Button variant="ghost" icon="arrow-left" onClick={() => go("home")}>Back to the website</Button>
+        <Button variant="ghost" icon="arrow-left" onClick={() => go("home")}>{t("Back to the website")}</Button>
       </div>
     </>
   );

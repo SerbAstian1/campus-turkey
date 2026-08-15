@@ -22,6 +22,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { BrandDivider, Button, Card, Icon, Input, Logo, ASSETS } from "@/ds";
 import { go } from "@/app/router";
+import { useT } from "@/i18n/context";
 import {
   NEEDS_STUDENT, STATUS_COPY, claimRecord, useStudentDashboard, when,
   type StudentApplication, type StudentProfile,
@@ -29,15 +30,21 @@ import {
 
 type View = "dashboard" | "application" | "profile";
 
-const NAV: { key: View; label: string; icon: string }[] = [
-  { key: "dashboard", label: "Dashboard", icon: "layout-dashboard" },
-  { key: "application", label: "My Application", icon: "file-text" },
-  { key: "profile", label: "Profile", icon: "user" },
-];
-
 export default function StudentPortal() {
+  const t = useT();
   const [view, setView] = useState<View>("dashboard");
   const dashboard = useStudentDashboard();
+
+  /*
+   * Written out as literal `t()` calls rather than held in a module constant. The
+   * extractor collects string literals, so `t(label)` over a hoisted array would render
+   * correctly in every locale and never reach the catalogue to be translated at all.
+   */
+  const nav: { key: View; label: string; icon: string }[] = [
+    { key: "dashboard", label: t("Dashboard"), icon: "layout-dashboard" },
+    { key: "application", label: t("My Application"), icon: "file-text" },
+    { key: "profile", label: t("Profile"), icon: "user" },
+  ];
 
   // Somebody who has not claimed a record has nothing to navigate. Showing a sidebar of
   // empty sections would suggest the account is broken rather than incomplete.
@@ -66,19 +73,19 @@ export default function StudentPortal() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
           <span style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-micro)", letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,.62)" }}>
-            Student
+            {t("Student")}
           </span>
           <span style={{ color: "var(--white)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-medium)" }}>
             {dashboard.status === "ready" && dashboard.profile
               ? `${dashboard.profile.firstName} ${dashboard.profile.lastName}`
-              : "Your account"}
+              : t("Your account")}
           </span>
         </div>
 
         <BrandDivider theme="dark" />
 
         <nav style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const active = item.key === view;
             return (
               <button key={item.key} type="button" onClick={() => setView(item.key)}
@@ -101,12 +108,12 @@ export default function StudentPortal() {
 
         <a href="/portal" style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)", color: "rgba(255,255,255,.7)", fontSize: "var(--fs-body-sm)", fontFamily: "var(--font-ui)" }}>
           <Icon name="log-out" size={16} />
-          Sign out
+          {t("Sign out")}
         </a>
       </aside>
 
       <main style={{ padding: "var(--space-10) var(--space-8)", minWidth: 0 }}>
-        {dashboard.status === "loading" ? <p style={{ color: "var(--text-muted)" }}>Loading your application…</p> : null}
+        {dashboard.status === "loading" ? <p style={{ color: "var(--text-muted)" }}>{t("Loading your application…")}</p> : null}
 
         {dashboard.status === "failed" ? (
           <Card padding="var(--space-8)" radius="var(--radius-lg)">
@@ -114,7 +121,7 @@ export default function StudentPortal() {
               <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", color: "var(--status-danger)" }}>
                 <Icon name="alert-circle" size={18} />{dashboard.message}
               </span>
-              <Button variant="secondary" onClick={dashboard.reload}>Try again</Button>
+              <Button variant="secondary" onClick={dashboard.reload}>{t("Try again")}</Button>
             </div>
           </Card>
         ) : null}
@@ -141,6 +148,7 @@ function Heading({ title, lead }: { title: string; lead: string }) {
 }
 
 function Dashboard({ applications, name }: { applications: StudentApplication[]; name: string | null }) {
+  const t = useT();
   // The one the applicant is most likely asking about: the most recently touched.
   const current = applications[0];
 
@@ -152,14 +160,14 @@ function Dashboard({ applications, name }: { applications: StudentApplication[];
   if (!current) {
     return (
       <>
-        <Heading title={name ? `Welcome, ${name}` : "Welcome"} lead="Your application will appear here once it is started." />
+        <Heading title={name ? t("Welcome, {name}", { name }) : t("Welcome")} lead={t("Your application will appear here once it is started.")} />
         <Card padding="var(--space-8)" radius="var(--radius-lg)">
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", alignItems: "flex-start", maxWidth: "48ch" }}>
-            <h3 style={{ margin: 0, fontSize: "var(--fs-h3)", color: "var(--text-heading)" }}>No application yet.</h3>
+            <h3 style={{ margin: 0, fontSize: "var(--fs-h3)", color: "var(--text-heading)" }}>{t("No application yet.")}</h3>
             <p style={{ margin: 0, color: "var(--text-body)" }}>
-              Start your application to begin your journey to Türkiye.
+              {t("Start your application to begin your journey to Türkiye.")}
             </p>
-            <Button variant="primary" onClick={() => go("apply")}>Apply Now</Button>
+            <Button variant="primary" onClick={() => go("apply")}>{t("Apply Now")}</Button>
           </div>
         </Card>
       </>
@@ -172,8 +180,8 @@ function Dashboard({ applications, name }: { applications: StudentApplication[];
   return (
     <>
       <Heading
-        title={name ? `Welcome, ${name}` : "Welcome"}
-        lead="Where your application has reached, and what happens next."
+        title={name ? t("Welcome, {name}", { name }) : t("Welcome")}
+        lead={t("Where your application has reached, and what happens next.")}
       />
 
       {/* Where am I, and what does it mean. The status is stated in words the applicant
@@ -181,7 +189,7 @@ function Dashboard({ applications, name }: { applications: StudentApplication[];
       <Card padding="var(--space-8)" radius="var(--radius-lg)" elevation="sm">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <span style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-micro)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-            Application {current.applicationNumber}
+            {t("Application {number}", { number: current.applicationNumber })}
           </span>
           <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "var(--fs-h2)", lineHeight: "var(--lh-tight)", color: "var(--text-heading)" }}>
             {copy.label}
@@ -212,7 +220,7 @@ function Dashboard({ applications, name }: { applications: StudentApplication[];
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <span style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-semibold)", color: "var(--text-heading)" }}>
             <Icon name={waitingOnYou ? "alert-circle" : "check"} size={16} color={waitingOnYou ? "var(--status-warning)" : "var(--green-600)"} />
-            {waitingOnYou ? "Waiting on you" : "Nothing needed from you"}
+            {waitingOnYou ? t("Waiting on you") : t("Nothing needed from you")}
           </span>
           <p style={{ margin: 0, color: "var(--text-body)", maxWidth: "60ch" }}>{copy.next}</p>
         </div>
@@ -220,14 +228,14 @@ function Dashboard({ applications, name }: { applications: StudentApplication[];
 
       {actionable.length > 1 ? (
         <p style={{ marginTop: "var(--space-5)", color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
-          {actionable.length} of your applications are waiting on you. See My Application.
+          {t("{count} of your applications are waiting on you. See My Application.", { count: actionable.length })}
         </p>
       ) : null}
 
       {applications.length > 1 ? (
         <div style={{ marginTop: "var(--space-8)" }}>
           <h3 style={{ fontSize: "var(--fs-h3)", color: "var(--text-heading)", marginBottom: "var(--space-4)" }}>
-            Your other applications
+            {t("Your other applications")}
           </h3>
           <ApplicationList applications={applications.slice(1)} />
         </div>
@@ -237,12 +245,14 @@ function Dashboard({ applications, name }: { applications: StudentApplication[];
 }
 
 function Applications({ applications }: { applications: StudentApplication[] }) {
+  const t = useT();
+
   return (
     <>
-      <Heading title="My Application" lead="Every application you have with Campus Turkey." />
+      <Heading title={t("My Application")} lead={t("Every application you have with Campus Turkey.")} />
       {applications.length === 0 ? (
         <Card padding="var(--space-8)" radius="var(--radius-lg)">
-          <p style={{ margin: 0, color: "var(--text-body)" }}>No application yet.</p>
+          <p style={{ margin: 0, color: "var(--text-body)" }}>{t("No application yet.")}</p>
         </Card>
       ) : (
         <ApplicationList applications={applications} />
@@ -252,6 +262,8 @@ function Applications({ applications }: { applications: StudentApplication[] }) 
 }
 
 function ApplicationList({ applications }: { applications: StudentApplication[] }) {
+  const t = useT();
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       {applications.map((a) => {
@@ -265,16 +277,16 @@ function ApplicationList({ applications }: { applications: StudentApplication[] 
                   {copy.label}
                 </div>
                 <div style={{ color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
-                  {a.university ? `${a.university.name}, ${a.university.city}` : "University not chosen yet"}
+                  {a.university ? `${a.university.name}, ${a.university.city}` : t("University not chosen yet")}
                 </div>
                 <div style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", marginTop: 2 }}>
-                  {a.applicationNumber} · updated {when(a.updatedAt)}
+                  {t("{number} · updated {when}", { number: a.applicationNumber, when: when(a.updatedAt) })}
                 </div>
               </div>
               {waitingOnYou ? (
                 <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: "var(--fs-caption)", color: "var(--text-heading)", background: "var(--green-050)", border: "1px solid var(--green-100)", borderRadius: "var(--radius-pill)", padding: "4px 10px" }}>
                   <Icon name="alert-circle" size={13} color="var(--status-warning)" />
-                  Waiting on you
+                  {t("Waiting on you")}
                 </span>
               ) : null}
             </div>
@@ -289,19 +301,21 @@ function ApplicationList({ applications }: { applications: StudentApplication[] 
 }
 
 function Profile({ profile }: { profile: StudentProfile | null }) {
-  if (!profile) return <p style={{ color: "var(--text-muted)" }}>No profile yet.</p>;
+  const t = useT();
+
+  if (!profile) return <p style={{ color: "var(--text-muted)" }}>{t("No profile yet.")}</p>;
 
   const rows: [string, string][] = [
-    ["Name", `${profile.firstName} ${profile.lastName}`],
-    ["Nationality", profile.nationality],
-    ["Country of residence", profile.countryOfResidence],
-    ["Phone", profile.phone ?? "Not given"],
-    ["Address", profile.address ?? "Not given"],
+    [t("Name"), `${profile.firstName} ${profile.lastName}`],
+    [t("Nationality"), profile.nationality],
+    [t("Country of residence"), profile.countryOfResidence],
+    [t("Phone"), profile.phone ?? t("Not given")],
+    [t("Address"), profile.address ?? t("Not given")],
   ];
 
   return (
     <>
-      <Heading title="Profile" lead="Your details as Campus Turkey holds them." />
+      <Heading title={t("Profile")} lead={t("Your details as Campus Turkey holds them.")} />
       <Card padding="var(--space-8)" radius="var(--radius-lg)" elevation="sm">
         <dl style={{ display: "grid", gridTemplateColumns: "minmax(150px,auto) 1fr", gap: "var(--space-4) var(--space-6)", margin: 0 }}>
           {rows.map(([label, value]) => (
@@ -323,6 +337,7 @@ function Profile({ profile }: { profile: StudentProfile | null }) {
  * belongs to whoever referred them, and the code is how the two are joined.
  */
 function ClaimScreen({ message }: { message: string }) {
+  const t = useT();
   const [form, setForm] = useState({
     claimCode: "", firstName: "", lastName: "", nationality: "", countryOfResidence: "", phone: "",
   });
@@ -362,23 +377,22 @@ function ClaimScreen({ message }: { message: string }) {
     <div style={{ minHeight: "100dvh", background: "var(--surface-page)", display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--section-y) var(--gutter)" }}>
       <div style={{ width: "100%", maxWidth: 460, display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
         <Logo variant="lockup" theme="onLight" height={40} assetBase={ASSETS} />
-        <h1 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Connect your application</h1>
+        <h1 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{t("Connect your application")}</h1>
         <p style={{ margin: 0, color: "var(--text-body)" }}>{message}</p>
         <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "var(--fs-body-sm)" }}>
-          Your agency or representative has a short code for you. Entering it links your
-          application to this account.
+          {t("Your agency or representative has a short code for you. Entering it links your application to this account.")}
         </p>
 
         <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-          <Input id="c-code" label="Your code" icon="key" required
-            hint="Eight characters, from your agency."
-            placeholder="A7KP2MRQ"
+          <Input id="c-code" label={t("Your code")} icon="key" required
+            hint={t("Eight characters, from your agency.")}
+            placeholder={t("A7KP2MRQ")}
             value={form.claimCode} onChange={set("claimCode")} />
-          <Input id="c-first" label="First name" required value={form.firstName} onChange={set("firstName")} />
-          <Input id="c-last" label="Last name" required value={form.lastName} onChange={set("lastName")} />
-          <Input id="c-nat" label="Nationality" required placeholder="Nigerian" value={form.nationality} onChange={set("nationality")} />
-          <Input id="c-res" label="Country you live in" required placeholder="Nigeria" value={form.countryOfResidence} onChange={set("countryOfResidence")} />
-          <Input id="c-phone" label="WhatsApp number" hint="Optional. Include your country code." value={form.phone} onChange={set("phone")} />
+          <Input id="c-first" label={t("First name")} required value={form.firstName} onChange={set("firstName")} />
+          <Input id="c-last" label={t("Last name")} required value={form.lastName} onChange={set("lastName")} />
+          <Input id="c-nat" label={t("Nationality")} required placeholder={t("Nigerian")} value={form.nationality} onChange={set("nationality")} />
+          <Input id="c-res" label={t("Country you live in")} required placeholder={t("Nigeria")} value={form.countryOfResidence} onChange={set("countryOfResidence")} />
+          <Input id="c-phone" label={t("WhatsApp number")} hint={t("Optional. Include your country code.")} value={form.phone} onChange={set("phone")} />
 
           {error ? (
             <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
@@ -387,7 +401,7 @@ function ClaimScreen({ message }: { message: string }) {
           ) : null}
 
           <Button variant="primary" size="lg" fullWidth type="submit" disabled={busy}>
-            {busy ? "Connecting…" : "Connect my application"}
+            {busy ? t("Connecting…") : t("Connect my application")}
           </Button>
         </form>
       </div>
