@@ -27,7 +27,7 @@ export default function Article({ slug }: { slug: string | null }) {
       <section style={{ background: "var(--gradient-brand-deep)", paddingTop: 150, paddingBottom: "calc(var(--section-y) + 40px)", marginBottom: "calc(var(--overlap) * -1)" }}>
         <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", maxWidth: 820 }}>
           <button type="button" onClick={() => go("resources")} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", border: "none", color: "rgba(255,255,255,.78)", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", cursor: "pointer", width: "fit-content", padding: 0 }}>
-            <Icon name="arrow-left" size={16} /> All resources
+            <Icon name="arrow-left" size={16} /> {t("All resources")}
           </button>
           <span style={{ alignSelf: "flex-start" }}><Badge tone="onDark">{post.tag}</Badge></span>
           <h1 style={{ color: "var(--white)", fontSize: "var(--fs-h1)", lineHeight: "var(--lh-display)", margin: 0 }}>{post.title}</h1>
@@ -41,7 +41,7 @@ export default function Article({ slug }: { slug: string | null }) {
       <section style={{ position: "relative", zIndex: 10, background: "var(--surface-subtle)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", padding: "var(--section-y) 0" }}>
         <div className="ct-container ct-detail-grid" style={{ display: "grid", gridTemplateColumns: "1fr minmax(260px,320px)", gap: "var(--space-12)", alignItems: "start" }}>
           <article style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)", maxWidth: 720 }}>
-            <ImagePlaceholder slot={`post-${post.slug}`} label="Article lead image, 16:9" ratio="16 / 9" />
+            <ImagePlaceholder slot={`post-${post.slug}`} label={t("Article lead image, 16:9")} ratio="16 / 9" />
             {post.sections.map((section, i) => (
               <ScrollReveal key={section.heading} delay={i * 40} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                 <h2 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{section.heading}</h2>
@@ -59,7 +59,7 @@ export default function Article({ slug }: { slug: string | null }) {
 
           <aside style={{ position: "sticky", top: 140, display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
             <Card surface="tinted" padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <span className="ct-eyebrow">In this article</span>
+              <span className="ct-eyebrow">{t("In this article")}</span>
               {post.sections.map((s) => (
                 <span key={s.heading} style={{ display: "flex", gap: "var(--space-2)", fontSize: "var(--fs-body-sm)", color: "var(--text-body)" }}>
                   <Icon name="chevron-right" size={15} color="var(--green-500)" />{s.heading}
@@ -67,7 +67,7 @@ export default function Article({ slug }: { slug: string | null }) {
               ))}
             </Card>
             <Card padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-              <span className="ct-eyebrow">More resources</span>
+              <span className="ct-eyebrow">{t("More resources")}</span>
               {more.map((m) => (
                 <a key={m.slug} href={href(`blog/${m.slug}`)} style={{ display: "flex", flexDirection: "column", gap: 2, textDecoration: "none" }}>
                   <span style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-medium)", color: "var(--green-800)" }}>{m.title}</span>

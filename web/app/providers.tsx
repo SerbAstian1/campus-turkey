@@ -25,6 +25,7 @@
 
 import { useEffect, useState } from "react";
 import { loadDesignSystem } from "@/ds/load";
+import { useT } from "@/i18n/context";
 
 type Status = "loading" | "ready" | "failed";
 
@@ -70,6 +71,14 @@ function BootScreen() {
  * depends on the failure is not an error state.
  */
 function BootFailure() {
+  /*
+   * Safe to translate even here. This screen exists because the design system bundle
+   * failed, and `useT` depends on `LocaleProvider` — React context set by the layout —
+   * not on that bundle. The styles below stay inline for the reason the comment above
+   * gives; the words do not have to stay English for it.
+   */
+  const t = useT();
+
   return (
     <div
       style={{
@@ -85,9 +94,9 @@ function BootFailure() {
       }}
     >
       <div>
-        <h1 style={{ margin: "0 0 8px" }}>This page did not load</h1>
+        <h1 style={{ margin: "0 0 8px" }}>{t("This page did not load")}</h1>
         <p style={{ margin: 0, opacity: 0.8 }}>
-          Something went wrong on our side. Reloading usually fixes it.
+          {t("Something went wrong on our side. Reloading usually fixes it.")}
         </p>
       </div>
     </div>

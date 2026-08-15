@@ -25,6 +25,13 @@
  * A hard reload rather than `reset()`: if the root layout threw, re-rendering the same
  * tree is unlikely to produce a different result, and a button that visibly does nothing
  * is worse than one that reloads.
+ *
+ * **The copy here stays English, and it is the same reason as the hex.** `useT` reads
+ * `LocaleProvider`, which is mounted by `[locale]/layout.tsx` — the layout that by
+ * definition did not run. Calling it here would throw inside the boundary that exists to
+ * catch throwing, replacing a readable English apology with a blank page. Every other
+ * error surface on the site is translated; this one cannot be, and that is the correct
+ * trade. It is the only file on the site deliberately left untranslatable.
  */
 
 const ground = "#0A2C1E";

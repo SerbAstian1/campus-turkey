@@ -28,13 +28,8 @@
  */
 
 import Link from "next/link";
-
-/** The recovery routes from `ErrorScreen`'s `loadFailure` state, in its order. */
-const RECOVERY = [
-  { to: "/", label: "Back to home" },
-  { to: "/universities", label: "Browse universities" },
-  { to: "/contact", label: "Talk to someone" },
-] as const;
+import { useT } from "@/i18n/context";
+import { useHref } from "@/app/router";
 
 export default function RouteError({
   error,
@@ -43,23 +38,36 @@ export default function RouteError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useT();
+  const href = useHref();
+
+  /*
+   * A hook rather than the module constant this was, so the labels reach the catalogue,
+   * and routed through `useHref` so a reader who hit an error on `/fr/…` is not offered
+   * four routes back into the English site.
+   */
+  const recovery = [
+    { to: href("home"), label: t("Back to home") },
+    { to: href("universities"), label: t("Browse universities") },
+    { to: href("contact"), label: t("Talk to someone") },
+  ];
+
   return (
     <main id="main" className="ct-error">
       <div className="ct-error-inner">
-        <p className="ct-error-eyebrow">Something went wrong</p>
-        <h1 className="ct-error-title">This page did not load</h1>
+        <p className="ct-error-eyebrow">{t("Something went wrong")}</p>
+        <h1 className="ct-error-title">{t("This page did not load")}</h1>
         <p className="ct-error-body">
-          The problem is on our side, not yours. Nothing you were working on has been
-          lost, and trying again usually works — this kind of fault is normally brief.
+          {t("The problem is on our side, not yours. Nothing you were working on has been lost, and trying again usually works — this kind of fault is normally brief.")}
         </p>
 
         <div className="ct-error-actions">
           {/* `reset()` re-renders the segment without a full document load, which is
               why it is first: it is the cheapest thing that fixes a transient fault. */}
           <button type="button" className="ct-error-btn" onClick={reset}>
-            Try again
+            {t("Try again")}
           </button>
-          {RECOVERY.map((item) => (
+          {recovery.map((item) => (
             <Link key={item.to} href={item.to} className="ct-error-btn ct-error-btn--outline">
               {item.label}
             </Link>
@@ -74,7 +82,7 @@ export default function RouteError({
         */}
         {error.digest ? (
           <p className="ct-error-body" style={{ fontSize: "var(--fs-micro)", opacity: 0.7 }}>
-            Reference: {error.digest}
+            {t("Reference: {digest}", { digest: error.digest })}
           </p>
         ) : null}
       </div>

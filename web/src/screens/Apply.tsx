@@ -16,7 +16,16 @@ import { useT } from "@/i18n/context";
 import { useTranslatedOptions } from "@/i18n/options";
 import { CaptchaField } from "@/features/leads/captcha";
 
-const STEPS = ["You", "Study plan", "Documents", "Done"];
+/**
+ * The step names, as a hook.
+ *
+ * Purely display — unlike the four select lists below, nothing downstream is keyed by
+ * these, so they translate outright rather than through `useTranslatedOptions`.
+ */
+function useSteps(): string[] {
+  const t = useT();
+  return [t("You"), t("Study plan"), t("Documents"), t("Done")];
+}
 
 /**
  * The study levels the form offers, mapped onto the enum the API accepts.
@@ -64,6 +73,7 @@ const LEVELS = [
 
 export default function Apply() {
   const t = useT();
+  const steps = useSteps();
   const countries = useTranslatedOptions(COUNTRIES);
   const levels = useTranslatedOptions(LEVELS);
   const cities = useTranslatedOptions(CITIES);
@@ -92,7 +102,7 @@ export default function Apply() {
           <span className="ct-eyebrow">{t("Student application")}</span>
           <h1 style={{ fontSize: "var(--fs-display-2)", lineHeight: "var(--lh-display)", letterSpacing: "var(--ls-display)", color: "var(--text-heading)", margin: 0, maxWidth: "20ch" }}>{t("Apply in four short steps")}</h1>
           <p style={{ fontSize: "var(--fs-lead)", lineHeight: "var(--lh-body)", color: "var(--text-body)", margin: 0, maxWidth: 620 }}>
-            Nothing to upload yet. Tell us who you are and what you want to study.
+            {t("Nothing to upload yet. Tell us who you are and what you want to study.")}
           </p>
         </ScrollReveal>
 
@@ -129,7 +139,7 @@ export default function Apply() {
               if (ok) setStep(3);
             }}
           >
-            <StepIndicator steps={STEPS} current={step} style={{ marginBottom: "var(--space-10)" }} />
+            <StepIndicator steps={steps} current={step} style={{ marginBottom: "var(--space-10)" }} />
 
             {step === 0 ? (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-5)" }}>
@@ -180,7 +190,7 @@ export default function Apply() {
                     <Icon name="upload" size={20} color="var(--green-500)" />
                     <span style={{ flex: 1 }}>
                       <span style={{ display: "block", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-medium)", color: "var(--green-800)" }}>{d}</span>
-                      <span style={{ display: "block", fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>PDF or photo. You can send these later on WhatsApp.</span>
+                      <span style={{ display: "block", fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{t("PDF or photo. You can send these later on WhatsApp.")}</span>
                     </span>
                     <Button variant="secondary" size="sm">{t("Choose file")}</Button>
                   </div>

@@ -7,6 +7,7 @@
 
 import { useState, type CSSProperties } from "react";
 import { Icon, Logo, ASSETS } from "@/ds";
+import { useT } from "@/i18n/context";
 
 /**
  * Brand artwork is never recoloured. The mark always sits on a brand-green field:
@@ -52,7 +53,7 @@ const WHATSAPP_HREF =
  * site's pill button geometry. Never fixed to the viewport unless asked.
  */
 export function WhatsAppAction({
-  label = "Chat on WhatsApp", tone = "brand", size = 56, fixed = false, style,
+  label, tone = "brand", size = 56, fixed = false, style,
 }: {
   label?: string;
   tone?: "brand" | "onDark";
@@ -60,13 +61,16 @@ export function WhatsAppAction({
   fixed?: boolean;
   style?: CSSProperties;
 }) {
+  const t = useT();
   const [hover, setHover] = useState(false);
+  // A default parameter cannot call `t()` — it is evaluated where no hook exists.
+  const text = label ?? t("Chat on WhatsApp");
   const dark = tone === "onDark";
   const disc = size - 10;
 
   return (
     <a
-      href={WHATSAPP_HREF} target="_blank" rel="noopener noreferrer" aria-label={label}
+      href={WHATSAPP_HREF} target="_blank" rel="noopener noreferrer" aria-label={text}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       onFocus={() => setHover(true)} onBlur={() => setHover(false)}
       style={{
@@ -85,7 +89,7 @@ export function WhatsAppAction({
       }}
     >
       <span className="ct-wa-label" style={{ opacity: hover ? 1 : 0, transition: "opacity var(--dur-base) var(--ease-out)" }}>
-        {label}
+        {text}
       </span>
       <span style={{
         position: "absolute", top: 5, left: 5, width: disc, height: disc,
@@ -119,7 +123,7 @@ export function WhatsAppAction({
  * decorative — that is a decision worth making per image rather than inheriting.
  */
 export function ImagePlaceholder({
-  slot, label = "Photography", ratio = "4 / 3", height, icon = "image", round, style,
+  slot, label, ratio = "4 / 3", height, icon = "image", round, style,
   src, alt, priority,
 }: {
   slot: string;

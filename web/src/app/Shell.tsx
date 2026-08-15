@@ -175,7 +175,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div>
-      <a className="ct-skip" href="#main">Skip to content</a>
+      <a className="ct-skip" href="#main">{t("Skip to content")}</a>
       <ScrollProgress />
 
       <MobileNav lang={lang} onLangChange={setLanguage} route={key} />

@@ -155,12 +155,13 @@ function Hero({ onApply, onExplore }: { onApply: () => void; onExplore: () => vo
    stand-in until the real university logos arrive. */
 function AffiliateMarquee() {
   const href = useHref();
+  const t = useT();
   const items = universities.slice(0, 14);
   return (
     <section style={{ position: "relative", zIndex: 10, background: "var(--surface-subtle)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", paddingTop: "var(--space-16)", paddingBottom: "var(--space-12)" }}>
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)", textAlign: "center" }}>
-        <span className="ct-eyebrow">Affiliated universities</span>
-        <h2 style={{ fontSize: "var(--fs-h3)", margin: 0, maxWidth: "30ch" }}>We hold agreements with more than 200 universities across Türkiye</h2>
+        <span className="ct-eyebrow">{t("Affiliated universities")}</span>
+        <h2 style={{ fontSize: "var(--fs-h3)", margin: 0, maxWidth: "30ch" }}>{t("We hold agreements with more than 200 universities across Türkiye")}</h2>
       </div>
       <div className="ct-marquee" style={{ position: "relative", marginTop: "var(--space-10)", overflow: "hidden", paddingInline: "var(--space-5)" }}>
         <div className="ct-marquee-track" style={{ display: "flex", alignItems: "center", gap: "var(--space-12)", width: "max-content" }}>
@@ -203,13 +204,13 @@ function AboutSection() {
               <Button variant="ghost" icon="message-circle" onClick={() => go("contact")}>{t("Contact us")}</Button>
             </div>
           </div>
-          <ImagePlaceholder slot="home-about" label="Campus or student photography, 4:3" ratio="4 / 3" />
+          <ImagePlaceholder slot="home-about" label={t("Campus or student photography, 4:3")} ratio="4 / 3" />
         </ScrollReveal>
         <ScrollReveal delay={80}><BrandDivider /></ScrollReveal>
         <ScrollReveal delay={160} style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-12)", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-5)", minWidth: 240 }}>
             <BrandMark size={92} />
-            <span className="ct-tagline" style={{ fontSize: "var(--fs-caption)", color: "var(--green-600)", maxWidth: 150 }}>Your guide to study in Turkey</span>
+            <span className="ct-tagline" style={{ fontSize: "var(--fs-caption)", color: "var(--green-600)", maxWidth: 150 }}>{t("Your guide to study in Turkey")}</span>
           </div>
           <p style={{ flex: 1, minWidth: 260, fontSize: "var(--fs-lead)", lineHeight: "var(--lh-body)", color: "var(--text-body)", maxWidth: 720 }}>
             Higher education is our core. We also support medical tourism, business visits and trade fairs, seasonal employment, educational tours, agency and university partnerships, and international representatives. Everything is designed to be clear, trustworthy and easy.
@@ -268,16 +269,17 @@ function StatsBand() {
 /* GIF stand-in, sized as a wide video band. Swap the placeholder for an <img src="...gif">
    once the reel is supplied; the frame geometry stays the same. */
 function StoryReel() {
+  const t = useT();
   return (
     <section style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
         <ScrollReveal>
-          <SectionHeading eyebrow="A minute in Türkiye" title="See what your year actually looks like"
-            lead="Campus, city and student life in one short reel." align="center" />
+          <SectionHeading eyebrow={t("A minute in Türkiye")} title={t("See what your year actually looks like")}
+            lead={t("Campus, city and student life in one short reel.")} align="center" />
         </ScrollReveal>
         <ScrollReveal delay={80}>
           <div style={{ position: "relative", borderRadius: "var(--radius-xl)", overflow: "hidden", background: "var(--gradient-brand-deep)", padding: "var(--space-3)" }}>
-            <ImagePlaceholder slot="home-reel" label="Animated GIF reel, 16:9" ratio="16 / 9" icon="play"
+            <ImagePlaceholder slot="home-reel" label={t("Animated GIF reel, 16:9")} ratio="16 / 9" icon="play"
               style={{ borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,.06)", borderColor: "rgba(255,255,255,.35)", color: "rgba(255,255,255,.82)" }} />
           </div>
         </ScrollReveal>
@@ -294,7 +296,7 @@ function FeaturedUniversities() {
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
         <ScrollReveal style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", alignItems: "flex-end", justifyContent: "space-between" }}>
           <SectionHeading eyebrow={t("Featured universities")} title={t("200+ universities, one directory")}
-            lead="Filter by city, type, language and scholarships. Every listing shows what it really costs." />
+            lead={t("Filter by city, type, language and scholarships. Every listing shows what it really costs.")} />
           <Button variant="secondary" icon="arrow-right" onClick={() => go("universities")}>{t("Browse the directory")}</Button>
         </ScrollReveal>
         <CardGrid min={260} gap="var(--space-6)">
@@ -321,7 +323,7 @@ function JourneySection() {
         <StickyScrollSection
           aside={
             <SectionHeading eyebrow={t("How it works")} title={t("Five steps from question to campus")}
-              lead="No jargon, no hidden stages. You always know what happens next." />
+              lead={t("No jargon, no hidden stages. You always know what happens next.")} />
           }
           items={journey.map((s) => ({
             content: (
@@ -339,10 +341,11 @@ function JourneySection() {
 }
 
 function TestimonialsSection() {
+  const t = useT();
   return (
     <section style={{ background: "var(--surface-subtle)", padding: "var(--section-y) 0" }}>
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
-        <ScrollReveal><SectionHeading eyebrow="In their words" title="Students, patients and partners" align="center" /></ScrollReveal>
+        <ScrollReveal><SectionHeading eyebrow={t("In their words")} title={t("Students, patients and partners")} align="center" /></ScrollReveal>
         <CardGrid min={280} gap="var(--space-6)">
           {testimonials.map((t, i) => (
             <ScrollReveal key={t.name} delay={i * 80} style={{ display: "flex" }}>
@@ -363,9 +366,9 @@ function PartnerStrip() {
         <ScrollReveal>
           <Card padding="var(--space-10)" radius="var(--radius-xl)" style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-8)", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ maxWidth: 520, display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <span className="ct-eyebrow">For agencies and institutions</span>
-              <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Send us students, we handle the rest</h3>
-              <p style={{ color: "var(--text-body)", margin: 0 }}>Agencies, consultants, universities and country representatives get a portal, published commission rates and a named contact.</p>
+              <span className="ct-eyebrow">{t("For agencies and institutions")}</span>
+              <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{t("Send us students, we handle the rest")}</h3>
+              <p style={{ color: "var(--text-body)", margin: 0 }}>{t("Agencies, consultants, universities and country representatives get a portal, published commission rates and a named contact.")}</p>
             </div>
             <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
               <Button variant="primary" onClick={() => go("partners")}>{t("Become a Partner")}</Button>
@@ -386,7 +389,7 @@ function FaqSection() {
         <div style={{ position: "sticky", top: 132 }}>
           <ScrollReveal>
             <SectionHeading eyebrow={t("Questions")} title={t("Answers before you ask")}
-              lead="Still unsure? Message us on WhatsApp and a person replies." />
+              lead={t("Still unsure? Message us on WhatsApp and a person replies.")} />
           </ScrollReveal>
         </div>
         <ScrollReveal delay={80}><Accordion items={generalFaq} /></ScrollReveal>
@@ -419,8 +422,8 @@ export default function Home() {
       <FaqSection />
       <div className="ct-container" style={{ background: "var(--surface-page)", paddingBottom: "var(--section-y)" }}>
         <ScrollReveal>
-          <CTABanner eyebrow="Ready when you are" title="Start your application for the next intake"
-            body="Tell us what you want to study. We come back with real options, real costs and real deadlines."
+          <CTABanner eyebrow={t("Ready when you are")} title={t("Start your application for the next intake")}
+            body={t("Tell us what you want to study. We come back with real options, real costs and real deadlines.")}
             primaryLabel={t("Apply Now")} primaryHref={href("apply")} secondaryLabel={t("Book a Consultation")} secondaryHref={href("contact")} assetBase={ASSETS} />
         </ScrollReveal>
       </div>

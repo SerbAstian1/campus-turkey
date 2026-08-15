@@ -43,30 +43,30 @@ export function MobileNav({
 
   const groups: Group[] = [
     { key: "education", label: t("Education"), icon: "graduation-cap", links: [
-      ["Study in Türkiye", "study-in-turkiye", "graduation-cap"],
-      ["University directory", "universities", "landmark"],
+      [t("Study in Türkiye"), "study-in-turkiye", "graduation-cap"],
+      [t("University directory"), "universities", "landmark"],
       // Was a second link to the study hub. It has its own page now, so the label and
       // the destination finally agree.
-      ["Scholarships", "study-in-turkiye/scholarships", "award"],
-      ["How to apply", "study-in-turkiye/application-process", "list-checks"],
-      ["Resources", "resources", "book-open"]] },
+      [t("Scholarships"), "study-in-turkiye/scholarships", "award"],
+      [t("How to apply"), "study-in-turkiye/application-process", "list-checks"],
+      [t("Resources"), "resources", "book-open"]] },
     { key: "services", label: t("Services"), icon: "heart-pulse", links: [
-      ["All services", "services", "layout-grid"],
-      ["Medical Tourism", "services/medical", "heart-pulse"],
-      ["Business Facilitation", "services/business", "briefcase"],
-      ["Employment", "services/employment", "hard-hat"],
-      ["Educational tours", "services/tours", "bus-front"]] },
+      [t("All services"), "services", "layout-grid"],
+      [t("Medical Tourism"), "services/medical", "heart-pulse"],
+      [t("Business Facilitation"), "services/business", "briefcase"],
+      [t("Employment"), "services/employment", "hard-hat"],
+      [t("Educational tours"), "services/tours", "bus-front"]] },
     { key: "partners", label: t("Partners"), icon: "handshake", links: [
-      ["All partnerships", "partnerships", "handshake"],
-      ["Become a Partner", "partnerships/agents", "briefcase"],
-      ["Become a Representative", "partnerships/representatives", "globe"],
-      ["For universities", "partnerships/universities", "landmark"],
-      ["For agencies", "institutions/agencies", "users"],
-      ["For hospitals", "institutions/hospitals", "stethoscope"],
-      ["Partner Login", "portal", "log-in"]] },
+      [t("All partnerships"), "partnerships", "handshake"],
+      [t("Become a Partner"), "partnerships/agents", "briefcase"],
+      [t("Become a Representative"), "partnerships/representatives", "globe"],
+      [t("For universities"), "partnerships/universities", "landmark"],
+      [t("For agencies"), "institutions/agencies", "users"],
+      [t("For hospitals"), "institutions/hospitals", "stethoscope"],
+      [t("Partner Login"), "portal", "log-in"]] },
     { key: "company", label: t("Company"), icon: "info", links: [
-      ["About us", "about", "info"],
-      ["Contact", "contact", "phone"]] },
+      [t("About us"), "about", "info"],
+      [t("Contact"), "contact", "phone"]] },
   ];
 
   const navigate = (r: string) => { setOpen(false); setSection(null); go(r); };
@@ -79,7 +79,7 @@ export function MobileNav({
         </a>
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginInlineStart: "auto" }}>
           <LanguageSwitcher value={lang} onChange={onLangChange} theme="onLight" compact />
-          <button type="button" className="ct-burger" aria-label="Menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <button type="button" className="ct-burger" aria-label={t("Menu")} aria-expanded={open} onClick={() => setOpen(!open)}>
             <span className={open ? "on" : ""} />
             <span className={open ? "on" : ""} />
           </button>
@@ -124,7 +124,7 @@ export function MobileNav({
         </nav>
       </div>
 
-      {open ? <button type="button" className="ct-mobile-scrim" aria-label="Close menu" onClick={() => setOpen(false)} /> : null}
+      {open ? <button type="button" className="ct-mobile-scrim" aria-label={t("Close menu")} onClick={() => setOpen(false)} /> : null}
     </div>
   );
 }

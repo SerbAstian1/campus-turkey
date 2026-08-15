@@ -13,6 +13,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Button, Card, Icon, ASSETS } from "@/ds";
 import { go } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
+import { useT } from "@/i18n/context";
 
 export type ErrorState = "notFound" | "failed" | "offline" | "maintenance" | "sessionExpired";
 
@@ -37,79 +38,89 @@ interface StateSpec {
   help: Help[];
 }
 
-export const ERROR_STATES: Record<ErrorState, StateSpec> = {
+/**
+ * A hook, not the exported module constant this was — see the note in About.tsx.
+ *
+ * Every string here is copy a reader meets at the worst moment of their visit, and a
+ * constant evaluated at import can only ever hold English.
+ */
+export function useErrorStates(): Record<ErrorState, StateSpec> {
+  const t = useT();
+
+  return {
   notFound: {
     code: "404",
-    eyebrow: "Page not found",
-    title: "That page does not exist",
-    body: "The link may be out of date, or the address may have a typo. Nothing is wrong with your account or your application.",
+    eyebrow: t("Page not found"),
+    title: t("That page does not exist"),
+    body: t("The link may be out of date, or the address may have a typo. Nothing is wrong with your account or your application."),
     icon: "compass",
     actions: [
-      { label: "Back to home", variant: "onDark", route: "home" },
-      { label: "Browse universities", variant: "outlineOnDark", route: "universities" },
+      { label: t("Back to home"), variant: "onDark", route: "home" },
+      { label: t("Browse universities"), variant: "outlineOnDark", route: "universities" },
     ],
     help: [
-      ["Looking for a university?", "The directory lists every partner university with real tuition.", "universities", "landmark"],
-      ["Ready to apply?", "The application takes four short steps and no documents up front.", "apply", "file-text"],
-      ["Need a person?", "Message us and someone replies, usually the same day.", "contact", "message-circle"],
+      [t("Looking for a university?"), t("The directory lists every partner university with real tuition."), "universities", "landmark"],
+      [t("Ready to apply?"), t("The application takes four short steps and no documents up front."), "apply", "file-text"],
+      [t("Need a person?"), t("Message us and someone replies, usually the same day."), "contact", "message-circle"],
     ],
   },
   failed: {
     code: "500",
-    eyebrow: "Something went wrong",
-    title: "This page did not load",
-    body: "The fault is on our side, not yours. Nothing you submitted has been lost, and the rest of the site is working normally.",
+    eyebrow: t("Something went wrong"),
+    title: t("This page did not load"),
+    body: t("The fault is on our side, not yours. Nothing you submitted has been lost, and the rest of the site is working normally."),
     icon: "triangle-alert",
     actions: [
-      { label: "Try again", variant: "onDark", reload: true },
-      { label: "Back to home", variant: "outlineOnDark", route: "home" },
+      { label: t("Try again"), variant: "onDark", reload: true },
+      { label: t("Back to home"), variant: "outlineOnDark", route: "home" },
     ],
     help: [
-      ["Was this mid-application?", "Your progress is saved. Reopen the form and carry on where you stopped.", "apply", "rotate-ccw"],
-      ["Still stuck?", "Tell us what you were doing and we will fix it.", "contact", "life-buoy"],
+      [t("Was this mid-application?"), t("Your progress is saved. Reopen the form and carry on where you stopped."), "apply", "rotate-ccw"],
+      [t("Still stuck?"), t("Tell us what you were doing and we will fix it."), "contact", "life-buoy"],
     ],
   },
   offline: {
     code: "",
-    eyebrow: "No connection",
-    title: "You are offline",
-    body: "Your device has lost its internet connection. This page will recover on its own once the connection returns.",
+    eyebrow: t("No connection"),
+    title: t("You are offline"),
+    body: t("Your device has lost its internet connection. This page will recover on its own once the connection returns."),
     icon: "wifi-off",
-    actions: [{ label: "Try again", variant: "onDark", reload: true }],
+    actions: [{ label: t("Try again"), variant: "onDark", reload: true }],
     help: [
-      ["Check your connection", "Turn airplane mode off, or switch between wifi and mobile data.", null, "signal"],
-      ["Nothing is lost", "Anything you had already sent us is safe on our side.", null, "shield-check"],
+      [t("Check your connection"), t("Turn airplane mode off, or switch between wifi and mobile data."), null, "signal"],
+      [t("Nothing is lost"), t("Anything you had already sent us is safe on our side."), null, "shield-check"],
     ],
   },
   maintenance: {
     code: "",
-    eyebrow: "Scheduled maintenance",
-    title: "We are back shortly",
-    body: "We are updating the site. Applications already submitted are unaffected, and this usually takes under an hour.",
+    eyebrow: t("Scheduled maintenance"),
+    title: t("We are back shortly"),
+    body: t("We are updating the site. Applications already submitted are unaffected, and this usually takes under an hour."),
     icon: "wrench",
     actions: [
-      { label: "Try again", variant: "onDark", reload: true },
-      { label: "Message us on WhatsApp", variant: "outlineOnDark", whatsapp: true },
+      { label: t("Try again"), variant: "onDark", reload: true },
+      { label: t("Message us on WhatsApp"), variant: "outlineOnDark", whatsapp: true },
     ],
     help: [
-      ["Urgent deadline?", "Message us. We can accept your details by WhatsApp in the meantime.", null, "clock"],
+      [t("Urgent deadline?"), t("Message us. We can accept your details by WhatsApp in the meantime."), null, "clock"],
     ],
   },
   sessionExpired: {
     code: "",
-    eyebrow: "Signed out",
-    title: "Your session has expired",
-    body: "For your security we sign partners out after a period of inactivity. Sign in again to pick up where you left off.",
+    eyebrow: t("Signed out"),
+    title: t("Your session has expired"),
+    body: t("For your security we sign partners out after a period of inactivity. Sign in again to pick up where you left off."),
     icon: "lock",
     actions: [
-      { label: "Sign in again", variant: "onDark", route: "portal" },
-      { label: "Back to the website", variant: "outlineOnDark", route: "home" },
+      { label: t("Sign in again"), variant: "onDark", route: "portal" },
+      { label: t("Back to the website"), variant: "outlineOnDark", route: "home" },
     ],
     help: [
-      ["Forgotten your details?", "Your named contact can reset them for you.", "contact", "key-round"],
+      [t("Forgotten your details?"), t("Your named contact can reset them for you."), "contact", "key-round"],
     ],
   },
-};
+  };
+}
 
 const openWhatsApp = () =>
   window.open(
@@ -124,7 +135,9 @@ const openWhatsApp = () =>
  * leaves the visitor exactly where they were stuck.
  */
 export function ErrorScreen({ state = "notFound", detail }: { state?: ErrorState; detail?: string | null }) {
-  const s = ERROR_STATES[state] ?? ERROR_STATES.notFound;
+  const t = useT();
+  const states = useErrorStates();
+  const s = states[state] ?? states.notFound;
 
   const act = (a: Action) => {
     if (a.reload) return window.location.reload();
@@ -168,7 +181,7 @@ export function ErrorScreen({ state = "notFound", detail }: { state?: ErrorState
 
       <section style={{ position: "relative", zIndex: 10, background: "var(--surface-subtle)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", padding: "var(--section-y) 0" }}>
         <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
-          <h2 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Where to go from here</h2>
+          <h2 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{t("Where to go from here")}</h2>
           <CardGrid min={260} gap="var(--space-5)">
             {s.help.map(([title, body, route, icon]) => {
               const clickable = Boolean(route);
@@ -181,7 +194,7 @@ export function ErrorScreen({ state = "notFound", detail }: { state?: ErrorState
                   <p style={{ color: "var(--text-body)", fontSize: "var(--fs-body-sm)", lineHeight: "var(--lh-body)", margin: 0 }}>{body}</p>
                   {clickable ? (
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: "auto", paddingTop: "var(--space-3)", color: "var(--green-700)", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-medium)" }}>
-                      Go there <Icon name="arrow-right" size={15} />
+                      {t("Go there")} <Icon name="arrow-right" size={15} />
                     </span>
                   ) : null}
                 </Card>
@@ -190,7 +203,7 @@ export function ErrorScreen({ state = "notFound", detail }: { state?: ErrorState
           </CardGrid>
           {detail ? (
             <details style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
-              <summary style={{ cursor: "pointer" }}>Technical detail</summary>
+              <summary style={{ cursor: "pointer" }}>{t("Technical detail")}</summary>
               <code style={{ display: "block", marginTop: "var(--space-3)", padding: "var(--space-4)", background: "var(--neutral-100)", borderRadius: "var(--radius-md)", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{detail}</code>
             </details>
           ) : null}
