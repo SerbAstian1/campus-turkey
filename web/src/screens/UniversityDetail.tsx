@@ -11,7 +11,7 @@
 import { BrandDivider, Badge, Button, Card, Icon, ScrollReveal, Tag, UniversityCard } from "@/ds";
 
 import { ImagePlaceholder } from "@/components/Common";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { Facts } from "./shared";
 import { ErrorScreen } from "./Errors";
 import { CardGrid } from "@/components/CardGrid";
@@ -70,6 +70,7 @@ export default function UniversityDetail({
   university: UniversityDetailData | null;
   similar: SimilarUniversity[];
 }) {
+  const href = useHref();
   const u = university;
   if (!u) return <ErrorScreen state="notFound" />;
 
@@ -153,7 +154,7 @@ export default function UniversityDetail({
                 {similar.map((s) => (
                   <UniversityCard key={s.slug} name={s.name} city={s.city} type={typeLabel(s.type)} languages={s.languages}
                     tuition={s.tuition} scholarship={s.scholarship} programs={s.programs}
-                    href={`#/university/${s.slug}`} style={{ width: "100%" }} />
+                    href={href(`university/${s.slug}`)} style={{ width: "100%" }} />
                 ))}
               </CardGrid>
             </ScrollReveal>

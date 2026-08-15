@@ -10,11 +10,12 @@
 
 import { useState, type FormEvent } from "react";
 import { BrandDivider, Button, Checkbox, Icon, Input, Logo, Select, ASSETS } from "@/ds";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { signInWithPassword } from "@/features/auth/client";
 import { useLeadSubmit } from "@/features/leads/submit";
 
 export default function PartnerLogin() {
+  const href = useHref();
   const [tab, setTab] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -115,7 +116,7 @@ export default function PartnerLogin() {
                   onChange={(e) => setPassword(e.target.value)} />
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)" }}>
                   <Checkbox id="p-remember" label="Keep me signed in" checked onChange={() => {}} />
-                  <a href="#/contact" style={{ fontSize: "var(--fs-body-sm)" }}>Forgot password</a>
+                  <a href={href("contact")} style={{ fontSize: "var(--fs-body-sm)" }}>Forgot password</a>
                 </div>
 
                 {error ? (

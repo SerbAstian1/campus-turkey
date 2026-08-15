@@ -19,7 +19,7 @@
  */
 
 import { Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, ASSETS } from "@/ds";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { PageBody, PageHero } from "./shared";
 import { useT } from "@/i18n/context";
 
@@ -88,6 +88,7 @@ const TRACKS: Track[] = [
 ];
 
 export default function Partnerships() {
+  const href = useHref();
   const t = useT();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -178,9 +179,9 @@ export default function Partnerships() {
             title={t("Sign in to the partner portal")}
             body="Your students, their stage, your commission and your payment status."
             primaryLabel="Partner Login"
-            primaryHref="#/portal"
+            primaryHref={href("portal")}
             secondaryLabel="Book a Consultation"
-            secondaryHref="#/contact"
+            secondaryHref={href("contact")}
             assetBase={ASSETS}
           />
         </ScrollReveal>

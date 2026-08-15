@@ -71,16 +71,23 @@ beforeAll(() => {
   ds = loaded;
 });
 
-/** The shell, reduced to the two things that decide where this button goes. */
+/**
+ * The shell, reduced to the two things that decide where this button goes.
+ *
+ * The hrefs here are real paths because that is what the app now renders — `useHref`
+ * resolves them at render time so the attribute a crawler reads is a link rather than a
+ * fragment. They used to be `#/apply` and `#/study`, repaired on click; the repair is
+ * gone and the markup is correct to begin with.
+ */
 function Shell() {
   usePlaceholderLinks();
   const Navbar = ds["Navbar"]!;
   return (
     <div className="ct-desktop-nav">
       <Navbar
-        items={[{ label: "Study in Türkiye", href: "#/study" }]}
+        items={[{ label: "Study in Türkiye", href: "/study-in-turkiye" }]}
         ctaLabel="Apply Now"
-        ctaHref="#/apply"
+        ctaHref="/apply"
         secondaryLabel="Partner Login"
       />
     </div>
@@ -120,12 +127,19 @@ describe("the real Navbar", () => {
   });
 
   it("routes the primary call to action to /apply as a client transition", () => {
-    // The other half of the scoping. `#/apply` is a real destination, so it must not be
-    // treated as a placeholder — but it should still be upgraded from the design
-    // system's leftover hash href into a router push rather than a document load.
+    /*
+     * Both halves of the link contract, in one test, because each is useless alone.
+     *
+     * The attribute must be a real path: the design system renders a plain `<a>`, and a
+     * crawler reads that and nothing else. The click must still become a router push:
+     * a plain `<a>` is not `next/link`, so without the listener every navbar, mega-menu
+     * and footer link would be a full document reload. Asserting only the href would
+     * pass while the site got slower; asserting only the push would pass while it
+     * stayed invisible to search.
+     */
     render(<Shell />);
     const anchor = screen.getByText("Apply Now").closest("a");
-    expect(anchor?.getAttribute("href")).toBe("#/apply");
+    expect(anchor?.getAttribute("href")).toBe("/apply");
 
     fireEvent.click(anchor!);
     expect(push).toHaveBeenCalledWith("/apply");

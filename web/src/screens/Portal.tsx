@@ -21,7 +21,7 @@ import { usePortalData, type PortalData } from "@/features/portal/data";
 import { useLocaleSwitch } from "@/i18n/switch";
 import { useT } from "@/i18n/context";
 import { useTranslatedOptions } from "@/i18n/options";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { toast } from "@/app/toast";
 import { CardGrid } from "@/components/CardGrid";
 import { ErrorScreen } from "./Errors";
@@ -482,6 +482,7 @@ export default function PortalDashboard() {
  */
 function PortalView({ data, onReload }: { data: PortalData; onReload: () => void }) {
   const t = useT();
+  const href = useHref();
   const [view, setView] = useState<View>("overview");
   const [sheet, setSheet] = useState<"student" | "withdraw" | "method" | null>(null);
   const [students, setStudents] = useState<PortalStudent[]>(data.students);
@@ -569,7 +570,7 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
   return (
     <div className="ct-portal" style={{ display: "grid", gridTemplateColumns: "minmax(240px,264px) 1fr", background: "var(--surface-subtle)", minHeight: "100dvh" }}>
       <aside className="ct-portal-aside" style={{ position: "sticky", top: 0, alignSelf: "start", height: "100dvh", display: "flex", flexDirection: "column", gap: "var(--space-8)", padding: "var(--space-8) var(--space-6)", background: "var(--gradient-brand-deep)", boxSizing: "border-box" }}>
-        <a href="#/" style={{ display: "block" }}><Logo variant="lockup" theme="reversed" height={44} assetBase={ASSETS} /></a>
+        <a href={href("home")} style={{ display: "block" }}><Logo variant="lockup" theme="reversed" height={44} assetBase={ASSETS} /></a>
         <nav style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {nav.map(([key, label, icon]) => {
             const on = view === key;

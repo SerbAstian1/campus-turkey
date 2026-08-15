@@ -10,6 +10,20 @@ robots, structured data, and the edge maintenance response.
 `src/app/router.ts` navigates through the Next.js router rather than `location.hash`, and
 every route in the table has a `page.tsx`. `tsc --noEmit` passes and the suite is green.
 
+**Step 3 was incomplete until 15 Aug, and the gap was invisible.** The link *layer* was
+rewritten but the link *markup* was not: forty-three hrefs across the screens, the mega
+menu, the navbar and the footer still read `#/university/itu`, repaired on click by a
+delegated listener. Every click worked, so nothing looked wrong — but a crawler reads
+the attribute and never clicks, and `#/…` is a fragment of the page it is already on. The
+site therefore had no internal links at all: every page was reachable only from the
+sitemap, and no link equity flowed anywhere. On a build whose stated reason for existing
+is organic search, that quietly cancelled a large part of the migration.
+
+They are now resolved at render by `useHref`, which also applies the locale — so a
+reader on `/fr/…` gets `/fr/universities/itu` instead of being bounced there by the
+middleware's 307 on every navigation. `src/test/crawlable-links.test.ts` reads the
+source and fails if a hash href returns.
+
 **Done — step 6, the cutover.** `app/` is deleted. The root package is no longer a
 workspace, its scripts point at `web/`, and CI no longer builds a Vite application that
 does not exist. The revert is one `git revert` of that commit, which is why it is its
@@ -142,15 +156,23 @@ the sitemap and `moved-routes.test.ts` all read.
 Mechanical, and the only step that touches every screen:
 
 - `go("study")` → `router.push("/study")` from `next/navigation`
-- `href="#/study"` → `<Link href="/study">`
+- `href="#/study"` → a real path — **done**, via `useHref`, which resolves the route name
+  *and* the locale. Not `<Link>`: the design system renders its own plain `<a>` elements
+  from `href` props, so there is nowhere to put a `<Link>` without forking the bundle.
 - `useRoute()` → `usePathname()` / `useParams()`
-- `usePlaceholderLinks()` — delete. It exists to map the design system's placeholder
-  `#consultation`-style hrefs onto hash routes; with real routes the mapping belongs in
-  the props passed to `Navbar` and `Footer`.
+- ~~`usePlaceholderLinks()` — delete.~~ **This instruction was wrong and is retained
+  deliberately.** It cannot be deleted: `Navbar` hardcodes `href="#consultation"` on its
+  secondary button and exposes only `secondaryLabel`, so there is no prop to move the
+  mapping into. What it no longer does is rewrite `#/…` links — those are real paths now.
+  What it gained is the other half of that trade: it upgrades a click on a real internal
+  href into a `router.push`, because a plain `<a>` is not `next/link` and would otherwise
+  cost a full document load on every navbar, mega-menu and footer link.
 
 **The old addresses.** A hash never reaches the server, so `#/study` cannot be
-redirected server-side. Add a client-side rewrite in the root layout that reads
-`location.hash` on first paint and `history.replaceState`s to the real path.
+redirected server-side. **Done** — `useLegacyHashRedirect` reads `location.hash` on
+first paint and `history.replaceState`s to the real path. Until 15 Aug this was
+unimplemented, so every link published while the prototype was live landed on the
+homepage with no indication that anything had been missed.
 
 Everything that *can* be redirected server-side is in `src/app/moved-routes.ts`, which
 `redirects()` in `next.config.ts` reads. Each entry is emitted twice: unprefixed for

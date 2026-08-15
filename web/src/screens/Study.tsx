@@ -6,7 +6,7 @@ import { Accordion, Badge, BrandDivider, Button, CTABanner, Card, Icon, SectionH
 import { useT } from "@/i18n/context";
 import { generalFaq, journey, scholarships, studentLife } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, FaqLayout } from "./shared";
 import { CardGrid } from "@/components/CardGrid";
 
@@ -20,6 +20,7 @@ const WHY = [
 ];
 
 export default function Study() {
+  const href = useHref();
   const t = useT();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -136,7 +137,7 @@ export default function Study() {
         <ScrollReveal>
           <CTABanner eyebrow="Next step" title="Apply for the 2026 intake"
             body="One short form. We reply with a shortlist, real tuition and the scholarships you qualify for."
-            primaryLabel="Apply Now" primaryHref="#/apply" secondaryLabel="Book a Consultation" secondaryHref="#/contact" assetBase={ASSETS} />
+            primaryLabel="Apply Now" primaryHref={href("apply")} secondaryLabel="Book a Consultation" secondaryHref={href("contact")} assetBase={ASSETS} />
         </ScrollReveal>
       </PageBody>
     </div>

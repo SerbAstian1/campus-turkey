@@ -11,13 +11,14 @@
 import { Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, StatBlock, ASSETS } from "@/ds";
 import { getInstitution } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, splitStyle } from "./shared";
 import { useT } from "@/i18n/context";
 import { ErrorScreen } from "./Errors";
 import { CardGrid } from "@/components/CardGrid";
 
 export default function Institution({ slug }: { slug: string }) {
+  const href = useHref();
   const t = useT();
   const inst = getInstitution(slug);
   if (!inst) return <ErrorScreen state="notFound" />;
@@ -64,7 +65,7 @@ export default function Institution({ slug }: { slug: string }) {
         <ScrollReveal>
           <CTABanner eyebrow={t("Work with us")} title={inst.cta}
             body="A 30 minute call is enough to see whether this fits. We come prepared with numbers."
-            primaryLabel="Book a Consultation" primaryHref="#/contact" secondaryLabel="Become a Partner" secondaryHref="#/partners" assetBase={ASSETS} />
+            primaryLabel="Book a Consultation" primaryHref={href("contact")} secondaryLabel="Become a Partner" secondaryHref={href("partners")} assetBase={ASSETS} />
         </ScrollReveal>
       </PageBody>
     </div>

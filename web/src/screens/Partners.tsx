@@ -5,7 +5,7 @@
 import { BrandDivider, Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, ASSETS } from "@/ds";
 import { institutions, partnerBenefits } from "@/content";
 import { scrollToId } from "@/components/Common";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero } from "./shared";
 import { PartnerForm } from "./PartnerForm";
 import { CardGrid } from "@/components/CardGrid";
@@ -13,6 +13,7 @@ import { useT } from "@/i18n/context";
 
 export default function Partners() {
   const t = useT();
+  const href = useHref();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero eyebrow="Partnerships" title="Become a partner"
@@ -39,7 +40,7 @@ export default function Partners() {
           <CardGrid min={240} gap="var(--space-6)">
             {institutions.map((inst, i) => (
               <ScrollReveal key={inst.slug} delay={i * 70} style={{ display: "flex" }}>
-                <Card interactive href={`#/institutions/${inst.slug}`} padding="var(--space-8)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                <Card interactive href={href(`institutions/${inst.slug}`)} padding="var(--space-8)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                   <Icon name={inst.icon} size={22} color="var(--green-600)" />
                   <h3 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>{inst.title}</h3>
                   <p style={{ fontSize: "var(--fs-body-sm)", color: "var(--text-body)", margin: 0 }}>{inst.lead}</p>
@@ -70,7 +71,7 @@ export default function Partners() {
         <ScrollReveal>
           <CTABanner eyebrow="Already a partner" title="Sign in to your portal"
             body="Track every referral, download materials and check your payments."
-            primaryLabel="Partner Login" primaryHref="#/portal" secondaryLabel="Contact us" secondaryHref="#/contact" assetBase={ASSETS} />
+            primaryLabel="Partner Login" primaryHref={href("portal")} secondaryLabel="Contact us" secondaryHref={href("contact")} assetBase={ASSETS} />
         </ScrollReveal>
       </PageBody>
     </div>

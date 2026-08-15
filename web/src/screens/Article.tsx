@@ -11,11 +11,12 @@ import { BrandDivider, Badge, Button, Card, Icon, ScrollReveal } from "@/ds";
 import { useT } from "@/i18n/context";
 import { articles, getArticle } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { ErrorScreen } from "./Errors";
 
 export default function Article({ slug }: { slug: string | null }) {
   const t = useT();
+  const href = useHref();
   const post = slug ? getArticle(slug) : undefined;
   if (!post) return <ErrorScreen state="notFound" />;
 
@@ -68,7 +69,7 @@ export default function Article({ slug }: { slug: string | null }) {
             <Card padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               <span className="ct-eyebrow">More resources</span>
               {more.map((m) => (
-                <a key={m.slug} href={`#/blog/${m.slug}`} style={{ display: "flex", flexDirection: "column", gap: 2, textDecoration: "none" }}>
+                <a key={m.slug} href={href(`blog/${m.slug}`)} style={{ display: "flex", flexDirection: "column", gap: 2, textDecoration: "none" }}>
                   <span style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-medium)", color: "var(--green-800)" }}>{m.title}</span>
                   <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{m.tag} · {m.read}</span>
                 </a>

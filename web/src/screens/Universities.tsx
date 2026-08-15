@@ -10,7 +10,7 @@ import {
   useDirectory, useFacets, useFilters,
   type UniversityPin,
 } from "@/features/universities/data";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { tileLayerFor } from "@/features/map/tiles";
 
@@ -132,6 +132,7 @@ const SORTS = [
 ] as const;
 
 export default function Universities() {
+  const href = useHref();
   const { filters, update, reset } = useFilters();
   const facets = useFacets();
   const directory = useDirectory(filters);
@@ -227,7 +228,7 @@ export default function Universities() {
                   type={u.type === "PUBLIC" ? "Public" : "Private"}
                   languages={u.languages} tuition={u.tuitionDisplay}
                   scholarship={u.scholarship} programs={u.programCount}
-                  href={`#/university/${u.slug}`} layout={view === "grid" ? "grid" : "row"} style={{ width: "100%" }}
+                  href={href(`university/${u.slug}`)} layout={view === "grid" ? "grid" : "row"} style={{ width: "100%" }}
                 />
               </ScrollReveal>
             ));
@@ -271,7 +272,7 @@ export default function Universities() {
         <ScrollReveal>
           <CTABanner eyebrow="Not sure which one" title="Send us your grades and we will shortlist for you"
             body="One short form. We reply with universities you can actually get into." primaryLabel="Apply Now"
-            primaryHref="#/apply" secondaryLabel="Book a Consultation" secondaryHref="#/contact" assetBase={ASSETS} />
+            primaryHref={href("apply")} secondaryLabel="Book a Consultation" secondaryHref={href("contact")} assetBase={ASSETS} />
         </ScrollReveal>
       </div>
     </div>

@@ -10,7 +10,7 @@
 import { Accordion, Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, StatBlock, Tag, TimelineTrack, ASSETS } from "@/ds";
 import { getService, services } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, PriceTable, FaqLayout, splitStyle } from "./shared";
 import { useT } from "@/i18n/context";
 import { ErrorScreen } from "./Errors";
@@ -18,6 +18,7 @@ import { CardGrid } from "@/components/CardGrid";
 
 export default function Service({ slug }: { slug: string }) {
   const t = useT();
+  const href = useHref();
   const s = getService(slug);
   if (!s) return <ErrorScreen state="notFound" />;
 
@@ -107,7 +108,7 @@ export default function Service({ slug }: { slug: string }) {
           <CardGrid min={240} gap="var(--space-6)">
             {others.map((o, i) => (
               <ScrollReveal key={o.slug} delay={i * 60} style={{ display: "flex" }}>
-                <Card interactive href={`#/service/${o.slug}`} padding="var(--space-8)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                <Card interactive href={href(`service/${o.slug}`)} padding="var(--space-8)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                   <Icon name={o.icon} size={22} color="var(--green-600)" />
                   <h3 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>{o.title}</h3>
                   <p style={{ fontSize: "var(--fs-body-sm)", color: "var(--text-body)", margin: 0 }}>{o.lead}</p>
@@ -134,7 +135,7 @@ export default function Service({ slug }: { slug: string }) {
         <ScrollReveal>
           <CTABanner eyebrow={t("Talk to us")} title={t("Get a written plan for {service}", { service: s.title.toLowerCase() })}
             body="Tell us what you need. You get a clear scope and a price before you travel."
-            primaryLabel="Book a Consultation" primaryHref="#/contact" secondaryLabel="Apply Now" secondaryHref="#/apply" assetBase={ASSETS} />
+            primaryLabel="Book a Consultation" primaryHref={href("contact")} secondaryLabel="Apply Now" secondaryHref={href("apply")} assetBase={ASSETS} />
         </ScrollReveal>
       </PageBody>
     </div>

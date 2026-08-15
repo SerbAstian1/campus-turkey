@@ -22,7 +22,7 @@
 
 import { Accordion, Badge, BrandDivider, Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, ASSETS } from "@/ds";
 import { generalFaq, scholarships } from "@/content";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { FaqLayout, PageBody, PageHero } from "../shared";
 
@@ -32,6 +32,7 @@ const MONEY_FAQ = generalFaq.filter((item) =>
 );
 
 export default function Scholarships() {
+  const href = useHref();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
@@ -185,9 +186,9 @@ export default function Scholarships() {
             title="Find out what you qualify for"
             body="One short form. We reply with a shortlist, real tuition and the scholarships that apply to your grades and your country."
             primaryLabel="Apply Now"
-            primaryHref="#/apply"
+            primaryHref={href("apply")}
             secondaryLabel="Book a Consultation"
-            secondaryHref="#/contact"
+            secondaryHref={href("contact")}
             assetBase={ASSETS}
           />
         </ScrollReveal>

@@ -8,8 +8,10 @@ import { ImagePlaceholder, scrollToId } from "@/components/Common";
 import { IconCard, PageBody, PageHero, PriceTable, FaqLayout, splitStyle } from "./shared";
 import { RepresentativeForm } from "./RepresentativeForm";
 import { CardGrid } from "@/components/CardGrid";
+import { useHref } from "@/app/router";
 
 export default function Representative() {
+  const href = useHref();
   const r = representative;
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -68,7 +70,7 @@ export default function Representative() {
         <ScrollReveal>
           <CTABanner eyebrow="Next step" title="Check whether your country is open"
             body="One message tells you whether the territory is available and what the target would be."
-            primaryLabel="Contact us" primaryHref="#/contact" secondaryLabel="Become a Partner" secondaryHref="#/partners" assetBase={ASSETS} />
+            primaryLabel="Contact us" primaryHref={href("contact")} secondaryLabel="Become a Partner" secondaryHref={href("partners")} assetBase={ASSETS} />
         </ScrollReveal>
       </PageBody>
     </div>

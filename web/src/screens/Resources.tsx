@@ -8,10 +8,12 @@ import { articles } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
 import { PageBody, PageHero } from "./shared";
 import { useT } from "@/i18n/context";
+import { useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 
 export default function Resources() {
   const t = useT();
+  const href = useHref();
   const [tag, setTag] = useState<string | null>(null);
   const tags = [...new Set(articles.map((r) => r.tag))];
   const list = articles.filter((r) => !tag || r.tag === tag);
@@ -33,7 +35,7 @@ export default function Resources() {
         <CardGrid min={280} gap="var(--space-6)">
           {list.map((r, i) => (
             <ScrollReveal key={r.slug} delay={i * 60} style={{ display: "flex" }}>
-              <Card interactive href={`#/blog/${r.slug}`} padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              <Card interactive href={href(`blog/${r.slug}`)} padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                 <ImagePlaceholder slot={`article-${r.slug}`} label={t("Article image, 16:9")} ratio="16 / 9" />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-3)" }}>
                   <Badge tone="neutral">{r.tag}</Badge>
@@ -52,7 +54,7 @@ export default function Resources() {
         <ScrollReveal>
           <CTABanner eyebrow={t("Faster than reading")} title={t("Ask us your question directly")}
             body="A person replies on WhatsApp, usually the same day."
-            primaryLabel="Book a Consultation" primaryHref="#/contact" secondaryLabel="Apply Now" secondaryHref="#/apply" assetBase={ASSETS} />
+            primaryLabel="Book a Consultation" primaryHref={href("contact")} secondaryLabel="Apply Now" secondaryHref={href("apply")} assetBase={ASSETS} />
         </ScrollReveal>
       </PageBody>
     </div>

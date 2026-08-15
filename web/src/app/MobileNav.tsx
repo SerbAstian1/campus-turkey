@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import { Button, Icon, LanguageSwitcher, Logo, ASSETS } from "@/ds";
 import { useT } from "@/i18n/context";
-import { go } from "./router";
+import { go, useHref } from "./router";
 
 type Group = { key: string; label: string; icon: string; links: [string, string, string][] };
 
@@ -23,6 +23,7 @@ export function MobileNav({
   route: string;
 }) {
   const t = useT();
+  const href = useHref();
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<string | null>(null);
 
@@ -73,7 +74,7 @@ export function MobileNav({
   return (
     <div className="ct-mobile-nav">
       <div className="ct-mobile-bar">
-        <a href="#/home" onClick={(e) => { e.preventDefault(); navigate("home"); }} style={{ display: "inline-flex", alignItems: "center" }}>
+        <a href={href("home")} onClick={(e) => { e.preventDefault(); navigate("home"); }} style={{ display: "inline-flex", alignItems: "center" }}>
           <Logo variant="lockup" theme="onLight" height={34} assetBase={ASSETS} />
         </a>
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginInlineStart: "auto" }}>
@@ -112,7 +113,7 @@ export function MobileNav({
                 </button>
                 <div className="ct-mobile-sub" style={{ maxHeight: on ? 60 * g.links.length : 0 }}>
                   {g.links.map(([label, r, icon]) => (
-                    <a key={label + r} href={`#/${r}`} onClick={(e) => { e.preventDefault(); navigate(r); }}>
+                    <a key={label + r} href={href(r)} onClick={(e) => { e.preventDefault(); navigate(r); }}>
                       <Icon name={icon} size={16} color="var(--neutral-500)" />{label}
                     </a>
                   ))}

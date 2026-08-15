@@ -20,8 +20,8 @@ import { useLocaleSwitch } from "@/i18n/switch";
 import { WhatsAppAction } from "@/components/Common";
 import { ErrorScreen, OfflineGuard } from "@/screens/Errors";
 import { MobileNav } from "./MobileNav";
-import { MEGA } from "./mega";
-import { routeKey, useRoute, usePlaceholderLinks, useNavigationBridge, go } from "./router";
+import { useMega } from "./mega";
+import { routeKey, useRoute, usePlaceholderLinks, useNavigationBridge, useLegacyHashRedirect, useHref, go } from "./router";
 import { subscribeToToasts } from "./toast";
 
 /**
@@ -106,6 +106,7 @@ const ACTIVE: Record<string, string> = {
 export function Shell({ children }: { children: ReactNode }) {
   const route = useRoute();
   const t = useT();
+  const href = useHref();
   const [lang, setLanguage] = useLocaleSwitch();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [narrow, setNarrow] = useState(false);
@@ -113,6 +114,8 @@ export function Shell({ children }: { children: ReactNode }) {
   // Parks the router so the free `go()` the screens call can reach it.
   useNavigationBridge();
   usePlaceholderLinks();
+  // Rescues inbound `#/study`-style links published while the prototype was live.
+  useLegacyHashRedirect();
 
   /*
    * The runtime translation sweep is gone.
@@ -154,10 +157,12 @@ export function Shell({ children }: { children: ReactNode }) {
     about: t("About"),
   };
 
+  const mega = useMega();
+
   const navItems = nav.map((n) => ({
     label: n.route ? (navLabels[n.route] ?? n.label) : (navLabels[n.label] ?? n.label),
-    href: n.route ? `#/${n.route}` : undefined,
-    children: n.mega ? MEGA[n.mega] : undefined,
+    href: n.route ? href(n.route) : undefined,
+    children: n.mega ? mega[n.mega] : undefined,
     _route: n.route,
   }));
 
@@ -182,7 +187,7 @@ export function Shell({ children }: { children: ReactNode }) {
           onLangChange={setLanguage}
           assetBase={ASSETS}
           ctaLabel={t("Apply Now")}
-          ctaHref="#/apply"
+          ctaHref={href("apply")}
           /* The design system hardcodes this button's destination to
              `href="#consultation"` and exposes no prop to change it — only the label.
              `usePlaceholderLinks` resolves it to the portal when the click comes from
@@ -207,7 +212,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <Footer
         columns={footerColumns.map((c) => ({
           title: footerTitles[c.title] ?? c.title,
-          links: c.links.map((l) => ({ label: l.label, href: `#/${l.route}` })),
+          links: c.links.map((l) => ({ label: l.label, href: href(l.route) })),
         }))}
         contact={contact}
         socials={socials}

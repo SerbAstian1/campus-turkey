@@ -17,7 +17,7 @@
 
 import { Accordion, Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, TimelineTrack, ASSETS } from "@/ds";
 import { generalFaq, journey } from "@/content";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { FaqLayout, PageBody, PageHero } from "../shared";
 
 /**
@@ -84,6 +84,7 @@ const PROCESS_FAQ = generalFaq.filter((item) =>
 );
 
 export default function ApplicationProcess() {
+  const href = useHref();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
@@ -191,9 +192,9 @@ export default function ApplicationProcess() {
             title="Send us step one"
             body="Your name, the subject and roughly when. No documents, nothing to pay, and a shortlist back with real tuition."
             primaryLabel="Apply Now"
-            primaryHref="#/apply"
+            primaryHref={href("apply")}
             secondaryLabel="Book a Consultation"
-            secondaryHref="#/contact"
+            secondaryHref={href("contact")}
             assetBase={ASSETS}
           />
         </ScrollReveal>

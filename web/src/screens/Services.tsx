@@ -20,13 +20,14 @@
 
 import { Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, ASSETS } from "@/ds";
 import { services } from "@/content";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { PageBody, PageHero } from "./shared";
 import { useT } from "@/i18n/context";
 
 export default function Services() {
   const t = useT();
+  const href = useHref();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
@@ -59,7 +60,7 @@ export default function Services() {
             <ScrollReveal key={service.slug} delay={index * 60} style={{ display: "flex" }}>
               <Card
                 interactive
-                href={`#/services/${service.slug}`}
+                href={href(`services/${service.slug}`)}
                 padding="var(--space-8)"
                 style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
               >
@@ -150,9 +151,9 @@ export default function Services() {
             title={t("Tell us what you need")}
             body="Describe it in a sentence. We will say which service it is, or that it is not one we run."
             primaryLabel="Book a Consultation"
-            primaryHref="#/contact"
+            primaryHref={href("contact")}
             secondaryLabel="Apply Now"
-            secondaryHref="#/apply"
+            secondaryHref={href("apply")}
             assetBase={ASSETS}
           />
         </ScrollReveal>

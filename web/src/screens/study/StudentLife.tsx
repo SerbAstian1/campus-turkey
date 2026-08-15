@@ -19,7 +19,7 @@
 import { Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, ASSETS } from "@/ds";
 import { studentLife } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { PageBody, PageHero } from "../shared";
 
@@ -41,6 +41,7 @@ const BUDGET: { item: string; dorm: string; flat: string }[] = [
 const TOTALS = { dorm: "$213 – $303", flat: "$353 – $503" };
 
 export default function StudentLife() {
+  const href = useHref();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
@@ -177,9 +178,9 @@ export default function StudentLife() {
             title="Get the number for your city and program"
             body="Tuition, housing and living costs for the universities you are actually considering, in one document."
             primaryLabel="Apply Now"
-            primaryHref="#/apply"
+            primaryHref={href("apply")}
             secondaryLabel="Book a Consultation"
-            secondaryHref="#/contact"
+            secondaryHref={href("contact")}
             assetBase={ASSETS}
           />
         </ScrollReveal>

@@ -6,7 +6,7 @@ import { Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, StatBlock,
 import { useT } from "@/i18n/context";
 import { accreditations, leadership, milestones, offices, stats, testimonials } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, splitStyle } from "./shared";
 import { CardGrid } from "@/components/CardGrid";
 
@@ -17,6 +17,7 @@ const VALUES = [
 ];
 
 export default function About() {
+  const href = useHref();
   const t = useT();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -136,7 +137,7 @@ export default function About() {
         <ScrollReveal>
           <CTABanner eyebrow="Start here" title="Tell us what you need in Türkiye"
             body="Study, treatment, business or work. One message and a person replies."
-            primaryLabel="Contact us" primaryHref="#/contact" secondaryLabel="Apply Now" secondaryHref="#/apply" assetBase={ASSETS} />
+            primaryLabel="Contact us" primaryHref={href("contact")} secondaryLabel="Apply Now" secondaryHref={href("apply")} assetBase={ASSETS} />
         </ScrollReveal>
       </PageBody>
     </div>

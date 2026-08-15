@@ -9,7 +9,7 @@ import {
 } from "@/ds";
 import { generalFaq, journey, serviceCards, stats, testimonials, universities } from "@/content";
 import { BrandMark, ImagePlaceholder } from "@/components/Common";
-import { go } from "@/app/router";
+import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { useT } from "@/i18n/context";
 
@@ -154,6 +154,7 @@ function Hero({ onApply, onExplore }: { onApply: () => void; onExplore: () => vo
    Pauses on hover and holds still under reduced motion. Each plate is a wordmark
    stand-in until the real university logos arrive. */
 function AffiliateMarquee() {
+  const href = useHref();
   const items = universities.slice(0, 14);
   return (
     <section style={{ position: "relative", zIndex: 10, background: "var(--surface-subtle)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", paddingTop: "var(--space-16)", paddingBottom: "var(--space-12)" }}>
@@ -167,7 +168,7 @@ function AffiliateMarquee() {
             <div key={copy} aria-hidden={copy ? "true" : undefined}
               style={{ display: "flex", alignItems: "center", gap: "var(--space-12)", flex: "none" }}>
               {items.map((u) => (
-                <a key={`${copy}-${u.slug}`} href={`#/university/${u.slug}`} tabIndex={copy ? -1 : 0} className="ct-affiliate"
+                <a key={`${copy}-${u.slug}`} href={href(`university/${u.slug}`)} tabIndex={copy ? -1 : 0} className="ct-affiliate"
                   style={{ flex: "none", display: "flex", alignItems: "center", gap: "var(--space-4)", textDecoration: "none", opacity: .75, transition: "opacity var(--dur-base) var(--ease-out)" }}>
                   <ImagePlaceholder slot={`logo-${u.slug}`} label="" round style={{ width: 44, height: 44, flex: "none", aspectRatio: "auto" }} />
                   <span style={{ display: "flex", flexDirection: "column", gap: 2, whiteSpace: "nowrap" }}>
@@ -221,6 +222,7 @@ function AboutSection() {
 
 function ServicesSection() {
   const t = useT();
+  const href = useHref();
   return (
     <section id="study" style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-12)" }}>
@@ -239,7 +241,7 @@ function ServicesSection() {
               <ServiceCard
                 icon={s.icon} title={s.title} description={s.description} points={s.points}
                 badge={s.badge} emphasis={s.emphasis} ctaLabel={s.ctaLabel}
-                href={`#/${s.route}`} index={i + 1} style={{ width: "100%" }}
+                href={href(s.route)} index={i + 1} style={{ width: "100%" }}
               />
             </ScrollReveal>
           ))}
@@ -286,6 +288,7 @@ function StoryReel() {
 
 function FeaturedUniversities() {
   const t = useT();
+  const href = useHref();
   return (
     <section id="universities" style={{ background: "var(--surface-subtle)", padding: "var(--section-y) 0" }}>
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
@@ -300,7 +303,7 @@ function FeaturedUniversities() {
               <UniversityCard
                 name={u.name} city={u.city} type={u.type} languages={u.languages} tuition={u.tuition}
                 scholarship={u.scholarship} programs={u.programs}
-                href={`#/university/${u.slug}`} style={{ width: "100%" }}
+                href={href(`university/${u.slug}`)} style={{ width: "100%" }}
               />
             </ScrollReveal>
           ))}
@@ -393,6 +396,7 @@ function FaqSection() {
 }
 
 export default function Home() {
+  const href = useHref();
   const t = useT();
   return (
     <div>
@@ -417,7 +421,7 @@ export default function Home() {
         <ScrollReveal>
           <CTABanner eyebrow="Ready when you are" title="Start your application for the next intake"
             body="Tell us what you want to study. We come back with real options, real costs and real deadlines."
-            primaryLabel={t("Apply Now")} primaryHref="#/apply" secondaryLabel={t("Book a Consultation")} secondaryHref="#/contact" assetBase={ASSETS} />
+            primaryLabel={t("Apply Now")} primaryHref={href("apply")} secondaryLabel={t("Book a Consultation")} secondaryHref={href("contact")} assetBase={ASSETS} />
         </ScrollReveal>
       </div>
     </div>

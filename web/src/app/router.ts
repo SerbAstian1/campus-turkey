@@ -20,6 +20,8 @@
 
 import { useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { localePath } from "@/i18n/locales";
+import { useLocale } from "@/i18n/context";
 
 export interface Route {
   /** First path segment. `home` at the root, matching the old hash router. */
@@ -90,6 +92,30 @@ export function pathFor(route: string): string {
   return `/${path}`;
 }
 
+/**
+ * The `href` for a link to another page of this site, in the reader's language.
+ *
+ * Screens used to write `href={`#/university/${slug}`}` and let the delegated click
+ * listener rewrite it. That worked for a mouse and for nothing else. The attribute that
+ * reached the HTML was still `#/university/…`, which a crawler reads as a fragment of
+ * the page it is already on — so every university, service and article page was
+ * reachable only through the sitemap, with no internal link pointing at it and no link
+ * equity flowing to it. On a site whose whole funnel is organic search, that quietly
+ * undid a large part of what moving off the hash router was for.
+ *
+ * It also cost a redirect. `pathFor` alone yields the unprefixed path, so a reader on
+ * `/fr/...` was pushed to `/universities/…` and bounced by the middleware's 307 to
+ * `/fr/universities/…` — a round trip on every internal navigation in sixteen of the
+ * seventeen languages. Composing `localePath` here means the link points at the right
+ * language to begin with.
+ *
+ * Accepts what the screens already pass: `"apply"`, `"university/itu"`, `"#/apply"`.
+ */
+export function useHref(): (route: string) => string {
+  const locale = useLocale();
+  return useMemo(() => (route: string) => localePath(pathFor(route), locale), [locale]);
+}
+
 /** Read the current route in the shape the screens expect. */
 export function useRoute(): Route {
   const pathname = usePathname() ?? "/";
@@ -139,13 +165,54 @@ let pushRoute: ((route: string) => void) | null = null;
 
 export function useNavigationBridge(): void {
   const router = useRouter();
+  const locale = useLocale();
 
   useEffect(() => {
-    pushRoute = (route: string) => router.push(pathFor(route));
+    /*
+     * Locale-aware, so that `go("apply")` from `/fr/universities` lands on `/fr/apply`.
+     *
+     * It used to push the unprefixed path and let the middleware's 307 put the reader
+     * back in their own language. That worked, at the cost of a server round trip on
+     * every one of the fifty-seven `go()` calls in the screens, in sixteen of the
+     * seventeen languages. The bridge is a hook, so the locale is reachable here and
+     * the fix is one line rather than fifty-seven.
+     */
+    pushRoute = (route: string) => router.push(localePath(pathFor(route), locale));
     return () => {
       pushRoute = null;
     };
-  }, [router]);
+  }, [router, locale]);
+}
+
+/**
+ * Send an inbound legacy hash address to its real path, once, on first paint.
+ *
+ * MIGRATION.md step 3 asks for this and it was never built. A hash is never sent to the
+ * server, so `next.config.ts` redirects cannot see `campusturkey.org/#/study` — the
+ * request that arrives is for `/`, and the visitor was silently left on the homepage
+ * wondering where the page went. Every link shared, bookmarked or published while the
+ * prototype was live has that shape.
+ *
+ * `replace` rather than `push`, so Back returns to wherever they came from rather than
+ * to the address that just redirected itself. Runs once: the dependency list is empty on
+ * purpose, because this is about how the document was *entered*, not about later
+ * navigation.
+ */
+export function useLegacyHashRedirect(): void {
+  const router = useRouter();
+  const locale = useLocale();
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash.startsWith("#/")) return;
+
+    // Strip it from the address before replacing, or the hash survives the transition
+    // and this fires again on the next mount.
+    const target = localePath(pathFor(hash), locale);
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    router.replace(target);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 }
 
 /** Navigate. Same signature the screens have always called. */
@@ -161,12 +228,23 @@ export function go(route: string): void {
 /**
  * Intercepts the design system's placeholder hrefs and routes them properly.
  *
- * Also upgrades the design system's real `#/...` anchors — the navbar, footer and CTA
- * banner all emit them — into client-side transitions. Without that, every link in the
- * chrome would be a full page load.
+ * MIGRATION.md step 3 says to delete this hook. That instruction cannot be followed and
+ * the document is now wrong about it: the design system hardcodes `#consultation`,
+ * `#apply`, `#home` and `#whatsapp` inside components that expose no prop to override
+ * them — `Navbar`'s secondary button takes a `secondaryLabel` and no href at all. Until
+ * the bundle offers those props, one delegated listener is the alternative to forking
+ * the components.
+ *
+ * What *has* gone is the `#/...` branch this also used to carry. Those were our own
+ * links, not the design system's, and rewriting them on click was the wrong layer: the
+ * click handler fixed the mouse and left the `href` attribute in the HTML reading
+ * `#/university/…`, which is a fragment of the current page to every crawler that saw
+ * it. They are now written as real paths at the point they are rendered — see `useHref`
+ * — so there is nothing left here to upgrade.
  */
 export function usePlaceholderLinks(): void {
   const router = useRouter();
+  const locale = useLocale();
 
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
@@ -176,25 +254,41 @@ export function usePlaceholderLinks(): void {
       const anchor = target?.closest?.("a[href]");
       if (!anchor) return;
 
-      const href = anchor.getAttribute("href") ?? "";
-
       const placeholder = resolvePlaceholder(anchor);
       if (placeholder) {
         event.preventDefault();
-        router.push(pathFor(placeholder));
+        router.push(localePath(pathFor(placeholder), locale));
         return;
       }
 
-      // The design system's own `#/study`-style links, left over from the hash router.
-      if (href.startsWith("#/")) {
+      /*
+       * Real internal links, now that `useHref` writes them into the markup.
+       *
+       * These two halves answer two different readers and both are needed. The `href`
+       * attribute is for the crawler, which reads it and never clicks. This handler is
+       * for the person, who clicks and would otherwise get a full document reload —
+       * the design system renders plain `<a>` elements, not `next/link`, so without
+       * this every navbar, mega-menu, footer and CTA link is a cold page load. That was
+       * the one thing the old `#/` interception genuinely bought, and it would have
+       * been lost by making the hrefs real.
+       *
+       * `//evil.com` is not internal. It starts with a slash and is a different origin,
+       * which is precisely the advisory class handoff note 14 flags for `?returnTo=`.
+       */
+      const destination = anchor.getAttribute("href") ?? "";
+      const internal = destination.startsWith("/") && !destination.startsWith("//");
+      const opensElsewhere =
+        anchor.hasAttribute("download") || anchor.getAttribute("target") === "_blank";
+
+      if (internal && !opensElsewhere) {
         event.preventDefault();
-        router.push(pathFor(href));
+        router.push(destination);
       }
     };
 
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
-  }, [router]);
+  }, [router, locale]);
 }
 
 /**
