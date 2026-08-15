@@ -204,7 +204,28 @@ function AboutSection() {
               <Button variant="ghost" icon="message-circle" onClick={() => go("contact")}>{t("Contact us")}</Button>
             </div>
           </div>
-          <ImagePlaceholder slot="home-about" label={t("Campus or student photography, 4:3")} ratio="4 / 3" />
+          {/*
+            The photograph, with the placeholder text kept as the fallback — the pattern
+            `UniversityDetail` already uses, so removing `src` reopens the reserved frame
+            rather than leaving a broken image.
+
+            `alt` describes the picture rather than its role: this is content, and
+            "Campus photography" tells a screen reader nothing the page has not said.
+            Not `priority` — the section sits below the hero, and the hero heading is the
+            LCP element here.
+
+            The source is 16:9 in a 4:3 frame, so it is centre-cropped by `objectFit:
+            cover`. The frame's ratio is deliberately not changed to suit one file: the
+            box is a layout agreement, and the whole point of a fixed frame is that
+            nothing shifts on the day a photograph is replaced.
+          */}
+          <ImagePlaceholder
+            slot="home-about"
+            label={t("Campus or student photography, 4:3")}
+            ratio="4 / 3"
+            src="/assets/homepage image 1.png"
+            alt={t("Six students working together around a table with a laptop and notebooks")}
+          />
         </ScrollReveal>
         <ScrollReveal delay={80}><BrandDivider /></ScrollReveal>
         <ScrollReveal delay={160} style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-12)", alignItems: "center" }}>
