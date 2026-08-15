@@ -9,6 +9,7 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
+import { getTranslator } from "@/i18n/messages";
 import StudentLife from "@/screens/study/StudentLife";
 
 export function generateStaticParams() {
@@ -19,10 +20,11 @@ export async function generateMetadata(
   { params }: { params: Promise<{ locale: string }> },
 ): Promise<Metadata> {
   const { locale } = await params;
+  const t = await getTranslator(locale as Locale);
   return pageMetadata({
-    title: "Cost of living for students in Türkiye",
+    title: t("Cost of living for students in Türkiye"),
     description:
-      "Housing, food, transport and insurance added up two ways — a state dormitory from about $213 a month, a shared private flat from about $353.",
+      t("Housing, food, transport and insurance added up two ways — a state dormitory from about $213 a month, a shared private flat from about $353."),
     path: "/study-in-turkiye/student-life",
     locale: locale as Locale,
   });

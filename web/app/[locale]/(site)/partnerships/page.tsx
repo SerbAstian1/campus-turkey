@@ -10,6 +10,7 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
+import { getTranslator } from "@/i18n/messages";
 import Partnerships from "@/screens/Partnerships";
 
 export function generateStaticParams() {
@@ -20,10 +21,11 @@ export async function generateMetadata(
   { params }: { params: Promise<{ locale: string }> },
 ): Promise<Metadata> {
   const { locale } = await params;
+  const t = await getTranslator(locale as Locale);
   return pageMetadata({
-    title: "Partnerships",
+    title: t("Partnerships"),
     description:
-      "Three ways to work with Campus Turkey: refer students as an agency, hold a country as a representative, or receive students as a university. Terms and commission for each.",
+      t("Three ways to work with Campus Turkey: refer students as an agency, hold a country as a representative, or receive students as a university. Terms and commission for each."),
     path: "/partnerships",
     locale: locale as Locale,
   });

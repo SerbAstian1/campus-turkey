@@ -116,5 +116,22 @@ export function createTranslator(messages: Messages) {
 
 export type Translator = ReturnType<typeof createTranslator>;
 
+/**
+ * The translator for a locale, on the server.
+ *
+ * `useT()` is a client hook and cannot reach `generateMetadata`, which is where a page's
+ * `<title>` and meta description are decided. That is exactly the copy that most needs
+ * translating: it is what a search engine indexes and what a reader sees in a result
+ * before they ever load the page, and until this existed all seventeen locales served
+ * the same English titles under correct `hreflang` — advertising a French page and
+ * handing Google an English one.
+ *
+ * English returns the identity translator, because `loadMessages` short-circuits to an
+ * empty catalogue and every key is already its own English text.
+ */
+export async function getTranslator(locale: Locale): Promise<Translator> {
+  return createTranslator(await loadMessages(locale));
+}
+
 /** The identity translator, for English and for tests. */
 export const identity: Translator = createTranslator({});

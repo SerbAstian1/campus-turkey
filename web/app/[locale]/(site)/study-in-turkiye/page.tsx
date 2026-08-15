@@ -13,6 +13,7 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
+import { getTranslator } from "@/i18n/messages";
 import Study from "@/screens/Study";
 
 /**
@@ -26,9 +27,10 @@ export async function generateMetadata(
   { params }: { params: Promise<{ locale: string }> },
 ): Promise<Metadata> {
   const { locale } = await params;
+  const t = await getTranslator(locale as Locale);
   return pageMetadata({
-  title: "Study in Türkiye",
-  description: "Tuition, scholarships, intakes and what a year in Türkiye actually costs. Written for students applying from abroad.",
+  title: t("Study in Türkiye"),
+  description: t("Tuition, scholarships, intakes and what a year in Türkiye actually costs. Written for students applying from abroad."),
   path: "/study-in-turkiye",
     locale: locale as Locale,
   });

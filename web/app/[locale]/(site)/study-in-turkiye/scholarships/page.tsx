@@ -10,6 +10,7 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
+import { getTranslator } from "@/i18n/messages";
 import Scholarships from "@/screens/study/Scholarships";
 
 export function generateStaticParams() {
@@ -20,10 +21,11 @@ export async function generateMetadata(
   { params }: { params: Promise<{ locale: string }> },
 ): Promise<Metadata> {
   const { locale } = await params;
+  const t = await getTranslator(locale as Locale);
   return pageMetadata({
-    title: "Scholarships to study in Türkiye",
+    title: t("Scholarships to study in Türkiye"),
     description:
-      "Türkiye Bursları, private merit awards, country quotas and family discounts — what each covers, when to apply and how competitive it really is.",
+      t("Türkiye Bursları, private merit awards, country quotas and family discounts — what each covers, when to apply and how competitive it really is."),
     path: "/study-in-turkiye/scholarships",
     locale: locale as Locale,
   });

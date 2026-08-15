@@ -13,6 +13,7 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
+import { getTranslator } from "@/i18n/messages";
 import Apply from "@/screens/Apply";
 
 /**
@@ -26,9 +27,10 @@ export async function generateMetadata(
   { params }: { params: Promise<{ locale: string }> },
 ): Promise<Metadata> {
   const { locale } = await params;
+  const t = await getTranslator(locale as Locale);
   return pageMetadata({
-  title: "Start your application",
-  description: "Send one application and we place it with the universities that fit. Free to start, no obligation.",
+  title: t("Start your application"),
+  description: t("Send one application and we place it with the universities that fit. Free to start, no obligation."),
   path: "/apply",
     locale: locale as Locale,
   });

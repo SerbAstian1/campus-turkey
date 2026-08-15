@@ -14,6 +14,7 @@ import type { Metadata } from "next";
 import { getInstitution } from "@/content/institutions";
 import { pageMetadata } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
+import { getTranslator } from "@/i18n/messages";
 import Institution from "@/screens/Institution";
 
 export function generateStaticParams() {
@@ -24,13 +25,20 @@ export async function generateMetadata(
   { params }: { params: Promise<{ locale: string }> },
 ): Promise<Metadata> {
   const { locale } = await params;
+  const t = await getTranslator(locale as Locale);
   const institution = getInstitution("universities");
 
   return pageMetadata({
-    title: "University partnerships",
+    title: t("University partnerships"),
+    /*
+     * The content lead when there is one, and a translated sentence when there is not.
+     * Only the fallback goes through `t()`: the lead comes from the content module,
+     * which is a separate namespace and not translated yet — wrapping it here would put
+     * a variable where the extractor needs a literal and reach the catalogue as nothing.
+     */
     description:
       institution?.lead.slice(0, 150).replace(/\s+\S*$/, "") ??
-      "Recruitment agreements with Turkish universities: pre-screened applicants, intake reporting and a two-week agreement turnaround.",
+      t("Recruitment agreements with Turkish universities: pre-screened applicants, intake reporting and a two-week agreement turnaround."),
     path: "/partnerships/universities",
     locale: locale as Locale,
   });
