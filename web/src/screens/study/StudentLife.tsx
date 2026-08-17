@@ -19,10 +19,9 @@
 import { Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, ASSETS } from "@/ds";
 import { studentLife } from "@/content";
 import { useT } from "@/i18n/context";
-import { ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
-import { PageBody, PageHero } from "../shared";
+import { PageBody, PageHero, StudentLifeFrames } from "../shared";
 
 /**
  * A monthly budget, in the two shapes students actually live in.
@@ -176,11 +175,7 @@ export default function StudentLife() {
               subject and the grid container gets its columns recalculated on every
               frame of that animation. */}
           <ScrollReveal delay={80}>
-            <CardGrid min={240} gap="var(--space-6)">
-              <ImagePlaceholder slot="study-housing" label={t("Dormitory or student housing")} ratio="4 / 3" />
-              <ImagePlaceholder slot="study-campus" label={t("Campus life, students outdoors")} ratio="4 / 3" />
-              <ImagePlaceholder slot="study-city" label={t("City street, everyday costs")} ratio="4 / 3" />
-            </CardGrid>
+            <StudentLifeFrames />
           </ScrollReveal>
         </div>
 

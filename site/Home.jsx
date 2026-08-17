@@ -131,7 +131,17 @@ function AboutSection() {
               <Button variant="ghost" icon="message-circle" onClick={() => go("contact")}>{T("cta.contact")}</Button>
             </div>
           </div>
-          <window.ImagePlaceholder slot="home-about" label="Campus or student photography, 4:3" ratio="4 / 3" />
+          {/*
+            The label stays alongside `src`: dropping the photograph reopens the reserved
+            frame rather than leaving a broken image. The source is 16:9 in a 4:3 frame, so
+            `objectFit: cover` centre-crops it — the ratio is not bent to suit one file,
+            because the fixed box is what stops the page moving when a picture is swapped.
+            Path is relative, matching the rest of the prototype: routing is hash-based, so
+            the document is always at the root and `assets/…` always resolves.
+          */}
+          <window.ImagePlaceholder slot="home-about" label="Campus or student photography, 4:3" ratio="4 / 3"
+            src={`${A}/homepage image 1.webp`}
+            alt="Six students working together around a table with a laptop and notebooks" />
         </ScrollReveal>
         <ScrollReveal delay={80}><BrandDivider /></ScrollReveal>
         <ScrollReveal delay={160} style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-12)", alignItems: "center" }}>
@@ -182,8 +192,66 @@ function StatsBand({ stats }) {
   );
 }
 
-/* GIF stand-in, sized as a wide video band. Swap the placeholder for an <img
-   src="...gif"> once the reel is supplied; the frame geometry stays the same. */
+/*
+ * The reel itself: muted, looping, autostarted. What the frame reserved as an "animated
+ * GIF" delivered as a video, which is what that label always meant — a GIF of the same
+ * twelve seconds at this size would be many times the bytes and far worse looking.
+ *
+ * No green on it. The frame used to be a `--gradient-brand-deep` matte showing through a
+ * `--space-3` pad, so brand green ran round every edge of the footage. The hero reached
+ * the same conclusion when its green wash came off: the reel's job is to look like a real
+ * place, and the green belongs in the UI around it, not on it.
+ */
+function CampusReel() {
+  const ref = React.useRef(null);
+  const [reduceMotion, setReduceMotion] = React.useState(false);
+
+  React.useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduceMotion(query.matches);
+    sync();
+    /* Followed rather than sampled once: the setting gets changed while a page is open,
+       and on macOS and Windows it commonly is. */
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+
+  /*
+   * Playback is tied to visibility rather than to page load. This section sits a long way
+   * down the homepage and the file is 4.6 MB, so autoplaying it on load spends that on
+   * every visitor including the ones who never scroll this far. Pausing on the way back
+   * out is the other half: a reel playing offscreen decodes frames nobody is looking at.
+   */
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el || reduceMotion) return;
+    const io = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) { el.pause(); return; }
+      /* Muted again here, not only in the markup: React does not reliably reflect the
+         `muted` prop onto the element, and every browser refuses an unmuted autoplay.
+         `play()` returns a promise that rejects when it is refused anyway — caught,
+         because an unhandled rejection in the console is not a useful way to find out. */
+      el.muted = true;
+      el.play().catch(() => {});
+    }, { rootMargin: "200px 0px", threshold: 0.2 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [reduceMotion]);
+
+  return (
+    <div style={{ position: "relative", borderRadius: "var(--radius-xl)", overflow: "hidden" }}>
+      <video ref={ref} data-slot="home-reel" src={`${A}/campus-reel.mp4`}
+        loop muted playsInline preload="metadata"
+        /* Reduced motion gets the reel as something to start rather than something
+           already running. It stays reachable — this is content the section promises,
+           not decoration, so the answer there is controls, not removal. */
+        controls={reduceMotion}
+        aria-label="Campus, city and student life in one short reel."
+        style={{ display: "block", width: "100%", aspectRatio: "16 / 9", objectFit: "cover" }} />
+    </div>
+  );
+}
+
 function StoryReel() {
   return (
     <section style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>
@@ -193,10 +261,7 @@ function StoryReel() {
             lead="Campus, city and student life in one short reel." align="center" />
         </ScrollReveal>
         <ScrollReveal delay={80}>
-          <div style={{ position: "relative", borderRadius: "var(--radius-xl)", overflow: "hidden", background: "var(--gradient-brand-deep)", padding: "var(--space-3)" }}>
-            <window.ImagePlaceholder slot="home-reel" label="Animated GIF reel, 16:9" ratio="16 / 9" icon="play"
-              style={{ borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,.06)", borderColor: "rgba(255,255,255,.35)", color: "rgba(255,255,255,.82)" }} />
-          </div>
+          <CampusReel />
         </ScrollReveal>
       </div>
     </section>

@@ -8,6 +8,8 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Badge, Card, Icon, ASSETS } from "@/ds";
 import { CardGrid } from "@/components/CardGrid";
+import { ImagePlaceholder } from "@/components/Common";
+import { useT } from "@/i18n/context";
 
 export function PageHero({
   eyebrow, title, lead, actions, badge,
@@ -109,6 +111,45 @@ export function FaqLayout({ heading, children }: { heading: ReactNode; children:
       <div style={{ position: "sticky", top: 140 }}>{heading}</div>
       {children}
     </div>
+  );
+}
+
+/**
+ * The three student-life photographs, rendered identically by the study hub and by the
+ * student-life page beneath it.
+ *
+ * One definition rather than two matching blocks. The same three slots appear on both
+ * pages and are meant to hold the same three pictures, so a photograph swapped in one
+ * place is a photograph swapped in both — the alternative is two lists that drift, which
+ * is the same reason the captcha hosts and the map tile hosts each live in one file.
+ * These have already been re-sourced once.
+ *
+ * `alt` describes each picture rather than the frame it sits in. Without it
+ * `ImagePlaceholder` falls back to `alt=""`, which marks a photograph decorative — wrong
+ * for three images a section about where you live and what it costs uses as evidence.
+ *
+ * The housing and city sources are 3:2 in a 4:3 frame, so `objectFit: cover` trims their
+ * top and bottom. The ratio stays as agreed rather than bending to the files.
+ * `campus-life.jpg` is a true 4:3 and fills its frame uncropped.
+ *
+ * One mismatch left deliberately visible: `study-campus` is labelled "students outdoors"
+ * and currently holds a lecture hall. The label is the placeholder's fallback text and
+ * never renders beside a picture, so nothing is wrong on the page — but
+ * `scripts/image-manifest.mjs` prints label and file together under "already supplied"
+ * precisely so the pair can be read against each other. Either the label or the
+ * photograph is in the wrong frame; someone has to choose which.
+ */
+export function StudentLifeFrames() {
+  const t = useT();
+  return (
+    <CardGrid min={240} gap="var(--space-6)">
+      <ImagePlaceholder slot="study-housing" src="/assets/student housing.jpg" label={t("Dormitory or student housing")} ratio="4 / 3"
+        alt={t("A Turkish apartment building with balconies, a Turkish flag hanging from one of them and an orange tree in the foreground")} />
+      <ImagePlaceholder slot="study-campus" src="/assets/campus-life.jpg" label={t("Campus life, students outdoors")} ratio="4 / 3"
+        alt={t("Students seated in a tiered university lecture hall, facing a lecturer and a projected slide")} />
+      <ImagePlaceholder slot="study-city" src="/assets/people-street.jpg" label={t("City street, everyday costs")} ratio="4 / 3"
+        alt={t("A busy shopping street lined with clothing and textile shops, crowded with people walking")} />
+    </CardGrid>
   );
 }
 

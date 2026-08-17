@@ -69,11 +69,37 @@ function WhatsAppAction({ label = "Chat on WhatsApp", tone = "brand", size = 56,
 }
 
 /**
- * Frame reserved for photography the brand supplies later. `slot` is the stable name
- * a developer swaps for a real <img>; it is rendered as data-slot so each frame is
- * findable in the DOM and in the IDE.
+ * A photography frame: the real image once `src` is passed, the reserved placeholder
+ * until then. `slot` is the stable name for the frame either way, rendered as data-slot
+ * so each one is findable in the DOM and in the IDE.
+ *
+ * Both states live here rather than at the call sites because photography arrives a few
+ * pictures at a time — passing `src` is the whole change, and the box does not move.
+ * `alt` is required with `src` and deliberately not defaulted: a campus photograph is
+ * content, and a default would describe every image as "Photography" to a screen reader.
  */
-function ImagePlaceholder({ slot, label = "Photography", ratio = "4 / 3", height, icon = "image", round, style }) {
+function ImagePlaceholder({ slot, label = "Photography", ratio = "4 / 3", height, icon = "image", round, style, src, alt, priority }) {
+  if (src) {
+    /*
+     * Lazy and low-priority unless the caller says otherwise: these frames sit well below
+     * a hero whose heading is the LCP element on every page that has one.
+     *
+     * `fetchpriority` is lowercase on purpose. React 18 passes unknown lowercase
+     * attributes straight through to the DOM, and warns on camelCase ones — the camelCase
+     * spelling `web/` uses is React 19 there, not a house style to copy back here.
+     */
+    return (
+      <img data-slot={slot} src={src} alt={alt ?? ""}
+        loading={priority ? "eager" : "lazy"} decoding="async" fetchpriority={priority ? "high" : "low"}
+        style={{
+          // The placeholder's box exactly, so nothing shifts on the day a picture lands.
+          aspectRatio: height ? undefined : ratio, height, width: "100%", objectFit: "cover",
+          borderRadius: round ? "var(--radius-circle)" : "var(--radius-lg)", display: "block",
+          ...style,
+        }} />
+    );
+  }
+
   return (
     <div data-slot={slot} style={{
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-3)",

@@ -223,7 +223,7 @@ function AboutSection() {
             slot="home-about"
             label={t("Campus or student photography, 4:3")}
             ratio="4 / 3"
-            src="/assets/homepage image 1.png"
+            src="/assets/homepage image 1.webp"
             alt={t("Six students working together around a table with a laptop and notebooks")}
           />
         </ScrollReveal>
@@ -287,8 +287,96 @@ function StatsBand() {
   );
 }
 
-/* GIF stand-in, sized as a wide video band. Swap the placeholder for an <img src="...gif">
-   once the reel is supplied; the frame geometry stays the same. */
+/*
+ * The reel itself: muted, looping, autostarted. What the frame reserved as an "animated
+ * GIF" delivered as a video, which is what that label always meant — a GIF of the same
+ * twelve seconds at this size would be many times the bytes and far worse looking.
+ *
+ * No green on it. The frame used to be a `--gradient-brand-deep` matte showing through a
+ * `--space-3` pad, so brand green ran round every edge of the footage. `Hero` reached the
+ * same conclusion when its green wash came off: the reel's job is to look like a real
+ * place, and the green belongs in the UI around it, not on it.
+ */
+function CampusReel() {
+  const t = useT();
+  const ref = useRef<HTMLVideoElement>(null);
+
+  /*
+   * Resolved in an effect rather than during render, for the reason `Hero` gives:
+   * `matchMedia` does not exist on the server, so reading it during render makes the
+   * markup differ between the server and the first client pass. Starting at `false`
+   * matches what the server rendered, and `controls` appears a frame later if needed.
+   */
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduceMotion(query.matches);
+    sync();
+    // Followed rather than sampled once: the setting gets changed while a page is open.
+    const onChange = (event: MediaQueryListEvent) => setReduceMotion(event.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  /*
+   * Playback is tied to visibility rather than to page load. This section sits a long way
+   * down the homepage and the file is 4.6 MB, so autoplaying it on load spends that on
+   * every visitor including the ones who never scroll this far. Pausing on the way back
+   * out is the other half: a reel playing offscreen decodes frames nobody is looking at.
+   */
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || reduceMotion) return;
+
+    const io = new IntersectionObserver(([entry]) => {
+      // `noUncheckedIndexedAccess` is on, and an observer callback with an empty batch is
+      // typeable even if it does not happen; nothing to decide from, so nothing to do.
+      if (!entry) return;
+      if (!entry.isIntersecting) { el.pause(); return; }
+      /*
+       * Muted again here, not only in the markup: React does not reliably reflect the
+       * `muted` prop onto the element — it is a property, not an attribute, and the
+       * server-rendered markup carries no `muted` at all — and every browser refuses an
+       * unmuted autoplay. `play()` rejects when it is refused anyway, caught because an
+       * unhandled rejection in the console is not a useful way to find that out.
+       */
+      el.muted = true;
+      void el.play().catch(() => {});
+    }, { rootMargin: "200px 0px", threshold: 0.2 });
+
+    io.observe(el);
+    return () => io.disconnect();
+  }, [reduceMotion]);
+
+  return (
+    <div style={{ position: "relative", borderRadius: "var(--radius-xl)", overflow: "hidden" }}>
+      <video
+        ref={ref}
+        data-slot="home-reel"
+        /*
+         * Absolute, not the relative `ASSETS` constant, for the reason the homepage
+         * photograph is: relative resolves against the current directory, and every page
+         * here is under a locale segment.
+         */
+        src="/assets/campus-reel.mp4"
+        loop
+        muted
+        playsInline
+        preload="metadata"
+        /* Reduced motion gets the reel as something to start rather than something
+           already running. It stays reachable — this is content the section promises,
+           not decoration, so the answer there is controls, not removal. */
+        controls={reduceMotion}
+        /* Named with the line the section already uses for it, so the reel is not an
+           unlabelled media element and no new string enters the phrase book to describe
+           the same twelve seconds twice. */
+        aria-label={t("Campus, city and student life in one short reel.")}
+        style={{ display: "block", width: "100%", aspectRatio: "16 / 9", objectFit: "cover" }}
+      />
+    </div>
+  );
+}
+
 function StoryReel() {
   const t = useT();
   return (
@@ -299,10 +387,7 @@ function StoryReel() {
             lead={t("Campus, city and student life in one short reel.")} align="center" />
         </ScrollReveal>
         <ScrollReveal delay={80}>
-          <div style={{ position: "relative", borderRadius: "var(--radius-xl)", overflow: "hidden", background: "var(--gradient-brand-deep)", padding: "var(--space-3)" }}>
-            <ImagePlaceholder slot="home-reel" label={t("Animated GIF reel, 16:9")} ratio="16 / 9" icon="play"
-              style={{ borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,.06)", borderColor: "rgba(255,255,255,.35)", color: "rgba(255,255,255,.82)" }} />
-          </div>
+          <CampusReel />
         </ScrollReveal>
       </div>
     </section>

@@ -138,9 +138,31 @@ function StudyScreen({ data }) {
             ))}
           </div>
           <ScrollReveal delay={80} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: "var(--space-6)" }}>
-            <window.ImagePlaceholder slot="study-housing" label="Dormitory or student housing" ratio="4 / 3" />
-            <window.ImagePlaceholder slot="study-campus" label="Campus life, students outdoors" ratio="4 / 3" />
-            <window.ImagePlaceholder slot="study-city" label="City street, everyday costs" ratio="4 / 3" />
+            {/*
+              The three student-life photographs. Labels stay alongside `src`: dropping a
+              picture reopens its reserved frame rather than leaving a broken image.
+
+              Housing and city are 3:2 sources in a 4:3 frame, so `objectFit: cover` trims
+              their top and bottom; `campus-life.jpg` is a true 4:3 and fills its frame
+              uncropped. The ratio stays as agreed rather than bending to the files, because
+              the fixed box is what stops the page moving when a picture is swapped.
+
+              One mismatch left deliberately visible: `study-campus` is labelled "students
+              outdoors" and holds a lecture hall. The label is the placeholder's fallback
+              text and never renders beside a picture, so nothing is wrong on the page — but
+              web/scripts/image-manifest.mjs prints label and file together under "already
+              supplied" precisely so the pair can be read against each other. Either the
+              label or the photograph is in the wrong frame; someone has to choose which.
+            */}
+            <window.ImagePlaceholder slot="study-housing" label="Dormitory or student housing" ratio="4 / 3"
+              src={`${AS}/student housing.jpg`}
+              alt="A Turkish apartment building with balconies, a Turkish flag hanging from one of them and an orange tree in the foreground" />
+            <window.ImagePlaceholder slot="study-campus" label="Campus life, students outdoors" ratio="4 / 3"
+              src={`${AS}/campus-life.jpg`}
+              alt="Students seated in a tiered university lecture hall, facing a lecturer and a projected slide" />
+            <window.ImagePlaceholder slot="study-city" label="City street, everyday costs" ratio="4 / 3"
+              src={`${AS}/people-street.jpg`}
+              alt="A busy shopping street lined with clothing and textile shops, crowded with people walking" />
           </ScrollReveal>
         </div>
 

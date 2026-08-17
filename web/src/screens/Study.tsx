@@ -5,9 +5,8 @@
 import { Accordion, Badge, BrandDivider, Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, TimelineTrack, ASSETS } from "@/ds";
 import { useT } from "@/i18n/context";
 import { generalFaq, journey, scholarships, studentLife } from "@/content";
-import { ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
-import { IconCard, PageBody, PageHero, FaqLayout } from "./shared";
+import { IconCard, PageBody, PageHero, FaqLayout, StudentLifeFrames } from "./shared";
 import { CardGrid } from "@/components/CardGrid";
 
 /** A hook, not a module constant — see the note in About.tsx. */
@@ -126,11 +125,7 @@ export default function Study() {
               subject and the grid container gets its columns recalculated on every
               frame of that animation. */}
           <ScrollReveal delay={80}>
-            <CardGrid min={240} gap="var(--space-6)">
-              <ImagePlaceholder slot="study-housing" label={t("Dormitory or student housing")} ratio="4 / 3" />
-              <ImagePlaceholder slot="study-campus" label={t("Campus life, students outdoors")} ratio="4 / 3" />
-              <ImagePlaceholder slot="study-city" label={t("City street, everyday costs")} ratio="4 / 3" />
-            </CardGrid>
+            <StudentLifeFrames />
           </ScrollReveal>
         </div>
 
