@@ -2,14 +2,18 @@
  * The picture at the top of every university page, with the attribution its licence
  * requires — and an honest label for what it actually shows.
  *
- * **Two kinds, and the distinction is the point.** Eighteen universities have a `campus`
+ * **Two kinds, and the distinction is the point.** Thirty-three universities have a `campus`
  * photograph: a freely licensed image of that institution's own grounds or buildings. The
- * other twenty-two have a `city` photograph instead — Pamukkale's travertines for
- * Pamukkale University, Balıklıgöl for Harran, the Kordon for the two in İzmir. A city
- * picture is never captioned as a campus. `UniversityDetail` renders it as "İzmir, where
- * Ege University is based", because a photograph on a recruitment page is evidence, and a
- * pretty building that is not the university's would be a lie told to someone choosing
- * where to move.
+ * remaining seven have a `city` photograph instead: Marmara, Uludağ, İnönü, Van Yüzüncü
+ * Yıl, Süleyman Demirel, Harran and Gaziantep, for which no freely licensed photograph of
+ * the campus exists at all — repeated searches of Commons categories, the universities'
+ * own Wikipedia articles and their named campuses (Görükle, Osmanbey, Göztepe, Zeve)
+ * returned nothing usable. Harran gets Balıklıgöl, Van the view from the castle.
+ *
+ * A city picture is never captioned as a campus. `UniversityDetail` renders it as
+ * "Şanlıurfa, where Harran University is based", because a photograph on a recruitment
+ * page is evidence, and a pretty building that is not the university's would be a lie
+ * told to the person choosing where to move.
  *
  * That split is what makes complete coverage possible at all. A photograph is a
  * copyrighted work, so the only lawful source is freely licensed imagery, and the free
@@ -42,49 +46,44 @@ export interface UniversityPhoto {
 
 export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
   "istanbul-technical-university": {
-    src: "/assets/city-photos/istanbul.webp",
-    author: "Hunanuk",
-    licence: "CC0",
-    licenceUrl: "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-    source: "https://commons.wikimedia.org/wiki/File:Historical_peninsula_and_modern_skyline_of_Istanbul.jpg",
-    kind: "city",
-    city: "Istanbul",
-  },
-  "middle-east-technical-university": {
-    src: "/assets/city-photos/ankara.webp",
-    author: "ekrem osmanoglu",
-    licence: "CC0",
-    licenceUrl: "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-    source: "https://commons.wikimedia.org/wiki/File:Ahmet_Hamdi_Akseki_Mosque,_Ankara_02.jpg",
-    kind: "city",
-    city: "Ankara",
-  },
-  "bilkent-university": {
-    src: "/assets/city-photos/ankara.webp",
-    author: "ekrem osmanoglu",
-    licence: "CC0",
-    licenceUrl: "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-    source: "https://commons.wikimedia.org/wiki/File:Ahmet_Hamdi_Akseki_Mosque,_Ankara_02.jpg",
-    kind: "city",
-    city: "Ankara",
-  },
-  "ege-university": {
-    src: "/assets/city-photos/izmir.webp",
-    author: "Dosseman",
+    src: "/assets/university-campus/istanbul-technical-university.webp",
+    author: "Dikkülah",
     licence: "CC BY-SA 4.0",
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Izmir_Alsancak_Kordon_2617.jpg",
-    kind: "city",
-    city: "Izmir",
+    source: "https://commons.wikimedia.org/wiki/File:Teknokent_Gate,_Istanbul_Technical_University_Ayazaga_Campus.jpg",
+    kind: "campus",
+  },
+  "middle-east-technical-university": {
+    src: "/assets/university-campus/middle-east-technical-university.webp",
+    author: "Foora",
+    licence: "CC BY-SA 4.0",
+    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
+    source: "https://commons.wikimedia.org/wiki/File:METU_Campus.jpg",
+    kind: "campus",
+  },
+  "bilkent-university": {
+    src: "/assets/university-campus/bilkent-university.webp",
+    author: "collage bird's eye v…",
+    licence: "CC BY-SA 3.0",
+    licenceUrl: "https://creativecommons.org/licenses/by-sa/3.0",
+    source: "https://commons.wikimedia.org/wiki/File:Bilkent_University_-_panoramio.jpg",
+    kind: "campus",
+  },
+  "ege-university": {
+    src: "/assets/university-campus/ege-university.webp",
+    author: "Ayratayrat",
+    licence: "CC BY-SA 4.0",
+    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
+    source: "https://commons.wikimedia.org/wiki/File:Ege_%C3%BCniversitesi_kamp%C3%BCs_i%C3%A7inde.jpg",
+    kind: "campus",
   },
   "ko-university": {
-    src: "/assets/city-photos/istanbul.webp",
-    author: "Hunanuk",
-    licence: "CC0",
-    licenceUrl: "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-    source: "https://commons.wikimedia.org/wiki/File:Historical_peninsula_and_modern_skyline_of_Istanbul.jpg",
-    kind: "city",
-    city: "Istanbul",
+    src: "/assets/university-campus/ko-university.webp",
+    author: "Khutuck",
+    licence: "CC BY-SA 3.0",
+    licenceUrl: "https://creativecommons.org/licenses/by-sa/3.0",
+    source: "https://commons.wikimedia.org/wiki/File:Ko%C3%A7_%C3%9Cniversitesi_Ana_Kamp%C3%BCs_Bilim_Kap%C4%B1s%C4%B1.JPG",
+    kind: "campus",
   },
   "akdeniz-university": {
     src: "/assets/university-campus/akdeniz-university.webp",
@@ -184,13 +183,12 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     kind: "campus",
   },
   "hacettepe-university": {
-    src: "/assets/city-photos/ankara.webp",
-    author: "ekrem osmanoglu",
-    licence: "CC0",
-    licenceUrl: "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-    source: "https://commons.wikimedia.org/wiki/File:Ahmet_Hamdi_Akseki_Mosque,_Ankara_02.jpg",
-    kind: "city",
-    city: "Ankara",
+    src: "/assets/university-campus/hacettepe-university.webp",
+    author: "Gargarapalvin",
+    licence: "CC BY 4.0",
+    licenceUrl: "https://creativecommons.org/licenses/by/4.0",
+    source: "https://commons.wikimedia.org/wiki/File:Hacettepe_%C3%9Cniversitesi_Beytepe_Kamp%C3%BCs%C3%BC_-_Hacettepe_University_Beytepe_Campus_(10.05.2023)_87.jpg",
+    kind: "campus",
   },
   "gazi-university": {
     src: "/assets/university-campus/gazi-university.webp",
@@ -201,13 +199,12 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     kind: "campus",
   },
   "dokuz-eyl-l-university": {
-    src: "/assets/city-photos/izmir.webp",
-    author: "Dosseman",
+    src: "/assets/university-campus/dokuz-eyl-l-university.webp",
+    author: "Samizambak",
     licence: "CC BY-SA 4.0",
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Izmir_Alsancak_Kordon_2617.jpg",
-    kind: "city",
-    city: "Izmir",
+    source: "https://commons.wikimedia.org/wiki/File:Rectorate_Building_of_Dokuz_Eylul_University.jpg",
+    kind: "campus",
   },
   "ya-ar-university": {
     src: "/assets/university-campus/ya-ar-university.webp",
@@ -259,22 +256,20 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     kind: "campus",
   },
   "mersin-university": {
-    src: "/assets/city-photos/mersin.webp",
-    author: "Mersin Page",
+    src: "/assets/university-campus/mersin-university.webp",
+    author: "Cobija",
     licence: "CC BY-SA 3.0",
     licenceUrl: "https://creativecommons.org/licenses/by-sa/3.0",
-    source: "https://commons.wikimedia.org/wiki/File:Mersin-tekneler.jpg",
-    kind: "city",
-    city: "Mersin",
+    source: "https://commons.wikimedia.org/wiki/File:Mersin_%C3%9Cniversitesi_giri%C5%9F_kap%C4%B1s%C4%B1.jpg",
+    kind: "campus",
   },
   "dicle-university": {
-    src: "/assets/city-photos/diyarbakir.webp",
-    author: "ArdviAnahlta",
+    src: "/assets/university-campus/dicle-university.webp",
+    author: "Sralp2",
     licence: "CC BY-SA 4.0",
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Amed_-_Diyarbak%C4%B1r_historical_ten-eyed_bridge_05.jpg",
-    kind: "city",
-    city: "Diyarbakır",
+    source: "https://commons.wikimedia.org/wiki/File:Dicle_%C3%9Cniversitesi_Kamp%C3%BCs%C3%BC.jpg",
+    kind: "campus",
   },
   "i-n-n-university": {
     src: "/assets/city-photos/malatya.webp",
@@ -303,22 +298,20 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     kind: "campus",
   },
   "pamukkale-university": {
-    src: "/assets/city-photos/denizli.webp",
-    author: "Juicybear213",
+    src: "/assets/university-campus/pamukkale-university.webp",
+    author: "Grozdovaa",
     licence: "CC BY-SA 4.0",
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Pamukkale_Traventines,_Turkey.jpg",
-    kind: "city",
-    city: "Denizli",
+    source: "https://commons.wikimedia.org/wiki/File:Winter_in_Pamukkale_University.jpg",
+    kind: "campus",
   },
   "sakarya-university": {
-    src: "/assets/city-photos/sakarya.webp",
-    author: "A.Savin",
-    licence: "FAL",
-    licenceUrl: "http://artlibre.org/licence/lal/en",
-    source: "https://commons.wikimedia.org/wiki/File:TR_Sakarya_asv2021-10_img21_Urban_Park.jpg",
-    kind: "city",
-    city: "Sakarya",
+    src: "/assets/university-campus/sakarya-university.webp",
+    author: "Kurmanbek",
+    licence: "CC BY-SA 4.0",
+    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
+    source: "https://commons.wikimedia.org/wiki/File:Main_gate_of_Sakarya_University_(3).jpg",
+    kind: "campus",
   },
   "s-leyman-demirel-university": {
     src: "/assets/city-photos/isparta.webp",
@@ -330,22 +323,20 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     city: "Isparta",
   },
   "adnan-menderes-university": {
-    src: "/assets/city-photos/aydin.webp",
-    author: "CeeGee",
+    src: "/assets/university-campus/adnan-menderes-university.webp",
+    author: "Zeynel Cebeci",
     licence: "CC BY-SA 4.0",
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:MonumentAyd%C4%B1n_(3).JPG",
-    kind: "city",
-    city: "Aydın",
+    source: "https://commons.wikimedia.org/wiki/File:Central_Library,_Adnan_Menderes_University.jpg",
+    kind: "campus",
   },
   "mu-la-s-tk-ko-man-university": {
-    src: "/assets/city-photos/mugla.webp",
-    author: "Dosseman",
-    licence: "CC BY-SA 4.0",
-    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Mu%C4%9Fla_General_street_view_in_2015_4239.jpg",
-    kind: "city",
-    city: "Muğla",
+    src: "/assets/university-campus/mu-la-s-tk-ko-man-university.webp",
+    author: "Gargarapalvin",
+    licence: "CC BY 4.0",
+    licenceUrl: "https://creativecommons.org/licenses/by/4.0",
+    source: "https://commons.wikimedia.org/wiki/File:Mu%C4%9Fla_S%C4%B1tk%C4%B1_Ko%C3%A7man_%C3%9Cniversitesi_K%C3%B6tekli_Kamp%C3%BCs%C3%BC,_2021_01.jpg",
+    kind: "campus",
   },
   "harran-university": {
     src: "/assets/city-photos/sanliurfa.webp",
@@ -366,22 +357,20 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     city: "Gaziantep",
   },
   "atat-rk-university": {
-    src: "/assets/city-photos/erzurum.webp",
-    author: "Zeynel Cebeci",
-    licence: "CC BY-SA 4.0",
-    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Erzurum_Citadel_-_Erzurum_Kalesi_01.jpg",
-    kind: "city",
-    city: "Erzurum",
+    src: "/assets/university-campus/atat-rk-university.webp",
+    author: "Eğitmen Mahmut",
+    licence: "CC BY-SA 3.0",
+    licenceUrl: "https://creativecommons.org/licenses/by-sa/3.0",
+    source: "https://commons.wikimedia.org/wiki/File:Erzurum-Atat%C3%BCrk_%C3%9Cniversitesi_Kamp%C3%BCs_giri%C5%9F.jpg",
+    kind: "campus",
   },
   "anakkale-onsekiz-mart-university": {
-    src: "/assets/city-photos/canakkale.webp",
-    author: "Webturkey",
+    src: "/assets/university-campus/anakkale-onsekiz-mart-university.webp",
+    author: "Zafer",
     licence: "CC BY-SA 4.0",
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:%C3%87anakkale_Liman%C4%B1.jpg",
-    kind: "city",
-    city: "Çanakkale",
+    source: "https://commons.wikimedia.org/wiki/File:%C3%87anakkale_Onsekiz_Mart_University_Faculty_of_Art_and_Sciences_(4).jpg",
+    kind: "campus",
   },
 };
 
