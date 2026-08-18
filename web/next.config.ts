@@ -74,6 +74,35 @@ const nextConfig: NextConfig = {
     // server components' payload small matters more than usual here because that bundle
     // is already on the critical path.
     optimizePackageImports: ["lucide-react"],
+
+    /**
+     * Build concurrency, capped to what one Prisma pool can serve.
+     *
+     * This build renders 680 pages — forty universities in seventeen locales — and Next
+     * renders them in parallel across workers. Every one of them opens onto the same
+     * `DATABASE_URL`, whose pooled Neon endpoint is capped at `connection_limit=10`, so
+     * the default fan-out asks for far more connections than exist and the build dies
+     * with "Timed out fetching a new connection from the connection pool".
+     *
+     * **Capping the build rather than raising the pool is deliberate.** The detail page
+     * already documents what happened when the limit was raised instead: 25 got the
+     * build further and then Neon's pooler refused connections outright (P1001). More
+     * importantly `DATABASE_URL` is not build-only — the serving runtime reads the same
+     * string, and on serverless each instance opens its own pool, so a bigger number
+     * multiplies across every concurrently warm function. Raising it trades a loud,
+     * reproducible build failure for an intermittent production one, which is the wrong
+     * direction on both counts.
+     *
+     * These two knobs are build-only and cost nothing at runtime. A build that takes a
+     * few minutes longer once per deploy is not a cost worth weighing against that.
+     * Only `staticGenerationMaxConcurrency`, which bounds the pages a worker renders at
+     * once. Pairing it with `experimental.cpus` was tried first and breaks this build
+     * outright — Next fails collecting page data with `Cannot find module for page:
+     * /_document` — so the worker count is left alone and the per-worker concurrency
+     * does the work. 2 leaves headroom for the pages that issue several queries in
+     * parallel, such as the directory's facet counts.
+     */
+    staticGenerationMaxConcurrency: 2,
   },
 
   async redirects() {
