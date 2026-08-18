@@ -14,6 +14,7 @@ import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { tileLayerFor } from "@/features/map/tiles";
 import { useT } from "@/i18n/context";
+import { universityCardImage } from "@/content/university-photos";
 
 /**
  * MapTiler view of Türkiye. Tiles wrap horizontally, so panning east or west never
@@ -250,6 +251,9 @@ export default function Universities() {
                   type={u.type === "PUBLIC" ? "Public" : "Private"}
                   languages={u.languages} tuition={u.tuitionDisplay}
                   scholarship={u.scholarship} programs={u.programCount}
+                  /* Campus photographs only — see `universityCardImage` for why a card
+                     cannot carry a city picture the way the detail hero can. */
+                  image={universityCardImage(u.slug)}
                   href={href(`university/${u.slug}`)} layout={view === "grid" ? "grid" : "row"} style={{ width: "100%" }}
                 />
               </ScrollReveal>

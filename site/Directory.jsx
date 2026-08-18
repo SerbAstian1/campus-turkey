@@ -58,6 +58,18 @@ const CAMPUS_PHOTOS = {
   "atat-rk-university": { src: "/university-campus/atat-rk-university.webp", author: "E\u011fitmen Mahmut", licence: "CC BY-SA 3.0", kind: "campus" },
   "anakkale-onsekiz-mart-university": { src: "/university-campus/anakkale-onsekiz-mart-university.webp", author: "Zafer", licence: "CC BY-SA 4.0", kind: "campus" },
 };
+
+/*
+ * The card image, or nothing. Campus photographs only: a card is a bare picture behind a
+ * name, with no caption and no room for one, so a city view there would read as a claim
+ * that it is the campus. The detail hero can show one because the city badge sits on the
+ * image and the credit line names it underneath.
+ */
+const cardImage = (slug) =>
+  CAMPUS_PHOTOS[slug] && CAMPUS_PHOTOS[slug].kind === "campus"
+    ? `${AU}${CAMPUS_PHOTOS[slug].src}`
+    : undefined;
+
 /** OpenStreetMap view of Türkiye. Tiles wrap horizontally, so panning east or west
  *  never runs out of map. Pins are university buildings, not city labels. */
 function TurkeyMap({ universities, active, onSelect }) {
@@ -191,7 +203,7 @@ function UniversitiesScreen({ data, initialCity }) {
           <div style={{ display: view === "grid" ? "grid" : "flex", flexDirection: view === "grid" ? undefined : "column", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: "var(--space-6)" }}>
             {list.map((u, i) => (
               <ScrollReveal key={u.slug} delay={(i % 3) * 80} style={{ display: "flex" }}>
-                <UniversityCard {...u} href={`#/university/${u.slug}`} layout={view === "grid" ? "grid" : "row"} style={{ width: "100%" }} />
+                <UniversityCard {...u} image={cardImage(u.slug)} href={`#/university/${u.slug}`} layout={view === "grid" ? "grid" : "row"} style={{ width: "100%" }} />
               </ScrollReveal>
             ))}
           </div>
@@ -236,8 +248,18 @@ function UniversityDetailScreen({ data, slug }) {
   const similar = data.universities.filter((x) => x.slug !== u.slug && (x.city === u.city || x.type === u.type)).slice(0, 3);
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
-      <section style={{ background: "var(--gradient-brand-deep)", paddingTop: 150, paddingBottom: "calc(var(--section-y) + 40px)", marginBottom: "calc(var(--overlap) * -1)" }}>
-        <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+      {/* The university behind its own title. Darkened at the source rather than veiled
+          by a green wash — the same call the homepage hero makes, so the photograph still
+          reads as a place. Decorative: the framed copy below carries the alt and credit. */}
+      <section style={{ position: "relative", overflow: "hidden", background: "var(--gradient-brand-deep)", paddingTop: 150, paddingBottom: "calc(var(--section-y) + 40px)", marginBottom: "calc(var(--overlap) * -1)" }}>
+        {CAMPUS_PHOTOS[u.slug] ? (
+          <>
+            <img src={`${AU}${CAMPUS_PHOTOS[u.slug].src}`} alt="" aria-hidden="true"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.45)" }} />
+            <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "var(--gradient-protect-bottom)" }} />
+          </>
+        ) : null}
+        <div className="ct-container" style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
           <button type="button" onClick={() => goU("universities")} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", border: "none", color: "rgba(255,255,255,.78)", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", cursor: "pointer", width: "fit-content", padding: 0 }}>
             <Icon name="arrow-left" size={16} /> All universities
           </button>
@@ -252,29 +274,23 @@ function UniversityDetailScreen({ data, slug }) {
             <Button variant="onDark" size="lg" onClick={() => goU("apply")}>Apply Now</Button>
             <Button variant="outlineOnDark" size="lg" icon="calendar-check" onClick={() => goU("contact")}>Book a Consultation</Button>
           </div>
+          {/* The credit sits with the photograph, which is now the hero. It used to sit
+              under a framed copy of the same image further down — two prints of one
+              photograph, both on screen at once. */}
+          {CAMPUS_PHOTOS[u.slug] ? (
+            <p style={{ margin: "var(--space-4) 0 0", fontFamily: "var(--font-ui)", fontSize: "var(--fs-micro)", color: "rgba(255,255,255,.72)" }}>
+              {CAMPUS_PHOTOS[u.slug].kind === "city"
+                ? `${CAMPUS_PHOTOS[u.slug].city}, where ${u.name} is based. `
+                : null}
+              Photo: {CAMPUS_PHOTOS[u.slug].author} · {CAMPUS_PHOTOS[u.slug].licence} · via Wikimedia Commons
+            </p>
+          ) : null}
         </div>
       </section>
 
       <section style={{ position: "relative", zIndex: 10, background: "var(--surface-subtle)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", padding: "var(--section-y) 0" }}>
         <div className="ct-container ct-detail-grid" style={{ display: "grid", gridTemplateColumns: "1fr minmax(280px,340px)", gap: "var(--space-12)", alignItems: "start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
-            <ScrollReveal>
-              <window.ImagePlaceholder slot={`campus-${u.slug}`} label={`${u.name} campus photography, 16:9`} ratio="16 / 9"
-                src={CAMPUS_PHOTOS[u.slug] ? `${AU}${CAMPUS_PHOTOS[u.slug].src}` : undefined}
-                alt={CAMPUS_PHOTOS[u.slug]
-                  ? (CAMPUS_PHOTOS[u.slug].kind === "city"
-                    ? `${CAMPUS_PHOTOS[u.slug].city}, the city ${u.name} is based in`
-                    : `${u.name} campus`)
-                  : undefined} />
-              {CAMPUS_PHOTOS[u.slug] ? (
-                <p style={{ margin: "var(--space-2) 0 0", fontFamily: "var(--font-ui)", fontSize: "var(--fs-micro)", color: "var(--neutral-500)" }}>
-                  {CAMPUS_PHOTOS[u.slug].kind === "city"
-                    ? `${CAMPUS_PHOTOS[u.slug].city}, where ${u.name} is based. `
-                    : null}
-                  Photo: {CAMPUS_PHOTOS[u.slug].author} · {CAMPUS_PHOTOS[u.slug].licence} · via Wikimedia Commons
-                </p>
-              ) : null}
-            </ScrollReveal>
             <ScrollReveal style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
               <h2 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>About the university</h2>
               <p style={{ fontSize: "var(--fs-lead)", lineHeight: "var(--lh-body)", color: "var(--text-body)", margin: 0 }}>{u.about}</p>
@@ -304,7 +320,7 @@ function UniversityDetailScreen({ data, slug }) {
             <ScrollReveal delay={200} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
               <h2 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>Similar universities</h2>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "var(--space-5)" }}>
-                {similar.map((s) => <UniversityCard key={s.slug} {...s} href={`#/university/${s.slug}`} style={{ width: "100%" }} />)}
+                {similar.map((s) => <UniversityCard key={s.slug} {...s} image={cardImage(s.slug)} href={`#/university/${s.slug}`} style={{ width: "100%" }} />)}
               </div>
             </ScrollReveal>
           </div>

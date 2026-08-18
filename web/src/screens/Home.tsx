@@ -9,6 +9,7 @@ import {
 } from "@/ds";
 import { generalFaq, journey, serviceCards, stats, testimonials, universities } from "@/content";
 import { universityLogo } from "@/content/university-logos";
+import { universityCardImage } from "@/content/university-photos";
 import { BrandMark, ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
@@ -423,6 +424,7 @@ function FeaturedUniversities() {
               <UniversityCard
                 name={u.name} city={u.city} type={u.type} languages={u.languages} tuition={u.tuition}
                 scholarship={u.scholarship} programs={u.programs}
+                image={universityCardImage(u.slug)}
                 href={href(`university/${u.slug}`)} style={{ width: "100%" }}
               />
             </ScrollReveal>

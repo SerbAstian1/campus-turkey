@@ -377,3 +377,20 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
 /** The photograph for a university. Every university in the directory has one. */
 export const universityPhoto = (slug: string): UniversityPhoto | undefined =>
   universityPhotos[slug];
+
+/**
+ * The image for a `UniversityCard`, or `undefined` to leave the card's brand gradient.
+ *
+ * **Campus photographs only, and that is the difference between a card and a page.** A
+ * card is a bare image behind a name — it carries no caption, no credit and no room for
+ * one, so a picture of İstanbul behind "Marmara University" would read as a claim that it
+ * is the campus. The detail hero can show a city photograph because the city badge sits
+ * directly on it and the credit line beneath says so; a card can say neither.
+ *
+ * The seven without a campus photograph therefore keep `--gradient-brand` and the
+ * building icon, which is the design system's own empty state rather than a hole.
+ */
+export const universityCardImage = (slug: string): string | undefined => {
+  const photo = universityPhotos[slug];
+  return photo?.kind === "campus" ? photo.src : undefined;
+};

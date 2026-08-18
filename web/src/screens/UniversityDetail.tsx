@@ -10,13 +10,12 @@
 
 import { BrandDivider, Badge, Button, Card, Icon, ScrollReveal, Tag, UniversityCard } from "@/ds";
 
-import { ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
 import { Facts } from "./shared";
 import { ErrorScreen } from "./Errors";
 import { CardGrid } from "@/components/CardGrid";
 import { useT } from "@/i18n/context";
-import { universityPhoto } from "@/content/university-photos";
+import { universityPhoto, universityCardImage } from "@/content/university-photos";
 
 /**
  * The record and its neighbours, both fetched by the server page.
@@ -98,8 +97,9 @@ function PhotoCredit({ slug, name }: { slug: string; name: string }) {
   const linkStyle = { color: "inherit", textDecoration: "underline" };
   return (
     <p style={{
-      margin: "var(--space-2) 0 0", fontFamily: "var(--font-ui)",
-      fontSize: "var(--fs-micro)", color: "var(--neutral-500)",
+      margin: "var(--space-4) 0 0", fontFamily: "var(--font-ui)",
+      // On the hero photograph rather than on paper, so the muted grey would vanish.
+      fontSize: "var(--fs-micro)", color: "rgba(255,255,255,.72)",
     }}>
       {photo.kind === "city" ? `${photo.city}, where ${name} is based. ` : null}
       {"Photo: "}
@@ -133,8 +133,49 @@ export default function UniversityDetail({
 
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
-      <section style={{ background: "var(--gradient-brand-deep)", paddingTop: 150, paddingBottom: "calc(var(--section-y) + 40px)", marginBottom: "calc(var(--overlap) * -1)" }}>
-        <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+      <section style={{ position: "relative", overflow: "hidden", background: "var(--gradient-brand-deep)", paddingTop: 150, paddingBottom: "calc(var(--section-y) + 40px)", marginBottom: "calc(var(--overlap) * -1)" }}>
+        {/*
+          The university behind its own title.
+
+          Darkened at the source rather than veiled by a green wash, which is the same
+          decision `Hero` documents on the homepage and for the same reason: a wash tints
+          the photograph so every campus reads as brand green instead of as a place, while
+          `brightness` lowers the exposure and leaves the colour alone. The value matches
+          `Hero`'s, and it is set by contrast rather than taste — white display type sits
+          on top of this, and at full exposure it fails against the bright frames.
+
+          `--gradient-protect-bottom` stays over it. It is not decoration: the badges,
+          heading and buttons sit low in the section, and without it they land on whatever
+          that particular photograph happens to show there.
+
+          Decorative here — `alt=""`, `aria-hidden`. The same picture appears in the body
+          below carrying the descriptive `alt` and its credit line, and announcing it
+          twice would make a screen reader read the institution's name three times before
+          the page begins. A city photograph is allowed in this position, unlike on a card,
+          because the city badge sits directly on the image and `PhotoCredit` names it
+          underneath.
+
+          Eager and high priority: it is above the fold and now the largest element in the
+          viewport, so it is the LCP candidate rather than something competing with one.
+
+          When a university has no photograph at all the section keeps
+          `--gradient-brand-deep` on its own, which is what it looked like before.
+        */}
+        {u.coverImage ? (
+          <>
+            <img
+              src={u.coverImage}
+              alt=""
+              aria-hidden="true"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.45)" }}
+            />
+            <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "var(--gradient-protect-bottom)" }} />
+          </>
+        ) : null}
+        <div className="ct-container" style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
           <button type="button" onClick={() => go("universities")} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", border: "none", color: "rgba(255,255,255,.78)", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", cursor: "pointer", width: "fit-content", padding: 0 }}>
             <Icon name="arrow-left" size={16} /> {t("All universities")}
           </button>
@@ -149,6 +190,14 @@ export default function UniversityDetail({
             <Button variant="onDark" size="lg" onClick={() => go("apply")}>{t("Apply Now")}</Button>
             <Button variant="outlineOnDark" size="lg" icon="calendar-check" onClick={() => go("contact")}>{t("Book a Consultation")}</Button>
           </div>
+          {/*
+            The credit sits with the photograph it belongs to, which is now the hero.
+            It used to sit under a framed copy of the same image further down the page —
+            two prints of one photograph, both visible in the same viewport. The hero is
+            the better place for it and the licence is satisfied either way, so the
+            duplicate went rather than the credit.
+          */}
+          <PhotoCredit slug={u.slug} name={u.name} />
         </div>
       </section>
 
@@ -162,28 +211,6 @@ export default function UniversityDetail({
               is already titled, and "campus photography" describes the medium, not the
               subject.
             */}
-            <ScrollReveal>
-              <ImagePlaceholder
-                slot={`campus-${u.slug}`}
-                label={t("{name} campus photography, 16:9", { name: u.name })}
-                ratio="16 / 9"
-                /*
-                 * `alt` states what the photograph actually shows. A city view described
-                 * as a campus would be wrong twice over — to a screen reader user, and as
-                 * a claim about the institution.
-                 */
-                {...(u.coverImage
-                  ? {
-                    src: u.coverImage,
-                    alt: universityPhoto(u.slug)?.kind === "city"
-                      ? `${universityPhoto(u.slug)!.city}, the city ${u.name} is based in`
-                      : `${u.name} campus`,
-                  }
-                  : {})}
-              />
-              <PhotoCredit slug={u.slug} name={u.name} />
-            </ScrollReveal>
-
             <ScrollReveal style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
               <h2 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{t("About the university")}</h2>
               <p style={{ fontSize: "var(--fs-lead)", lineHeight: "var(--lh-body)", color: "var(--text-body)", margin: 0 }}>{u.about}</p>
@@ -223,6 +250,7 @@ export default function UniversityDetail({
               <CardGrid min={220} gap="var(--space-5)">
                 {similar.map((s) => (
                   <UniversityCard key={s.slug} name={s.name} city={s.city} type={typeLabel(s.type)} languages={s.languages}
+                    image={universityCardImage(s.slug)}
                     tuition={s.tuition} scholarship={s.scholarship} programs={s.programs}
                     href={href(`university/${s.slug}`)} style={{ width: "100%" }} />
                 ))}
