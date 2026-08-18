@@ -132,12 +132,12 @@ export function FaqLayout({ heading, children }: { heading: ReactNode; children:
  * top and bottom. The ratio stays as agreed rather than bending to the files.
  * `campus-life.jpg` is a true 4:3 and fills its frame uncropped.
  *
- * One mismatch left deliberately visible: `study-campus` is labelled "students outdoors"
- * and currently holds a lecture hall. The label is the placeholder's fallback text and
- * never renders beside a picture, so nothing is wrong on the page — but
- * `scripts/image-manifest.mjs` prints label and file together under "already supplied"
- * precisely so the pair can be read against each other. Either the label or the
- * photograph is in the wrong frame; someone has to choose which.
+ * `study-campus` was labelled "Campus life, students outdoors" while holding a lecture
+ * hall. Nothing rendered wrong — the label is the placeholder's fallback text and never
+ * appears beside a picture — but it is the shoot instruction that
+ * `scripts/image-manifest.mjs` prints, so it would have asked a photographer for the one
+ * thing this frame already has covered. The label now describes the photograph. Change it
+ * back the day the picture becomes students outdoors, not before.
  */
 export function StudentLifeFrames() {
   const t = useT();
@@ -145,7 +145,7 @@ export function StudentLifeFrames() {
     <CardGrid min={240} gap="var(--space-6)">
       <ImagePlaceholder slot="study-housing" src="/assets/student housing.jpg" label={t("Dormitory or student housing")} ratio="4 / 3"
         alt={t("A Turkish apartment building with balconies, a Turkish flag hanging from one of them and an orange tree in the foreground")} />
-      <ImagePlaceholder slot="study-campus" src="/assets/campus-life.jpg" label={t("Campus life, students outdoors")} ratio="4 / 3"
+      <ImagePlaceholder slot="study-campus" src="/assets/campus-life.jpg" label={t("Teaching, a full lecture hall")} ratio="4 / 3"
         alt={t("Students seated in a tiered university lecture hall, facing a lecturer and a projected slide")} />
       <ImagePlaceholder slot="study-city" src="/assets/street-life.webp" label={t("City street, everyday costs")} ratio="4 / 3"
         alt={t("A busy city street with döner kebab and street-food counters, vendors in aprons serving customers and pedestrians walking past")} />

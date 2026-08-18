@@ -147,17 +147,16 @@ function StudyScreen({ data }) {
               uncropped. The ratio stays as agreed rather than bending to the files, because
               the fixed box is what stops the page moving when a picture is swapped.
 
-              One mismatch left deliberately visible: `study-campus` is labelled "students
-              outdoors" and holds a lecture hall. The label is the placeholder's fallback
-              text and never renders beside a picture, so nothing is wrong on the page — but
-              web/scripts/image-manifest.mjs prints label and file together under "already
-              supplied" precisely so the pair can be read against each other. Either the
-              label or the photograph is in the wrong frame; someone has to choose which.
+              `study-campus` was labelled "students outdoors" while holding a lecture hall.
+              The label is the placeholder's fallback text and never renders beside a
+              picture, but it is the shoot instruction web/scripts/image-manifest.mjs
+              prints — so it asked for something this frame already had. The label now
+              describes the photograph.
             */}
             <window.ImagePlaceholder slot="study-housing" label="Dormitory or student housing" ratio="4 / 3"
               src={`${AS}/student housing.jpg`}
               alt="A Turkish apartment building with balconies, a Turkish flag hanging from one of them and an orange tree in the foreground" />
-            <window.ImagePlaceholder slot="study-campus" label="Campus life, students outdoors" ratio="4 / 3"
+            <window.ImagePlaceholder slot="study-campus" label="Teaching, a full lecture hall" ratio="4 / 3"
               src={`${AS}/campus-life.jpg`}
               alt="Students seated in a tiered university lecture hall, facing a lecturer and a projected slide" />
             <window.ImagePlaceholder slot="study-city" label="City street, everyday costs" ratio="4 / 3"
