@@ -32,6 +32,26 @@
  * impose no such condition and are credited anyway, because one uniform line beats two
  * rules. Share-alike binds the image rather than this codebase: a resized WEBP crop is a
  * derivative and stays under its own licence, which is what shipping the credit does.
+ *
+ * **Fifteen of these identify nothing, and replacing them needs supplied files.** Dicle's
+ * entry is what the rest should look like: a gate with the university's name across it.
+ * The ones below are the opposite — a real photograph of the right campus that could be
+ * almost any campus, because nothing in frame says which:
+ *
+ *   a facility rather than a place   akdeniz (stadium), gazi (basketball courts),
+ *                                    bah-e-ehir (auditorium interior),
+ *                                    ondokuz-may-s (a municipal bus),
+ *                                    sel-uk (a continuing-education annexe)
+ *   an anonymous road or lawn        bilkent, ege, karadeniz-technical,
+ *                                    mu-la-s-tk-ko-man, erciyes (a road at night),
+ *                                    middle-east-technical, istanbul-technical
+ *   too far away to read             hacettepe, i-n-n, pamukkale
+ *
+ * Commons was searched for each one's gate, entrance and rectorate in both Turkish and
+ * English. It returned two candidates: İTÜ's Teknokent gate, already in use, and a "Gazi
+ * Üniversitesi Rektörlük önü" that is a night photograph of statues — worse than what it
+ * would have replaced. The free corpus does not have this photography; Dicle's gate was
+ * supplied rather than found, and that is the route for the rest.
  */
 export interface UniversityPhoto {
   readonly src: string;
