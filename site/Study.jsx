@@ -161,8 +161,8 @@ function StudyScreen({ data }) {
               src={`${AS}/campus-life.jpg`}
               alt="Students seated in a tiered university lecture hall, facing a lecturer and a projected slide" />
             <window.ImagePlaceholder slot="study-city" label="City street, everyday costs" ratio="4 / 3"
-              src={`${AS}/people-street.jpg`}
-              alt="A busy shopping street lined with clothing and textile shops, crowded with people walking" />
+              src={`${AS}/street-life.webp`}
+              alt="A busy city street with döner kebab and street-food counters, vendors in aprons serving customers and pedestrians walking past" />
           </ScrollReveal>
         </div>
 

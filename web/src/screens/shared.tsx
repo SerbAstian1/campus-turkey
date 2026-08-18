@@ -147,8 +147,8 @@ export function StudentLifeFrames() {
         alt={t("A Turkish apartment building with balconies, a Turkish flag hanging from one of them and an orange tree in the foreground")} />
       <ImagePlaceholder slot="study-campus" src="/assets/campus-life.jpg" label={t("Campus life, students outdoors")} ratio="4 / 3"
         alt={t("Students seated in a tiered university lecture hall, facing a lecturer and a projected slide")} />
-      <ImagePlaceholder slot="study-city" src="/assets/people-street.jpg" label={t("City street, everyday costs")} ratio="4 / 3"
-        alt={t("A busy shopping street lined with clothing and textile shops, crowded with people walking")} />
+      <ImagePlaceholder slot="study-city" src="/assets/street-life.webp" label={t("City street, everyday costs")} ratio="4 / 3"
+        alt={t("A busy city street with döner kebab and street-food counters, vendors in aprons serving customers and pedestrians walking past")} />
     </CardGrid>
   );
 }
