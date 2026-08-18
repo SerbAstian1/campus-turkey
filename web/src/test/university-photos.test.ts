@@ -1,23 +1,31 @@
 /**
- * Every university has a picture, every picture is honestly labelled, and every licence
- * that demands a credit gets one.
+ * Campus photographs: the university's own grounds, or nothing at all.
  *
- * The second and third tests are the ones with teeth. Twenty-two of the forty show the
- * *city* rather than the campus, because no freely licensed photograph of those campuses
- * exists — and a city view presented as a campus is a false claim on the page a student
- * uses to choose where to move. So `kind` must be set, and a `city` entry must name its
- * city or the rendered caption would read "undefined, where X is based".
+ * **The absence is the assertion.** An earlier version filled every gap with a photograph
+ * of the city the university sits in, captioned as such. That is gone: on a recruitment
+ * page the picture is evidence, and a reader deciding where to move should not need to
+ * read a caption to learn the building above it is not the place. Three universities —
+ * Harran, Van Yüzüncü Yıl and Süleyman Demirel — have no verifiable free photograph of
+ * their campus, and they render the reserved frame rather than a substitute.
  *
- * The credit is a licence condition, not a courtesy: CC BY, CC BY-SA and the Free Art
- * Licence all grant use only while the author and licence are stated. An entry that loses
- * either does not look wrong on the page — it simply stops being licensed.
+ * So the first test guards the rule rather than the coverage: every path must point into
+ * `university-campus/`. A regression here does not look broken — a plausible photograph
+ * of somewhere else renders perfectly — which is exactly why it is worth a test.
+ *
+ * The slug keys carry the trap `university-logos.ts` documents: `slugify` reduces
+ * anything outside `[a-z0-9]` to a dash, so Boğaziçi is `bo-azi-i-university` and İnönü is
+ * `i-n-n-university`. A wrong key typechecks and silently shows the empty state.
+ *
+ * The attribution tests have teeth of their own: CC BY, CC BY-SA and the Free Art Licence
+ * grant use only while the author and licence are stated. An entry that loses either does
+ * not degrade the page — it stops being licensed.
  */
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { universities } from "@/content";
-import { universityPhotos, universityPhoto } from "@/content/university-photos";
+import { universityPhotos, universityPhoto, universityCardImage } from "@/content/university-photos";
 
 const ASSETS_ROOT = join(__dirname, "..", "..", "..", "assets");
 const diskPath = (webPath: string) => join(ASSETS_ROOT, webPath.replace(/^\/assets\//, ""));
@@ -25,9 +33,27 @@ const diskPath = (webPath: string) => join(ASSETS_ROOT, webPath.replace(/^\/asse
 /** Licences permitting commercial use and derivatives. NC and ND permit neither. */
 const PERMITTED = /^(cc0|cc by(-sa)?( \d(\.\d)?)?|public domain|fal)$/i;
 
-describe("the university photo map", () => {
-  it("covers every university in the directory", () => {
-    const missing = universities.filter((u) => !universityPhoto(u.slug)).map((u) => `${u.name} (${u.slug})`);
+/** No verifiable free photograph of their campus exists; see the module's own note. */
+const WITHOUT_PHOTO = ["harran-university", "van-y-z-nc-y-l-university", "s-leyman-demirel-university"];
+
+describe("the campus photo map", () => {
+  it("points only at campus photographs, never a stand-in", () => {
+    const strays = Object.entries(universityPhotos)
+      .filter(([, p]) => !p.src.startsWith("/assets/university-campus/"))
+      .map(([slug, p]) => `${slug} -> ${p.src}`);
+    expect(strays).toEqual([]);
+  });
+
+  it("leaves the universities with no verified photograph out entirely", () => {
+    // Not a gap to be filled by the next person who notices it — a decision. Filling it
+    // with a city, a landmark or a neighbouring campus is the thing this guards against.
+    for (const slug of WITHOUT_PHOTO) expect(universityPhoto(slug)).toBeUndefined();
+  });
+
+  it("covers every other university in the directory", () => {
+    const missing = universities
+      .filter((u) => !WITHOUT_PHOTO.includes(u.slug) && !universityPhoto(u.slug))
+      .map((u) => `${u.name} (${u.slug})`);
     expect(missing).toEqual([]);
   });
 
@@ -35,22 +61,6 @@ describe("the university photo map", () => {
     const slugs = new Set(universities.map((u) => u.slug));
     const orphans = Object.keys(universityPhotos).filter((k) => !slugs.has(k));
     expect(orphans).toEqual([]);
-  });
-
-  it("names the city on every entry that shows one", () => {
-    const unlabelled = Object.entries(universityPhotos)
-      .filter(([, p]) => p.kind === "city" && !p.city?.trim())
-      .map(([slug]) => slug);
-    expect(unlabelled).toEqual([]);
-  });
-
-  it("never marks a city photograph as a campus, or the reverse", () => {
-    const wrong = Object.entries(universityPhotos)
-      .filter(([, p]) =>
-        (p.kind === "campus" && p.src.includes("/city-photos/"))
-        || (p.kind === "city" && p.src.includes("/university-campus/")))
-      .map(([slug, p]) => `${slug}: ${p.kind} -> ${p.src}`);
-    expect(wrong).toEqual([]);
   });
 
   it("resolves every path to a WEBP that exists in the tracked assets", () => {
@@ -77,5 +87,16 @@ describe("the university photo map", () => {
   it("points at absolute paths, so they resolve at any route depth", () => {
     const relative = Object.entries(universityPhotos).filter(([, p]) => !p.src.startsWith("/"));
     expect(relative).toEqual([]);
+  });
+});
+
+describe("the card image", () => {
+  it("is the same photograph the page shows", () => {
+    const [slug] = Object.keys(universityPhotos);
+    expect(universityCardImage(slug!)).toBe(universityPhoto(slug!)!.src);
+  });
+
+  it("is undefined where there is no photograph, so the card keeps its gradient", () => {
+    for (const slug of WITHOUT_PHOTO) expect(universityCardImage(slug)).toBeUndefined();
   });
 });

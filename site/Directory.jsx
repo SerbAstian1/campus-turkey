@@ -5,60 +5,55 @@ const AU = "assets";
 const goU = (r) => window.CT_GO(r);
 
 /*
- * The picture at the top of each university page, by slug — all forty.
+ * The campus photograph for each university, by slug — thirty-seven of the forty.
  *
- * Two kinds. Thirty-three are `campus`: a freely licensed photograph of that
- * university's own grounds. Seven are `city`, because no free photograph of those
- * campuses exists — Marmara, Uludağ, İnönü, Van Yüzüncü Yıl, Süleyman Demirel, Harran
- * and Gaziantep. A city view is never captioned as a campus; the credit line says which
- * it is, for the reason a recruitment page has to: the picture is evidence.
+ * The university's own grounds or nothing: Harran, Van Yüzüncü Yıl and Süleyman Demirel
+ * have no freely licensed photograph of their campus that could be verified as theirs,
+ * and they keep the reserved frame rather than a stand-in. City photographs were tried
+ * and removed — on a recruitment page the picture is evidence.
  *
- * The credit itself is a licence condition, not a courtesy. CC BY, CC BY-SA and the
- * Free Art Licence grant use only while the author and licence are stated.
+ * The credit is a licence condition, not a courtesy. CC BY, CC BY-SA and the Free Art
+ * Licence grant use only while the author and licence are stated.
  */
 const CAMPUS_PHOTOS = {
-  "istanbul-technical-university": { src: "/university-campus/istanbul-technical-university.webp", author: "Dikk\u00fclah", licence: "CC BY-SA 4.0", kind: "campus" },
-  "middle-east-technical-university": { src: "/university-campus/middle-east-technical-university.webp", author: "Foora", licence: "CC BY-SA 4.0", kind: "campus" },
-  "bilkent-university": { src: "/university-campus/bilkent-university.webp", author: "collage bird's eye v\u2026", licence: "CC BY-SA 3.0", kind: "campus" },
-  "ege-university": { src: "/university-campus/ege-university.webp", author: "Ayratayrat", licence: "CC BY-SA 4.0", kind: "campus" },
-  "ko-university": { src: "/university-campus/ko-university.webp", author: "Khutuck", licence: "CC BY-SA 3.0", kind: "campus" },
-  "akdeniz-university": { src: "/university-campus/akdeniz-university.webp", author: "AntalyasporFC", licence: "CC BY-SA 3.0", kind: "campus" },
-  "sabanc-university": { src: "/university-campus/sabanc-university.webp", author: "Cerian", licence: "CC BY-SA 3.0", kind: "campus" },
-  "ukurova-university": { src: "/university-campus/ukurova-university.webp", author: "Zeynel Cebeci", licence: "CC BY-SA 4.0", kind: "campus" },
-  "karadeniz-technical-university": { src: "/university-campus/karadeniz-technical-university.webp", author: "MirkoS18", licence: "CC BY-SA 4.0", kind: "campus" },
-  "bo-azi-i-university": { src: "/university-campus/bo-azi-i-university.webp", author: "Denizmi\u015f", licence: "CC BY 4.0", kind: "campus" },
-  "istanbul-university": { src: "/university-campus/istanbul-university.webp", author: "Dosseman", licence: "CC BY-SA 4.0", kind: "campus" },
-  "marmara-university": { src: "/city-photos/istanbul.webp", author: "Hunanuk", licence: "CC0", kind: "city", city: "Istanbul" },
-  "y-ld-z-technical-university": { src: "/university-campus/y-ld-z-technical-university.webp", author: "Chapultepec", licence: "Public domain", kind: "campus" },
-  "bah-e-ehir-university": { src: "/university-campus/bah-e-ehir-university.webp", author: "Nevit Dilmen (talk)", licence: "CC BY-SA 3.0", kind: "campus" },
-  "istanbul-bilgi-university": { src: "/university-campus/istanbul-bilgi-university.webp", author: "Kurmanbek", licence: "CC BY-SA 4.0", kind: "campus" },
-  "zye-in-university": { src: "/university-campus/zye-in-university.webp", author: "Bo yaser", licence: "CC BY-SA 4.0", kind: "campus" },
-  "ankara-university": { src: "/university-campus/ankara-university.webp", author: "Ankara University", licence: "CC0", kind: "campus" },
-  "hacettepe-university": { src: "/university-campus/hacettepe-university.webp", author: "Gargarapalvin", licence: "CC BY 4.0", kind: "campus" },
-  "gazi-university": { src: "/university-campus/gazi-university.webp", author: "Ben Linus", licence: "CC BY 2.5", kind: "campus" },
-  "dokuz-eyl-l-university": { src: "/university-campus/dokuz-eyl-l-university.webp", author: "Samizambak", licence: "CC BY-SA 4.0", kind: "campus" },
-  "ya-ar-university": { src: "/university-campus/ya-ar-university.webp", author: "ToprakM", licence: "CC BY-SA 4.0", kind: "campus" },
-  "uluda-university": { src: "/city-photos/bursa.webp", author: "Metuboy", licence: "CC BY-SA 4.0", kind: "city", city: "Bursa" },
-  "sel-uk-university": { src: "/university-campus/sel-uk-university.webp", author: "Vyildirim42", licence: "CC BY-SA 4.0", kind: "campus" },
-  "anadolu-university": { src: "/university-campus/anadolu-university.webp", author: "Merhabaviki", licence: "CC0", kind: "campus" },
-  "erciyes-university": { src: "/university-campus/erciyes-university.webp", author: "brandmaster07", licence: "CC BY 3.0", kind: "campus" },
-  "ondokuz-may-s-university": { src: "/university-campus/ondokuz-may-s-university.webp", author: "Chidgk1", licence: "CC BY-SA 4.0", kind: "campus" },
-  "mersin-university": { src: "/university-campus/mersin-university.webp", author: "Cobija", licence: "CC BY-SA 3.0", kind: "campus" },
-  "dicle-university": { src: "/university-campus/dicle-university.webp", author: "Sralp2", licence: "CC BY-SA 4.0", kind: "campus" },
-  "i-n-n-university": { src: "/city-photos/malatya.webp", author: "Zeynel Cebeci", licence: "CC BY-SA 4.0", kind: "city", city: "Malatya" },
-  "van-y-z-nc-y-l-university": { src: "/city-photos/van.webp", author: "EvgenyGenkin", licence: "CC BY-SA 4.0", kind: "city", city: "Van" },
-  "trakya-university": { src: "/university-campus/trakya-university.webp", author: "Hamdigumus", licence: "CC0", kind: "campus" },
-  "pamukkale-university": { src: "/university-campus/pamukkale-university.webp", author: "Grozdovaa", licence: "CC BY-SA 4.0", kind: "campus" },
-  "sakarya-university": { src: "/university-campus/sakarya-university.webp", author: "Kurmanbek", licence: "CC BY-SA 4.0", kind: "campus" },
-  "s-leyman-demirel-university": { src: "/city-photos/isparta.webp", author: "Isparta at Turkish Wikipedia", licence: "Public domain", kind: "city", city: "Isparta" },
-  "adnan-menderes-university": { src: "/university-campus/adnan-menderes-university.webp", author: "Zeynel Cebeci", licence: "CC BY-SA 4.0", kind: "campus" },
-  "mu-la-s-tk-ko-man-university": { src: "/university-campus/mu-la-s-tk-ko-man-university.webp", author: "Gargarapalvin", licence: "CC BY 4.0", kind: "campus" },
-  "harran-university": { src: "/city-photos/sanliurfa.webp", author: "Bernard Gagnon", licence: "CC BY-SA 3.0", kind: "city", city: "\u015eanl\u0131urfa" },
-  "gaziantep-university": { src: "/city-photos/gaziantep.webp", author: "Emz12", licence: "CC BY-SA 4.0", kind: "city", city: "Gaziantep" },
-  "atat-rk-university": { src: "/university-campus/atat-rk-university.webp", author: "E\u011fitmen Mahmut", licence: "CC BY-SA 3.0", kind: "campus" },
-  "anakkale-onsekiz-mart-university": { src: "/university-campus/anakkale-onsekiz-mart-university.webp", author: "Zafer", licence: "CC BY-SA 4.0", kind: "campus" },
+  "istanbul-technical-university": { src: "/university-campus/istanbul-technical-university.webp", author: "Dikk\\u00fclah", licence: "CC BY-SA 4.0" },
+  "middle-east-technical-university": { src: "/university-campus/middle-east-technical-university.webp", author: "Foora", licence: "CC BY-SA 4.0" },
+  "bilkent-university": { src: "/university-campus/bilkent-university.webp", author: "collage bird's eye v\\u2026", licence: "CC BY-SA 3.0" },
+  "ege-university": { src: "/university-campus/ege-university.webp", author: "Ayratayrat", licence: "CC BY-SA 4.0" },
+  "ko-university": { src: "/university-campus/ko-university.webp", author: "Khutuck", licence: "CC BY-SA 3.0" },
+  "akdeniz-university": { src: "/university-campus/akdeniz-university.webp", author: "AntalyasporFC", licence: "CC BY-SA 3.0" },
+  "sabanc-university": { src: "/university-campus/sabanc-university.webp", author: "Cerian", licence: "CC BY-SA 3.0" },
+  "ukurova-university": { src: "/university-campus/ukurova-university.webp", author: "Zeynel Cebeci", licence: "CC BY-SA 4.0" },
+  "karadeniz-technical-university": { src: "/university-campus/karadeniz-technical-university.webp", author: "MirkoS18", licence: "CC BY-SA 4.0" },
+  "bo-azi-i-university": { src: "/university-campus/bo-azi-i-university.webp", author: "Denizmi\\u015f", licence: "CC BY 4.0" },
+  "istanbul-university": { src: "/university-campus/istanbul-university.webp", author: "Dosseman", licence: "CC BY-SA 4.0" },
+  "marmara-university": { src: "/university-campus/marmara-university.webp", author: "Anilyilmaz", licence: "CC BY 3.0" },
+  "y-ld-z-technical-university": { src: "/university-campus/y-ld-z-technical-university.webp", author: "Chapultepec", licence: "Public domain" },
+  "bah-e-ehir-university": { src: "/university-campus/bah-e-ehir-university.webp", author: "Nevit Dilmen (talk)", licence: "CC BY-SA 3.0" },
+  "istanbul-bilgi-university": { src: "/university-campus/istanbul-bilgi-university.webp", author: "Kurmanbek", licence: "CC BY-SA 4.0" },
+  "zye-in-university": { src: "/university-campus/zye-in-university.webp", author: "Bo yaser", licence: "CC BY-SA 4.0" },
+  "ankara-university": { src: "/university-campus/ankara-university.webp", author: "Ankara University", licence: "CC0" },
+  "hacettepe-university": { src: "/university-campus/hacettepe-university.webp", author: "Gargarapalvin", licence: "CC BY 4.0" },
+  "gazi-university": { src: "/university-campus/gazi-university.webp", author: "Ben Linus", licence: "CC BY 2.5" },
+  "dokuz-eyl-l-university": { src: "/university-campus/dokuz-eyl-l-university.webp", author: "Samizambak", licence: "CC BY-SA 4.0" },
+  "ya-ar-university": { src: "/university-campus/ya-ar-university.webp", author: "ToprakM", licence: "CC BY-SA 4.0" },
+  "uluda-university": { src: "/university-campus/uluda-university.webp", author: "Ollios", licence: "CC BY 3.0" },
+  "sel-uk-university": { src: "/university-campus/sel-uk-university.webp", author: "Vyildirim42", licence: "CC BY-SA 4.0" },
+  "anadolu-university": { src: "/university-campus/anadolu-university.webp", author: "Merhabaviki", licence: "CC0" },
+  "erciyes-university": { src: "/university-campus/erciyes-university.webp", author: "brandmaster07", licence: "CC BY 3.0" },
+  "ondokuz-may-s-university": { src: "/university-campus/ondokuz-may-s-university.webp", author: "Chidgk1", licence: "CC BY-SA 4.0" },
+  "mersin-university": { src: "/university-campus/mersin-university.webp", author: "Cobija", licence: "CC BY-SA 3.0" },
+  "dicle-university": { src: "/university-campus/dicle-university.webp", author: "Sralp2", licence: "CC BY-SA 4.0" },
+  "i-n-n-university": { src: "/university-campus/i-n-n-university.webp", author: "Inonu University", licence: "CC BY-SA 4.0" },
+  "trakya-university": { src: "/university-campus/trakya-university.webp", author: "Hamdigumus", licence: "CC0" },
+  "pamukkale-university": { src: "/university-campus/pamukkale-university.webp", author: "Grozdovaa", licence: "CC BY-SA 4.0" },
+  "sakarya-university": { src: "/university-campus/sakarya-university.webp", author: "Kurmanbek", licence: "CC BY-SA 4.0" },
+  "adnan-menderes-university": { src: "/university-campus/adnan-menderes-university.webp", author: "Zeynel Cebeci", licence: "CC BY-SA 4.0" },
+  "mu-la-s-tk-ko-man-university": { src: "/university-campus/mu-la-s-tk-ko-man-university.webp", author: "Gargarapalvin", licence: "CC BY 4.0" },
+  "gaziantep-university": { src: "/university-campus/gaziantep-university.webp", author: "YG01", licence: "CC BY 4.0" },
+  "atat-rk-university": { src: "/university-campus/atat-rk-university.webp", author: "E\\u011fitmen Mahmut", licence: "CC BY-SA 3.0" },
+  "anakkale-onsekiz-mart-university": { src: "/university-campus/anakkale-onsekiz-mart-university.webp", author: "Zafer", licence: "CC BY-SA 4.0" },
 };
-
 /*
  * The card image, or nothing. Campus photographs only: a card is a bare picture behind a
  * name, with no caption and no room for one, so a city view there would read as a claim
@@ -66,7 +61,7 @@ const CAMPUS_PHOTOS = {
  * image and the credit line names it underneath.
  */
 const cardImage = (slug) =>
-  CAMPUS_PHOTOS[slug] && CAMPUS_PHOTOS[slug].kind === "campus"
+  CAMPUS_PHOTOS[slug]
     ? `${AU}${CAMPUS_PHOTOS[slug].src}`
     : undefined;
 
@@ -279,9 +274,6 @@ function UniversityDetailScreen({ data, slug }) {
               photograph, both on screen at once. */}
           {CAMPUS_PHOTOS[u.slug] ? (
             <p style={{ margin: "var(--space-4) 0 0", fontFamily: "var(--font-ui)", fontSize: "var(--fs-micro)", color: "rgba(255,255,255,.72)" }}>
-              {CAMPUS_PHOTOS[u.slug].kind === "city"
-                ? `${CAMPUS_PHOTOS[u.slug].city}, where ${u.name} is based. `
-                : null}
               Photo: {CAMPUS_PHOTOS[u.slug].author} · {CAMPUS_PHOTOS[u.slug].licence} · via Wikimedia Commons
             </p>
           ) : null}

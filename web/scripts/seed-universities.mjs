@@ -76,9 +76,15 @@ for (const u of universities) {
     deadlines: u.deadlines ?? null,
     latitude: u.lat ?? null,
     longitude: u.lng ?? null,
-    // Left alone where there is no licensed photograph, so the detail page keeps its
-    // reserved frame rather than pointing at a file that does not exist.
-    ...(universityPhotos[u.slug] ? { coverImage: universityPhotos[u.slug].src } : {}),
+    /*
+     * Set, or explicitly cleared. Spreading the field in only when a photograph exists
+     * looks equivalent and is not: an upsert that omits a column leaves whatever was
+     * there, so a university whose photograph is withdrawn keeps pointing at a file that
+     * no longer exists. That is exactly what happened when the city stand-ins were
+     * removed — three rows still named a deleted image, and the page rendered a broken
+     * one instead of its reserved frame.
+     */
+    coverImage: universityPhotos[u.slug]?.src ?? null,
     status: "PUBLISHED",
   };
 

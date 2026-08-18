@@ -81,16 +81,14 @@ const typeLabel = (kind: "PUBLIC" | "PRIVATE") => (kind === "PUBLIC" ? "Public" 
  * the permission the image is published under. CC0 and public-domain entries impose no
  * such condition and are credited anyway, because one uniform line beats two rules.
  *
- * When the picture is of the city rather than the campus, the line says so. That is the
- * whole reason the distinction is carried this far: twenty-two of the forty universities
- * have no freely licensed photograph of their own grounds, and showing the city under a
- * caption that claims it is the campus would misinform the one reader who matters — the
- * person deciding where to move.
+ * Rendered from `universityPhotos` rather than from the database record, because the
+ * credit belongs to the specific file in `assets/` — a photograph an administrator later
+ * uploads through the console is the client's own and correctly finds no entry here.
  *
  * Untranslated on purpose: an author's name is a proper noun and a licence identifier is
  * a term of art. "CC BY-SA 4.0" is the name of the instrument in every language.
  */
-function PhotoCredit({ slug, name }: { slug: string; name: string }) {
+function PhotoCredit({ slug }: { slug: string }) {
   const photo = universityPhoto(slug);
   if (!photo) return null;
 
@@ -101,7 +99,6 @@ function PhotoCredit({ slug, name }: { slug: string; name: string }) {
       // On the hero photograph rather than on paper, so the muted grey would vanish.
       fontSize: "var(--fs-micro)", color: "rgba(255,255,255,.72)",
     }}>
-      {photo.kind === "city" ? `${photo.city}, where ${name} is based. ` : null}
       {"Photo: "}
       <a href={photo.source} target="_blank" rel="noopener noreferrer nofollow" style={linkStyle}>
         {photo.author}
@@ -148,18 +145,17 @@ export default function UniversityDetail({
           heading and buttons sit low in the section, and without it they land on whatever
           that particular photograph happens to show there.
 
-          Decorative here — `alt=""`, `aria-hidden`. The same picture appears in the body
-          below carrying the descriptive `alt` and its credit line, and announcing it
-          twice would make a screen reader read the institution's name three times before
-          the page begins. A city photograph is allowed in this position, unlike on a card,
-          because the city badge sits directly on the image and `PhotoCredit` names it
-          underneath.
+          Decorative here — `alt=""`, `aria-hidden`. The heading directly on top of it is
+          the institution's name, so a described background would have a screen reader say
+          it twice before the page begins. The credit line beneath carries the attribution
+          the licence requires.
 
           Eager and high priority: it is above the fold and now the largest element in the
           viewport, so it is the LCP candidate rather than something competing with one.
 
-          When a university has no photograph at all the section keeps
-          `--gradient-brand-deep` on its own, which is what it looked like before.
+          Three universities have no verified photograph of their campus and no stand-in
+          is used for them, so the section keeps `--gradient-brand-deep` on its own —
+          which is what every one of these looked like until recently.
         */}
         {u.coverImage ? (
           <>
@@ -197,7 +193,7 @@ export default function UniversityDetail({
             the better place for it and the licence is satisfied either way, so the
             duplicate went rather than the credit.
           */}
-          <PhotoCredit slug={u.slug} name={u.name} />
+          <PhotoCredit slug={u.slug} />
         </div>
       </section>
 
