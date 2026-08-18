@@ -19,6 +19,53 @@ import { ConflictError } from "./errors";
  */
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
+/**
+ * The datasource URL, with `pool_timeout` reconciled against `connect_timeout`.
+ *
+ * **These two settle a race, and by default they settle it wrongly.** `connect_timeout`
+ * is how long Prisma will wait for a *new TCP connection* to the database;
+ * `pool_timeout` is how long a query will wait for the pool to *hand it* a connection.
+ * Prisma defaults the second to 10 seconds regardless of the first, so a URL that raises
+ * `connect_timeout` to 30 — as this one does, deliberately, for a serverless database
+ * that suspends when idle — leaves every query giving up at 10 while the connection it
+ * is waiting for is still legitimately being established.
+ *
+ * The symptom is specific and misleading: the first request after an idle period returns
+ * 500 with "Timed out fetching a new connection from the connection pool", the next one
+ * succeeds, and by the third everything is fast. On the directory that surfaced as "We
+ * could not load the directory" on a cold load and nothing at all on a refresh, which
+ * reads like a flaky network rather than a setting.
+ *
+ * Raising `pool_timeout` is not the same trade as raising `connection_limit`. The limit
+ * governs how many connections exist at once, and on serverless that number multiplies
+ * across every warm instance — which is why the build caps its concurrency instead. This
+ * only governs how long a query is willing to queue for one that already exists, so it
+ * costs nothing in connections and turns a failed cold start into a slow one.
+ *
+ * An explicit `pool_timeout` in the URL is left alone: an operator who set it meant it.
+ */
+export function datasourceUrl(raw: string): string {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    // Not a shape we can reason about — hand it back untouched rather than guess.
+    return raw;
+  }
+
+  if (url.searchParams.has("pool_timeout")) return raw;
+
+  // Prisma's own defaults, so the arithmetic below is the same one it would do.
+  const connect = Number(url.searchParams.get("connect_timeout") ?? 5);
+  const DEFAULT_POOL_TIMEOUT = 10;
+  if (!Number.isFinite(connect) || connect <= DEFAULT_POOL_TIMEOUT) return raw;
+
+  // A margin over `connect_timeout`, so a query outlives the connection attempt it is
+  // queued behind rather than expiring one tick before it lands.
+  url.searchParams.set("pool_timeout", String(connect + 5));
+  return url.toString();
+}
+
 function create(): PrismaClient {
   const client = new PrismaClient({
     log: [
@@ -26,7 +73,7 @@ function create(): PrismaClient {
       { emit: "event", level: "error" },
       ...(isProduction ? [] : [{ emit: "event" as const, level: "query" as const }]),
     ],
-    datasources: { db: { url: env.DATABASE_URL } },
+    datasources: { db: { url: datasourceUrl(env.DATABASE_URL) } },
   });
 
   client.$on("warn" as never, (e: Prisma.LogEvent) => logger.warn({ prisma: e }, "prisma warning"));
