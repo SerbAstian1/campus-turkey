@@ -16,6 +16,7 @@ import { Facts } from "./shared";
 import { ErrorScreen } from "./Errors";
 import { CardGrid } from "@/components/CardGrid";
 import { useT } from "@/i18n/context";
+import { universityPhoto } from "@/content/university-photos";
 
 /**
  * The record and its neighbours, both fetched by the server page.
@@ -72,6 +73,52 @@ export interface SimilarUniversity {
  */
 const typeLabel = (kind: "PUBLIC" | "PRIVATE") => (kind === "PUBLIC" ? "Public" : "Private");
 
+/**
+ * The photographer's credit, under the picture.
+ *
+ * **Not optional and not decoration.** These images are used under CC BY, CC BY-SA and
+ * the Free Art Licence, which grant the right to publish only on condition that the
+ * author and the licence are stated. Removing this line does not tidy the page; it ends
+ * the permission the image is published under. CC0 and public-domain entries impose no
+ * such condition and are credited anyway, because one uniform line beats two rules.
+ *
+ * When the picture is of the city rather than the campus, the line says so. That is the
+ * whole reason the distinction is carried this far: twenty-two of the forty universities
+ * have no freely licensed photograph of their own grounds, and showing the city under a
+ * caption that claims it is the campus would misinform the one reader who matters — the
+ * person deciding where to move.
+ *
+ * Untranslated on purpose: an author's name is a proper noun and a licence identifier is
+ * a term of art. "CC BY-SA 4.0" is the name of the instrument in every language.
+ */
+function PhotoCredit({ slug, name }: { slug: string; name: string }) {
+  const photo = universityPhoto(slug);
+  if (!photo) return null;
+
+  const linkStyle = { color: "inherit", textDecoration: "underline" };
+  return (
+    <p style={{
+      margin: "var(--space-2) 0 0", fontFamily: "var(--font-ui)",
+      fontSize: "var(--fs-micro)", color: "var(--neutral-500)",
+    }}>
+      {photo.kind === "city" ? `${photo.city}, where ${name} is based. ` : null}
+      {"Photo: "}
+      <a href={photo.source} target="_blank" rel="noopener noreferrer nofollow" style={linkStyle}>
+        {photo.author}
+      </a>
+      {" · "}
+      {photo.licenceUrl
+        ? (
+          <a href={photo.licenceUrl} target="_blank" rel="noopener noreferrer nofollow" style={linkStyle}>
+            {photo.licence}
+          </a>
+        )
+        : photo.licence}
+      {" · via Wikimedia Commons"}
+    </p>
+  );
+}
+
 export default function UniversityDetail({
   university,
   similar,
@@ -120,8 +167,21 @@ export default function UniversityDetail({
                 slot={`campus-${u.slug}`}
                 label={t("{name} campus photography, 16:9", { name: u.name })}
                 ratio="16 / 9"
-                {...(u.coverImage ? { src: u.coverImage, alt: `${u.name} campus` } : {})}
+                /*
+                 * `alt` states what the photograph actually shows. A city view described
+                 * as a campus would be wrong twice over — to a screen reader user, and as
+                 * a claim about the institution.
+                 */
+                {...(u.coverImage
+                  ? {
+                    src: u.coverImage,
+                    alt: universityPhoto(u.slug)?.kind === "city"
+                      ? `${universityPhoto(u.slug)!.city}, the city ${u.name} is based in`
+                      : `${u.name} campus`,
+                  }
+                  : {})}
               />
+              <PhotoCredit slug={u.slug} name={u.name} />
             </ScrollReveal>
 
             <ScrollReveal style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>

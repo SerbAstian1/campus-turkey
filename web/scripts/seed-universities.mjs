@@ -29,6 +29,15 @@ const db = new PrismaClient();
 const source = pathToFileURL(resolve("src/content/universities.ts")).href;
 const { universities } = await import(source);
 
+/*
+ * Campus photography lives beside the files it names, not in the content records: the
+ * eleven that exist are freely licensed images whose attribution has to travel with them,
+ * and `universityPhotos` is what carries both. The column stores only the path —
+ * the credit line is rendered from the same map on the detail screen.
+ */
+const campusSource = pathToFileURL(resolve("src/content/university-photos.ts")).href;
+const { universityPhotos } = await import(campusSource);
+
 if (!Array.isArray(universities) || universities.length === 0) {
   throw new Error("No universities found in src/content/universities.ts");
 }
@@ -67,6 +76,9 @@ for (const u of universities) {
     deadlines: u.deadlines ?? null,
     latitude: u.lat ?? null,
     longitude: u.lng ?? null,
+    // Left alone where there is no licensed photograph, so the detail page keeps its
+    // reserved frame rather than pointing at a file that does not exist.
+    ...(universityPhotos[u.slug] ? { coverImage: universityPhotos[u.slug].src } : {}),
     status: "PUBLISHED",
   };
 
