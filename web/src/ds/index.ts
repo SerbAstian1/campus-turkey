@@ -368,5 +368,23 @@ export const TimelineTrack = bind<TimelineTrackProps>("TimelineTrack");
 /** The design system's language list, after the prototype's extension to seventeen. */
 export const languages = (): Language[] => (namespace()?.["LANGUAGES"] as Language[]) ?? [];
 
-/** Asset base the design system components resolve brand artwork against. */
-export const ASSETS = "assets";
+/**
+ * Asset base the design system components resolve brand artwork against.
+ *
+ * **Absolute, and it has to be.** The design system's own default is the relative string
+ * `"assets"`, which is correct for the `site/` prototype it was written against: that is
+ * hash-routed, so the document is always at the root and `assets/…` always resolves.
+ * Here every page is `/[locale]/…`, and a relative URL resolves against the current
+ * directory — so the same string reached `/assets/…` at `/en` and `/en/assets/…` at
+ * `/en/apply`, `/en/universities/assets/…` one level deeper again. The brand artwork was
+ * therefore correct on the locale root and 404 on every other page in the application.
+ *
+ * That is not only the logo. `Logo` and `CTABanner` take this as `assetBase`, and the
+ * footer photograph, the `PageHero` map wash and the hero video interpolate it directly,
+ * so a single relative string broke a different subset of images on every route depth.
+ *
+ * `next.config.ts` sets no `basePath` or `assetPrefix`, so the leading slash is the whole
+ * fix; if the app is ever mounted under a sub-path, this constant is the one place that
+ * has to learn about it. `src/test/asset-urls.test.ts` fails if it goes relative again.
+ */
+export const ASSETS = "/assets";
