@@ -54,7 +54,7 @@ function hasSessionCookie(request: NextRequest): boolean {
     .some((cookie) => cookie.name.endsWith("better-auth.session_token") && cookie.value !== "");
 }
 
-function contentSecurityPolicy(tileHosts: string[]): string {
+export function contentSecurityPolicy(tileHosts: string[], isProduction: boolean): string {
   return [
     "default-src 'self'",
     /*
@@ -91,7 +91,23 @@ function contentSecurityPolicy(tileHosts: string[]): string {
      * visitor cannot act on. The hosts live in `features/leads/captcha-hosts.ts`
      * alongside the widget, so the two cannot drift.
      */
-    `script-src 'self' 'unsafe-inline' ${HCAPTCHA_SCRIPT_HOSTS.join(" ")}`,
+    /*
+     * `'unsafe-eval'` outside production, and only outside production.
+     *
+     * Next's development build evaluates every module through `eval()` — that is how
+     * fast refresh replaces a module without reloading the page. A CSP that forbids it
+     * does not degrade the dev server, it stops the client bundle executing at all: the
+     * design system bundle never assigns `window.CampusTurkeyDesignSystem_4d33e7`, every
+     * `bind()` in `src/ds/index.ts` returns `null`, and the app sits on its loading
+     * screen for ever. The page still answers 200 with correct markup, which is why this
+     * looked like missing images and a directory that would not load rather than a
+     * security header — and why nothing in the suite caught it.
+     *
+     * Production has no such need: the built bundle is real script, not strings. Keeping
+     * `'unsafe-eval'` out of it is the entire point of the split — allowing it there
+     * would hand an attacker who lands any injected string the ability to run it.
+     */
+    `script-src 'self' 'unsafe-inline' ${isProduction ? "" : "'unsafe-eval' "}${HCAPTCHA_SCRIPT_HOSTS.join(" ")}`,
     `style-src 'self' 'unsafe-inline' ${HCAPTCHA_STYLE_HOSTS.join(" ")}`,
     `frame-src 'self' ${HCAPTCHA_FRAME_HOSTS.join(" ")}`,
     /*
@@ -300,7 +316,10 @@ export function middleware(request: NextRequest): NextResponse {
     ? NextResponse.rewrite(rewritten)
     : NextResponse.next();
 
-  response.headers.set("content-security-policy", contentSecurityPolicy(tileHosts));
+  response.headers.set(
+    "content-security-policy",
+    contentSecurityPolicy(tileHosts, process.env.NODE_ENV === "production"),
+  );
   // Two years, with preload. Set only once the domain is confirmed https-only —
   // preloading is difficult to reverse. See docs/DEPLOYMENT.md.
   response.headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
