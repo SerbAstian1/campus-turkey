@@ -75,6 +75,40 @@ function Hero({ onApply, onExplore }) {
 /* Affiliate wall. One continuous track, duplicated once so the -50% loop is
    seamless. Pauses on hover and holds still under reduced motion.
    Each plate is a wordmark stand-in until the real university logos arrive. */
+/*
+ * University logos, by slug. Only fourteen of the two hundred have one, so this is a map
+ * rather than a path built from the slug: a missing key leaves the reserved frame in
+ * place, where a missing file would leave a broken image.
+ *
+ * The keys look mangled because the slug is not the name — the slug rule reduces
+ * anything outside [a-z0-9] to a dash, and most of these names carry a Turkish
+ * character. Boğaziçi becomes `bo-azi-i-university`, Koç becomes `ko-university`. The
+ * filenames stay readable, so the two differ wherever that happens.
+ *
+ * Third-party trademarks, sourced from Wikimedia Commons and the universities' own
+ * sites. That establishes what each mark looks like, not permission to use it here —
+ * the institution's press office is the route to that, as it is for the photography.
+ */
+const UNIVERSITY_LOGOS = {
+  "istanbul-technical-university": "istanbul-technical-university",
+  "middle-east-technical-university": "middle-east-technical-university",
+  "bilkent-university": "bilkent-university",
+  "ege-university": "ege-university",
+  "ko-university": "koc-university",
+  "akdeniz-university": "akdeniz-university",
+  "sabanc-university": "sabanci-university",
+  "ukurova-university": "cukurova-university",
+  "karadeniz-technical-university": "karadeniz-technical-university",
+  "bo-azi-i-university": "bogazici-university",
+  "istanbul-university": "istanbul-university",
+  "marmara-university": "marmara-university",
+  "y-ld-z-technical-university": "yildiz-technical-university",
+  "bah-e-ehir-university": "bahcesehir-university",
+};
+
+const universityLogo = (slug) =>
+  UNIVERSITY_LOGOS[slug] ? `${A}/university-logos/${UNIVERSITY_LOGOS[slug]}.png` : undefined;
+
 function AffiliateMarquee({ universities }) {
   const items = universities.slice(0, 14);
   /* Two equal groups, each with the same inner gap as the gap between them,
@@ -98,7 +132,11 @@ function AffiliateMarquee({ universities }) {
                     textDecoration: "none", opacity: .75,
                     transition: "opacity var(--dur-base) var(--ease-out)",
                   }}>
+                  {/* `alt=""` on purpose: the name and city sit as text immediately to
+                      the right, so describing the logo would announce the same
+                      institution twice. */}
                   <window.ImagePlaceholder slot={`logo-${u.slug}`} label="" round
+                    src={universityLogo(u.slug)} alt=""
                     style={{ width: 44, height: 44, flex: "none", aspectRatio: "auto" }} />
                   <span style={{ display: "flex", flexDirection: "column", gap: 2, whiteSpace: "nowrap" }}>
                     <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-body-sm)", lineHeight: 1.25, color: "var(--green-800)" }}>{u.name}</span>

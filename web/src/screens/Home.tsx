@@ -8,6 +8,7 @@ import {
   ServiceCard, StatBlock, StickyScrollSection, TestimonialCard, UniversityCard, ASSETS,
 } from "@/ds";
 import { generalFaq, journey, serviceCards, stats, testimonials, universities } from "@/content";
+import { universityLogo } from "@/content/university-logos";
 import { BrandMark, ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
@@ -171,7 +172,18 @@ function AffiliateMarquee() {
               {items.map((u) => (
                 <a key={`${copy}-${u.slug}`} href={href(`university/${u.slug}`)} tabIndex={copy ? -1 : 0} className="ct-affiliate"
                   style={{ flex: "none", display: "flex", alignItems: "center", gap: "var(--space-4)", textDecoration: "none", opacity: .75, transition: "opacity var(--dur-base) var(--ease-out)" }}>
-                  <ImagePlaceholder slot={`logo-${u.slug}`} label="" round style={{ width: 44, height: 44, flex: "none", aspectRatio: "auto" }} />
+                  {/*
+                    `alt=""` on purpose. The link already carries the university's name
+                    and city as text immediately to the right, so a described logo would
+                    make a screen reader announce the same institution twice. The logo is
+                    decoration here in the precise sense the attribute means.
+
+                    Universities without a sourced logo pass no `src` and keep the
+                    reserved frame, so the row stays even rather than gapped.
+                  */}
+                  <ImagePlaceholder slot={`logo-${u.slug}`} label="" round
+                    src={universityLogo(u.slug)} alt=""
+                    style={{ width: 44, height: 44, flex: "none", aspectRatio: "auto" }} />
                   <span style={{ display: "flex", flexDirection: "column", gap: 2, whiteSpace: "nowrap" }}>
                     <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-body-sm)", lineHeight: 1.25, color: "var(--green-800)" }}>{u.name}</span>
                     <span style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-micro)", letterSpacing: ".08em", textTransform: "uppercase", color: "var(--neutral-500)" }}>{u.city}</span>
