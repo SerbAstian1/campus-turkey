@@ -176,6 +176,13 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     licenceUrl: "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
     source: "https://commons.wikimedia.org/wiki/File:Ankara_%C3%9Cniversitesi_11.jpg",
   },
+  "ege-university": {
+    src: "/assets/university-campus/ege-university.webp",
+    author: "Conquers",
+    licence: "Public domain",
+    licenceUrl: "",
+    source: "https://commons.wikimedia.org/wiki/File:Ege_%C3%9Cniversitesi_Ana_Giri%C5%9F_Kap%C4%B1s%C4%B1-Bilim_Me%C5%9Falesi.jpg",
+  },
   "hacettepe-university": {
     src: "/assets/university-campus/hacettepe-university.webp",
     author: "Gargarapalvin",

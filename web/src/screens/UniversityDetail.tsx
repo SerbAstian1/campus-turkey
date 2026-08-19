@@ -214,11 +214,17 @@ export default function UniversityDetail({
               {/* Rows with no value are dropped rather than shown empty. A fact panel with
                   "Founded —" reads as missing data on the university's part rather than
                   on ours. */}
+              {/* Programs and tuition follow the same rule as the two above, for the same
+                  reason. A university added before its figures are confirmed carries
+                  `programs: 0` and an empty tuition string, and "Programs 0 / Tuition —"
+                  states something false rather than stating nothing. The card already
+                  reaches the same conclusion on its own: no tuition renders as "Contact
+                  for tuition" rather than an empty amount. */}
               <Facts items={[
                 ...(u.founded ? [[t("Founded"), u.founded] as [string, string | number]] : []),
                 ...(u.students ? [[t("Students"), u.students] as [string, string | number]] : []),
-                [t("Programs"), u.programs] as [string, string | number],
-                [t("Tuition"), u.tuition] as [string, string | number],
+                ...(u.programs ? [[t("Programs"), u.programs] as [string, string | number]] : []),
+                ...(u.tuition ? [[t("Tuition"), u.tuition] as [string, string | number]] : []),
               ]} />
             </ScrollReveal>
 

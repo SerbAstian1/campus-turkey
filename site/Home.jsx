@@ -76,7 +76,7 @@ function Hero({ onApply, onExplore }) {
    seamless. Pauses on hover and holds still under reduced motion.
    Each plate is a wordmark stand-in until the real university logos arrive. */
 /*
- * University logos, by slug. Only fourteen of the two hundred have one, so this is a map
+ * University logos, by slug. Only nineteen of the directory have one, so this is a map
  * rather than a path built from the slug: a missing key leaves the reserved frame in
  * place, where a missing file would leave a broken image.
  *
@@ -104,6 +104,11 @@ const UNIVERSITY_LOGOS = {
   "marmara-university": "marmara-university",
   "y-ld-z-technical-university": "yildiz-technical-university",
   "bah-e-ehir-university": "bahcesehir-university",
+  "ankara-university": "ankara-university",
+  "bayburt-university": "bayburt-university",
+  "i-d-r-university": "i-d-r-university",
+  "bolu-abant-i-zzet-baysal-university": "bolu-abant-i-zzet-baysal-university",
+  "adana-alparslan-t-rke-science-and-technology-university": "adana-alparslan-t-rke-science-and-technology-university",
 };
 
 const universityLogo = (slug) =>

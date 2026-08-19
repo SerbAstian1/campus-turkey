@@ -45,8 +45,12 @@ const PERMITTED = /^(cc0|cc by(-sa)?( \d(\.\d)?)?|public domain|fal)$/i;
  */
 const WITHOUT_PHOTO = [
   "harran-university", "van-y-z-nc-y-l-university", "s-leyman-demirel-university",
-  "middle-east-technical-university", "ege-university", "erciyes-university",
+  "middle-east-technical-university", "erciyes-university",
   "i-n-n-university",
+  // Added to the directory so the client can feature them; their campus photography has
+  // not been sourced yet. Their logos have, which is what the marquee actually renders.
+  "bayburt-university", "i-d-r-university", "bolu-abant-i-zzet-baysal-university",
+  "adana-alparslan-t-rke-science-and-technology-university",
 ];
 
 describe("the campus photo map", () => {

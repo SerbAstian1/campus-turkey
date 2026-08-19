@@ -53,6 +53,10 @@ const EMBLEM = {
   "istanbul-technical-university": "x",
   "karadeniz-technical-university": "x",
   "marmara-university": "y",
+  // 4.6:1 — the widest of the set, and unreadable whole at 44px.
+  "adana-alparslan-t-rke-science-and-technology-university": "x",
+  // Mark stacked over the wordmark, like Marmara.
+  "bayburt-university": "y",
 };
 
 /** Split at the widest fully-transparent gutter and keep the leading block. */

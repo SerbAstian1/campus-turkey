@@ -4,7 +4,7 @@
  * A map rather than a convention like `/assets/university-logos/${slug}.png`, and for two
  * separate reasons.
  *
- * The first is coverage: only fourteen of the two hundred universities in the directory
+ * The first is coverage: only nineteen of the universities in the directory
  * have a logo. Under a naming convention a missing file is a broken image on the page;
  * a missing key here just leaves the reserved frame in place, which is what the marquee
  * was built to fall back to.
@@ -43,6 +43,11 @@ export const universityLogos: Readonly<Record<string, string>> = {
   "marmara-university": "/assets/university-logos/marmara-university.png",
   "y-ld-z-technical-university": "/assets/university-logos/yildiz-technical-university.png",
   "bah-e-ehir-university": "/assets/university-logos/bahcesehir-university.png",
+  "ankara-university": "/assets/university-logos/ankara-university.png",
+  "bayburt-university": "/assets/university-logos/bayburt-university.png",
+  "i-d-r-university": "/assets/university-logos/i-d-r-university.png",
+  "bolu-abant-i-zzet-baysal-university": "/assets/university-logos/bolu-abant-i-zzet-baysal-university.png",
+  "adana-alparslan-t-rke-science-and-technology-university": "/assets/university-logos/adana-alparslan-t-rke-science-and-technology-university.png",
 };
 
 /** The logo for a university, or `undefined` where none has been sourced yet. */

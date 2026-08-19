@@ -57,8 +57,13 @@ describe("lookups", () => {
 });
 
 describe("the directory", () => {
-  it("carries the full set the prototype had", () => {
-    expect(universities).toHaveLength(40);
+  it("still carries every university the prototype had", () => {
+    // The guard is against *losing* one in a refactor, which is what a bare length
+    // check was reaching for. It cannot stay a fixed number: the client adds
+    // universities they work with directly, and a growing directory must not read as
+    // a regression. Uniqueness is the half that still catches a real mistake.
+    expect(universities.length).toBeGreaterThanOrEqual(40);
+    expect(new Set(universities.map((u) => u.slug)).size).toBe(universities.length);
   });
 
   it("gives every university coordinates inside Türkiye", () => {
@@ -70,8 +75,18 @@ describe("the directory", () => {
     }
   });
 
-  it("states a tuition figure for every university", () => {
-    for (const u of universities) expect(u.tuition).toMatch(/\$[\d,]+/);
+  it("states a well-formed tuition figure, or none at all", () => {
+    /*
+     * A stated figure must look like money. An absent one is allowed and deliberate: a
+     * university added before its fees are confirmed carries an empty string, the card
+     * renders "Contact for tuition", and the detail page omits the row rather than
+     * printing a dash. What this rejects is the middle ground — "TBC", "N/A" or a bare
+     * dash, each of which a student would read as the answer and act on.
+     */
+    for (const u of universities) {
+      if (u.tuition === "") continue;
+      expect(u.tuition).toMatch(/\$[\d,]+/);
+    }
   });
 });
 
