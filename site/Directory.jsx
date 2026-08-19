@@ -31,6 +31,7 @@ const CAMPUS_PHOTOS = {
   "istanbul-bilgi-university": { src: "/university-campus/istanbul-bilgi-university.webp", author: "Kurmanbek", licence: "CC BY-SA 4.0" },
   "zye-in-university": { src: "/university-campus/zye-in-university.webp", author: "Bo yaser", licence: "CC BY-SA 4.0" },
   "ankara-university": { src: "/university-campus/ankara-university.webp", author: "Ankara University", licence: "CC0" },
+  "ege-university": { src: "/university-campus/ege-university.webp", author: "Conquers", licence: "Public domain" },
   "hacettepe-university": { src: "/university-campus/hacettepe-university.webp", author: "Gargarapalvin", licence: "CC BY 4.0" },
   "gazi-university": { src: "/university-campus/gazi-university.webp", author: "Mojeartoza", licence: "CC BY-SA 4.0" },
   "dokuz-eyl-l-university": { src: "/university-campus/dokuz-eyl-l-university.webp", author: "Samizambak", licence: "CC BY-SA 4.0" },
@@ -49,6 +50,8 @@ const CAMPUS_PHOTOS = {
   "gaziantep-university": { src: "/university-campus/gaziantep-university.webp", author: "YG01", licence: "CC BY 4.0" },
   "atat-rk-university": { src: "/university-campus/atat-rk-university.webp", author: "Eğitmen Mahmut", licence: "CC BY-SA 3.0" },
   "anakkale-onsekiz-mart-university": { src: "/university-campus/anakkale-onsekiz-mart-university.webp", author: "Zafer", licence: "CC BY-SA 4.0" },
+  "bayburt-university": { src: "/university-campus/bayburt-university.webp", author: "BAYBURT ÜNİVERSİTESİ", licence: "CC BY-SA 4.0" },
+  "adana-alparslan-t-rke-science-and-technology-university": { src: "/university-campus/adana-alparslan-t-rke-science-and-technology-university.webp", author: "Chaelane", licence: "CC BY-SA 4.0" },
 };
 /*
  * The card image, or nothing. Campus photographs only: a card is a bare picture behind a

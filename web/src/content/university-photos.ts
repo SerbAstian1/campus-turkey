@@ -309,6 +309,20 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
     source: "https://commons.wikimedia.org/wiki/File:%C3%87anakkale_Onsekiz_Mart_University_Faculty_of_Art_and_Sciences_(4).jpg",
   },
+  "bayburt-university": {
+    src: "/assets/university-campus/bayburt-university.webp",
+    author: "BAYBURT ÜNİVERSİTESİ",
+    licence: "CC BY-SA 4.0",
+    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
+    source: "https://commons.wikimedia.org/wiki/File:Bayburt_%C3%9Cniversitesi_Giri%C5%9F_Kap%C4%B1s%C4%B1.JPG",
+  },
+  "adana-alparslan-t-rke-science-and-technology-university": {
+    src: "/assets/university-campus/adana-alparslan-t-rke-science-and-technology-university.webp",
+    author: "Chaelane",
+    licence: "CC BY-SA 4.0",
+    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
+    source: "https://commons.wikimedia.org/wiki/File:Alparslan_T%C3%BCrke%C5%9F_Bilim_ve_Teknoloji_%C3%9Cniversitesi.jpg",
+  },
 };
 
 /** The campus photograph for a university, or `undefined` where none is verified. */

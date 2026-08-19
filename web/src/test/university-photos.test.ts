@@ -49,8 +49,11 @@ const WITHOUT_PHOTO = [
   "i-n-n-university",
   // Added to the directory so the client can feature them; their campus photography has
   // not been sourced yet. Their logos have, which is what the marquee actually renders.
-  "bayburt-university", "i-d-r-university", "bolu-abant-i-zzet-baysal-university",
-  "adana-alparslan-t-rke-science-and-technology-university",
+  // Added to the directory so the client can feature them. Bayburt has its main gate and
+  // Adana its entrance gantry; Bolu and Iğdır have no free photograph of their campus at
+  // all — Bolu's search returns İzzet Baysal Caddesi, a street named after the same
+  // philanthropist, and Iğdır returns nothing on Commons or Openverse.
+  "i-d-r-university", "bolu-abant-i-zzet-baysal-university",
 ];
 
 describe("the campus photo map", () => {
