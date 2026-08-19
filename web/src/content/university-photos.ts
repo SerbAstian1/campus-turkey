@@ -33,25 +33,34 @@
  * rules. Share-alike binds the image rather than this codebase: a resized WEBP crop is a
  * derivative and stays under its own licence, which is what shipping the credit does.
  *
- * **Fifteen of these identify nothing, and replacing them needs supplied files.** Dicle's
- * entry is what the rest should look like: a gate with the university's name across it.
- * The ones below are the opposite — a real photograph of the right campus that could be
- * almost any campus, because nothing in frame says which:
+ * **Every photograph here is a gate, a rectorate, or a building carrying the university's
+ * name.** That is the rule, and it is why seven universities have no entry at all rather
+ * than a stand-in. A campus photograph on a recruitment page is evidence; a real picture
+ * of the right campus that could be any campus asserts nothing, and a landscape asserts
+ * less than nothing.
  *
- *   a facility rather than a place   akdeniz (stadium), gazi (basketball courts),
- *                                    bah-e-ehir (auditorium interior),
- *                                    ondokuz-may-s (a municipal bus),
- *                                    sel-uk (a continuing-education annexe)
- *   an anonymous road or lawn        bilkent, ege, karadeniz-technical,
- *                                    mu-la-s-tk-ko-man, erciyes (a road at night),
- *                                    middle-east-technical, istanbul-technical
- *   too far away to read             hacettepe, i-n-n, pamukkale
+ * Eleven were replaced under that rule after searching Wikimedia Commons categories,
+ * both Wikipedias, Wikidata `P18` and Openverse (which reaches Flickr) for each one's
+ * gate, entrance and rectorate in Turkish and English. What that found:
  *
- * Commons was searched for each one's gate, entrance and rectorate in both Turkish and
- * English. It returned two candidates: İTÜ's Teknokent gate, already in use, and a "Gazi
- * Üniversitesi Rektörlük önü" that is a night photograph of statues — worse than what it
- * would have replaced. The free corpus does not have this photography; Dicle's gate was
- * supplied rather than found, and that is the route for the rest.
+ *   gate or entrance   istanbul-technical, karadeniz-technical, hacettepe (the Beytepe
+ *                      nizamiye kapısı), mu-la-s-tk-ko-man (the twin arches)
+ *   named in shot      sel-uk and pamukkale (signs carrying the crest), bah-e-ehir
+ *                      (name across the facade), ondokuz-may-s (the Ali Fuad Başgil law
+ *                      faculty), akdeniz (education faculty)
+ *   landmark building  gazi (rectorate), bilkent (main library)
+ *
+ * **Four were deleted rather than kept.** METU, Ege, Erciyes and İnönü had a misty plaza,
+ * a lawn in blossom, a road at night and a valley seen from a hillside. Nothing free
+ * exists for them that meets the rule, so their frames are now empty on purpose. Van,
+ * Süleyman Demirel and Harran never had one: Van's candidates are an aerial and a lecture
+ * theatre of identifiable students, Harran's are the ruins of the *ancient* Harran
+ * university a thousand years older than the campus, and Commons holds no file at all in
+ * either Harran's or Süleyman Demirel's category.
+ *
+ * Dicle's gate came from the client rather than from any of these sources, which is the
+ * shape of the remaining fix: a supplied photograph per university, converted by the same
+ * route.
  */
 export interface UniversityPhoto {
   readonly src: string;
@@ -64,31 +73,17 @@ export interface UniversityPhoto {
 export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
   "istanbul-technical-university": {
     src: "/assets/university-campus/istanbul-technical-university.webp",
-    author: "Dikk\u00fclah",
+    author: "Kurmanbek",
     licence: "CC BY-SA 4.0",
-    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Teknokent_Gate,_Istanbul_Technical_University_Ayazaga_Campus.jpg",
-  },
-  "middle-east-technical-university": {
-    src: "/assets/university-campus/middle-east-technical-university.webp",
-    author: "Foora",
-    licence: "CC BY-SA 4.0",
-    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:METU_Campus.jpg",
+    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+    source: "https://commons.wikimedia.org/w/index.php?curid=149447949",
   },
   "bilkent-university": {
     src: "/assets/university-campus/bilkent-university.webp",
-    author: "collage bird's eye v\u2026",
-    licence: "CC BY-SA 3.0",
-    licenceUrl: "https://creativecommons.org/licenses/by-sa/3.0",
-    source: "https://commons.wikimedia.org/wiki/File:Bilkent_University_-_panoramio.jpg",
-  },
-  "ege-university": {
-    src: "/assets/university-campus/ege-university.webp",
-    author: "Ayratayrat",
-    licence: "CC BY-SA 4.0",
-    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Ege_%C3%BCniversitesi_kamp%C3%BCs_i%C3%A7inde.jpg",
+    author: "Bilkent University",
+    licence: "CC BY 2.5",
+    licenceUrl: "https://creativecommons.org/licenses/by/2.5",
+    source: "https://commons.wikimedia.org/wiki/File:Bilkent_University_-_Main_Library.jpg",
   },
   "ko-university": {
     src: "/assets/university-campus/ko-university.webp",
@@ -99,10 +94,10 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
   },
   "akdeniz-university": {
     src: "/assets/university-campus/akdeniz-university.webp",
-    author: "AntalyasporFC",
-    licence: "CC BY-SA 3.0",
-    licenceUrl: "https://creativecommons.org/licenses/by-sa/3.0",
-    source: "https://commons.wikimedia.org/wiki/File:Akdeniz%C3%9CniversiteStadyumu1.jpg",
+    author: "Enessubasi33",
+    licence: "CC BY-SA 4.0",
+    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
+    source: "https://commons.wikimedia.org/wiki/File:Akdeniz_%C3%9Cniversitesi_E%C4%9Fitim_Fak%C3%BCltesi_2.jpg",
   },
   "sabanc-university": {
     src: "/assets/university-campus/sabanc-university.webp",
@@ -120,10 +115,10 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
   },
   "karadeniz-technical-university": {
     src: "/assets/university-campus/karadeniz-technical-university.webp",
-    author: "MirkoS18",
-    licence: "CC BY-SA 4.0",
-    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Karadeniz_Teknik_%C3%9Cniversitesi_02_%D0%A2%D0%B5%D1%85%D0%BD%D0%B8%D1%87%D0%BA%D0%B8_%D1%83%D0%BD%D0%B8%D0%B2%D0%B5%D1%80%D0%B7%D0%B8%D1%82%D0%B5%D1%82_%D0%BD%D0%B0_%D0%A6%D1%80%D0%BD%D0%BE%D0%BC_%D0%BC%D0%BE%D1%80%D1%83.jpg",
+    author: "Aleksasfi",
+    licence: "Public domain",
+    licenceUrl: "",
+    source: "https://commons.wikimedia.org/wiki/File:Karadenizo_technikos_universitetas_Trabzone.jpg",
   },
   "bo-azi-i-university": {
     src: "/assets/university-campus/bo-azi-i-university.webp",
@@ -155,10 +150,10 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
   },
   "bah-e-ehir-university": {
     src: "/assets/university-campus/bah-e-ehir-university.webp",
-    author: "Nevit Dilmen (talk)",
+    author: "No machine-readable author provided. とある白い猫 assumed (based on copyright claims).",
     licence: "CC BY-SA 3.0",
-    licenceUrl: "https://creativecommons.org/licenses/by-sa/3.0",
-    source: "https://commons.wikimedia.org/wiki/File:Bahcesehir_University_conferance_hall_3959.jpg",
+    licenceUrl: "http://creativecommons.org/licenses/by-sa/3.0/",
+    source: "https://commons.wikimedia.org/wiki/File:Bahcesehir_University_(front_view).png",
   },
   "istanbul-bilgi-university": {
     src: "/assets/university-campus/istanbul-bilgi-university.webp",
@@ -186,14 +181,14 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     author: "Gargarapalvin",
     licence: "CC BY 4.0",
     licenceUrl: "https://creativecommons.org/licenses/by/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Hacettepe_%C3%9Cniversitesi_Beytepe_Kamp%C3%BCs%C3%BC_-_Hacettepe_University_Beytepe_Campus_(10.05.2023)_87.jpg",
+    source: "https://commons.wikimedia.org/wiki/File:Hacettepe_%C3%9Cniversitesi_Beytepe_Kamp%C3%BCs%C3%BC_Nizamiye_Kap%C4%B1s%C4%B1,_2021_02.jpg",
   },
   "gazi-university": {
     src: "/assets/university-campus/gazi-university.webp",
-    author: "Ben Linus",
-    licence: "CC BY 2.5",
-    licenceUrl: "https://creativecommons.org/licenses/by/2.5",
-    source: "https://commons.wikimedia.org/wiki/File:Basketball_courts_on_Gazi_University_Be%C5%9Fevler_campus.jpg",
+    author: "Mojeartoza",
+    licence: "CC BY-SA 4.0",
+    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
+    source: "https://commons.wikimedia.org/wiki/File:GaziUniversityRectorate2021.jpg",
   },
   "dokuz-eyl-l-university": {
     src: "/assets/university-campus/dokuz-eyl-l-university.webp",
@@ -218,10 +213,10 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
   },
   "sel-uk-university": {
     src: "/assets/university-campus/sel-uk-university.webp",
-    author: "Vyildirim42",
+    author: "Satirdan kahraman",
     licence: "CC BY-SA 4.0",
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:SEL%C3%87UKSEM_Hizmet_Binas%C4%B1.jpg",
+    source: "https://commons.wikimedia.org/wiki/File:Sel%C3%A7uk_Edebiyat_Fak%C3%BCltesi.jpg",
   },
   "anadolu-university": {
     src: "/assets/university-campus/anadolu-university.webp",
@@ -230,19 +225,12 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     licenceUrl: "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
     source: "https://commons.wikimedia.org/wiki/File:Anadolu_%C3%9Cniversitesi_K%C3%BCt%C3%BCphanesi_binas%C4%B1.jpg",
   },
-  "erciyes-university": {
-    src: "/assets/university-campus/erciyes-university.webp",
-    author: "brandmaster07",
-    licence: "CC BY 3.0",
-    licenceUrl: "https://creativecommons.org/licenses/by/3.0",
-    source: "https://commons.wikimedia.org/wiki/File:Erciyes_Universitesi_Bridge_-_panoramio.jpg",
-  },
   "ondokuz-may-s-university": {
     src: "/assets/university-campus/ondokuz-may-s-university.webp",
-    author: "Chidgk1",
+    author: "İsmetby",
     licence: "CC BY-SA 4.0",
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Electric_bus_passes_mosque_at_19_May%C4%B1s_%C3%9Cniversitesi_(_OM%C3%9C_),_Atakum,_T%C3%BCrkiye.jpeg",
+    source: "https://commons.wikimedia.org/wiki/File:Ali_Fuad_Ba%C5%9Fgil_Hukuk_Fak%C3%BCltesi.jpg",
   },
   "mersin-university": {
     src: "/assets/university-campus/mersin-university.webp",
@@ -258,13 +246,6 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
     source: "https://commons.wikimedia.org/wiki/File:Dicle_%C3%9Cniversitesi_Kamp%C3%BCs%C3%BC.jpg",
   },
-  "i-n-n-university": {
-    src: "/assets/university-campus/i-n-n-university.webp",
-    author: "Inonu University",
-    licence: "CC BY-SA 4.0",
-    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:%C4%B0n%C3%B6n%C3%BC_University_Center_Campus.jpg",
-  },
   "trakya-university": {
     src: "/assets/university-campus/trakya-university.webp",
     author: "Hamdigumus",
@@ -274,10 +255,10 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
   },
   "pamukkale-university": {
     src: "/assets/university-campus/pamukkale-university.webp",
-    author: "Grozdovaa",
+    author: "Medelam",
     licence: "CC BY-SA 4.0",
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Winter_in_Pamukkale_University.jpg",
+    source: "https://commons.wikimedia.org/wiki/File:Pamukkale_%C3%9Cniversitesi_Termal_Rehabilitasyon_Merkezi.jpg",
   },
   "sakarya-university": {
     src: "/assets/university-campus/sakarya-university.webp",
@@ -298,7 +279,7 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     author: "Gargarapalvin",
     licence: "CC BY 4.0",
     licenceUrl: "https://creativecommons.org/licenses/by/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Mu%C4%9Fla_S%C4%B1tk%C4%B1_Ko%C3%A7man_%C3%9Cniversitesi_K%C3%B6tekli_Kamp%C3%BCs%C3%BC,_2021_01.jpg",
+    source: "https://commons.wikimedia.org/wiki/File:Mu%C4%9Fla_S%C4%B1tk%C4%B1_Ko%C3%A7man_%C3%9Cniversitesi_K%C3%B6tekli_Kamp%C3%BCs%C3%BC_Nizamiye_Kap%C4%B1s%C4%B1,_2021_01.jpg",
   },
   "gaziantep-university": {
     src: "/assets/university-campus/gaziantep-university.webp",

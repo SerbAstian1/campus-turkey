@@ -33,8 +33,21 @@ const diskPath = (webPath: string) => join(ASSETS_ROOT, webPath.replace(/^\/asse
 /** Licences permitting commercial use and derivatives. NC and ND permit neither. */
 const PERMITTED = /^(cc0|cc by(-sa)?( \d(\.\d)?)?|public domain|fal)$/i;
 
-/** No verifiable free photograph of their campus exists; see the module's own note. */
-const WITHOUT_PHOTO = ["harran-university", "van-y-z-nc-y-l-university", "s-leyman-demirel-university"];
+/**
+ * No free photograph of their campus exists that meets the rule — a gate, a rectorate, or
+ * a building carrying the university's name. See the module's own note for what each one's
+ * candidates actually were.
+ *
+ * The last four were deliberately *deleted* rather than left as they were: each held a
+ * real photograph of the right campus that identified nothing — a misty plaza, a lawn in
+ * blossom, a road at night, a valley seen from a hillside. An empty frame is the honest
+ * result, and this list is what stops one of them quietly coming back.
+ */
+const WITHOUT_PHOTO = [
+  "harran-university", "van-y-z-nc-y-l-university", "s-leyman-demirel-university",
+  "middle-east-technical-university", "ege-university", "erciyes-university",
+  "i-n-n-university",
+];
 
 describe("the campus photo map", () => {
   it("points only at campus photographs, never a stand-in", () => {
