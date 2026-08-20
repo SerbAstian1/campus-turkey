@@ -79,7 +79,14 @@ for (const file of walk(join(web, "src"))) {
       // The photograph in the frame, once there is one. A frame carrying a `src` has been
       // delivered and must not appear on the shoot list: a brief that asks for pictures it
       // already holds is the same wasted shoot as one that forgets a section, paid twice.
-      src: attr(block, "src"),
+      /*
+       * `src="…"` when the frame names its file, and `src:` when the caller spreads a
+       * record in — `{...(photo ? { src: photo.src, alt: photo.alt } : {})}`, which is how
+       * a frame whose photograph is optional is wired. Reading only the attribute form
+       * counted the four service pages as still needing photography after they had it,
+       * which is the same over-reporting this brief was fixed for once already.
+       */
+      src: attr(block, "src") ?? (/\bsrc:\s*\w/.test(block) ? "(from a record)" : null),
       // A frame whose slot is interpolated is per-record — one image per university,
       // not one image for the page. Worth calling out: it multiplies the shoot list.
       perRecord: /\$\{|\+/.test(slot),

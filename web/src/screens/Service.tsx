@@ -13,6 +13,7 @@ import { ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, PriceTable, FaqLayout, splitStyle } from "./shared";
 import { useT } from "@/i18n/context";
+import { servicePhoto } from "@/content/service-photos";
 import { ErrorScreen } from "./Errors";
 import { CardGrid } from "@/components/CardGrid";
 
@@ -20,6 +21,7 @@ export default function Service({ slug }: { slug: string }) {
   const t = useT();
   const href = useHref();
   const s = getService(slug);
+  const photo = servicePhoto(slug);
   if (!s) return <ErrorScreen state="notFound" />;
 
   const others = services.filter((o) => o.slug !== s.slug);
@@ -73,7 +75,32 @@ export default function Service({ slug }: { slug: string }) {
             <p style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)", margin: 0 }}>
               Indicative ranges from files we handled in the last twelve months. Your written quote is always specific to you.
             </p>
-            <ImagePlaceholder slot={`service-${s.title}`} label={`${s.title} photography, 4:3`} ratio="4 / 3" />
+            {/*
+              Keyed on the slug, not the title the slot uses: a slug is the stable
+              identifier, while a title is copy and may be reworded.
+
+              `alt` describes the picture rather than the service, because the heading
+              above already names the service and a screen reader gains nothing from
+              hearing it twice.
+            */}
+            <ImagePlaceholder slot={`service-${s.title}`} label={`${s.title} photography, 4:3`} ratio="4 / 3"
+              {...(photo ? { src: photo.src, alt: photo.alt } : {})} />
+            {photo ? (
+              <p style={{
+                margin: "var(--space-2) 0 0", fontFamily: "var(--font-ui)",
+                fontSize: "var(--fs-micro)", color: "var(--neutral-500)",
+              }}>
+                {"Photo: "}
+                <a href={photo.source} target="_blank" rel="noopener noreferrer nofollow"
+                  style={{ color: "inherit", textDecoration: "underline" }}>{photo.author}</a>
+                {" · "}
+                {photo.licenceUrl ? (
+                  <a href={photo.licenceUrl} target="_blank" rel="noopener noreferrer nofollow"
+                    style={{ color: "inherit", textDecoration: "underline" }}>{photo.licence}</a>
+                ) : photo.licence}
+                {" · via Wikimedia Commons"}
+              </p>
+            ) : null}
           </ScrollReveal>
         </div>
 

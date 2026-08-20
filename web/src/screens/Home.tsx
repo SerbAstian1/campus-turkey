@@ -414,7 +414,15 @@ function FeaturedUniversities() {
     <section id="universities" style={{ background: "var(--surface-subtle)", padding: "var(--section-y) 0" }}>
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
         <ScrollReveal style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", alignItems: "flex-end", justifyContent: "space-between" }}>
-          <SectionHeading eyebrow={t("Featured universities")} title={t("200+ universities, one directory")}
+          {/*
+            "More than 40", not "200+", because this heading is about the directory and a
+            reader can count it — forty-four listings across twenty-eight cities. The
+            larger number is not lost: the marquee above still says the agreements run to
+            more than two hundred, which is a claim about the company rather than about
+            what is browsable here. Stating both is stronger than stating one twice, and a
+            number a visitor can disprove by scrolling costs more than it wins.
+          */}
+          <SectionHeading eyebrow={t("Featured universities")} title={t("More than 40 universities, one directory")}
             lead={t("Filter by city, type, language and scholarships. Every listing shows what it really costs.")} />
           <Button variant="secondary" icon="arrow-right" onClick={() => go("universities")}>{t("Browse the directory")}</Button>
         </ScrollReveal>
