@@ -11,6 +11,8 @@ import { BrandDivider, Badge, Button, Card, Icon, ScrollReveal } from "@/ds";
 import { useT } from "@/i18n/context";
 import { articles, getArticle } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
+import { articlePhoto } from "@/content/article-photos";
+import { PhotoCredit } from "@/components/PhotoCredit";
 import { go, useHref } from "@/app/router";
 import { ErrorScreen } from "./Errors";
 
@@ -41,7 +43,12 @@ export default function Article({ slug }: { slug: string | null }) {
       <section style={{ position: "relative", zIndex: 10, background: "var(--surface-subtle)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", padding: "var(--section-y) 0" }}>
         <div className="ct-container ct-detail-grid" style={{ display: "grid", gridTemplateColumns: "1fr minmax(260px,320px)", gap: "var(--space-12)", alignItems: "start" }}>
           <article style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)", maxWidth: 720 }}>
-            <ImagePlaceholder slot={`post-${post.slug}`} label={t("Article lead image, 16:9")} ratio="16 / 9" />
+            {/* The lead image where one has been sourced, the reserved frame where it
+                has not — two of the six articles have no free photograph of the right
+                country. See `article-photos.ts`. */}
+            <ImagePlaceholder slot={`post-${post.slug}`} label={t("Article lead image, 16:9")} ratio="16 / 9"
+              {...(articlePhoto(post.slug) ? { src: articlePhoto(post.slug)!.src, alt: articlePhoto(post.slug)!.alt } : {})} />
+            <PhotoCredit photo={articlePhoto(post.slug)} />
             {post.sections.map((section, i) => (
               <ScrollReveal key={section.heading} delay={i * 40} style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                 <h2 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{section.heading}</h2>

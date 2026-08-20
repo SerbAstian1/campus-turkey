@@ -11,6 +11,8 @@
 import { Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, StatBlock, ASSETS } from "@/ds";
 import { getInstitution } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
+import { institutionPhoto } from "@/content/institution-photos";
+import { PhotoCredit } from "@/components/PhotoCredit";
 import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, splitStyle } from "./shared";
 import { useT } from "@/i18n/context";
@@ -58,7 +60,9 @@ export default function Institution({ slug }: { slug: string }) {
             </Card>
           </ScrollReveal>
           <ScrollReveal delay={80}>
-            <ImagePlaceholder slot={`inst-${inst.title}`} label={`${inst.title} photography, 4:3`} ratio="4 / 3" />
+            <ImagePlaceholder slot={`inst-${inst.title}`} label={`${inst.title} photography, 4:3`} ratio="4 / 3"
+              {...(institutionPhoto(inst.slug) ? { src: institutionPhoto(inst.slug)!.src, alt: institutionPhoto(inst.slug)!.alt } : {})} />
+            <PhotoCredit photo={institutionPhoto(inst.slug)} />
           </ScrollReveal>
         </div>
 
