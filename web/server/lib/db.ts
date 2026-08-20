@@ -223,3 +223,55 @@ export function isUniqueViolation(error: unknown, target?: string): boolean {
 }
 
 export { Prisma };
+
+/**
+ * Prisma error codes that mean "the database was not reachable just then", as opposed to
+ * "the query was wrong".
+ *
+ * P1001 is a refused or unroutable connection, P1008 a connection timeout, P1017 a
+ * server that closed the connection, and P2024 a query that waited out the pool. Every
+ * one of them is a statement about the moment rather than about the request, which is why
+ * repeating the request is a reasonable answer to them and would not be to anything else.
+ */
+const TRANSIENT_CONNECTION_CODES = new Set(["P1001", "P1008", "P1017", "P2024"]);
+
+export function isTransientConnectionError(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === "string" && TRANSIENT_CONNECTION_CODES.has(code);
+}
+
+/**
+ * Run a read again when the database was merely unreachable.
+ *
+ * **Reads only, and deliberately not wired into the client itself.** A write that fails
+ * with a connection error may still have committed — the connection can drop after the
+ * server has applied it — so retrying one risks doing it twice. A `findMany` has no such
+ * hazard, and the callers here are all `SELECT`s.
+ *
+ * The delays double from half a second, which is shaped to Neon rather than chosen for
+ * neatness: its compute suspends when idle and a cold start is seconds, not milliseconds,
+ * so the first retry usually lands while the instance is still waking and the third lands
+ * after it has. Five attempts spans about fifteen seconds in total.
+ */
+export async function withTransientRetry<T>(
+  run: () => Promise<T>,
+  { attempts = 5, label = "query" }: { attempts?: number; label?: string } = {},
+): Promise<T> {
+  let last: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await run();
+    } catch (error) {
+      if (!isTransientConnectionError(error)) throw error;
+      last = error;
+      if (attempt === attempts) break;
+      const wait = 500 * 2 ** (attempt - 1);
+      logger.warn(
+        { err: error, attempt, attempts, wait, label },
+        "database unreachable, retrying",
+      );
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
+  }
+  throw last;
+}

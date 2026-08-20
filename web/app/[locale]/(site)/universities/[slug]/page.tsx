@@ -12,7 +12,7 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { db } from "@/server/lib/db";
+import { db, withTransientRetry } from "@/server/lib/db";
 import { pageMetadata, universityJsonLd, jsonLdScript } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
 import UniversityDetail from "@/screens/UniversityDetail";
@@ -90,11 +90,31 @@ const isBuild = process.env["NEXT_PHASE"] === "phase-production-build";
 
 let catalogue: Promise<Array<Record<string, unknown>>> | null = null;
 
+/**
+ * The catalogue, fetched once per build worker — and re-fetchable if that fetch fails.
+ *
+ * **A rejected promise must not be memoised.** `catalogue ??= …` caches whatever the
+ * first call produced, and a promise that rejected is still a value: one unreachable
+ * moment would pin that failure to this worker for the rest of the build, so every page
+ * it had left to render would fail for a database that had already come back. The build
+ * aborts on the first of those, which is exactly what it did — at page 332 of 1331, on a
+ * single P1001, with the other workers still running fine.
+ *
+ * Clearing the slot on rejection is what makes the retry mean anything. The retry is for
+ * the transient case Neon actually produces: its compute suspends when idle, and a
+ * request arriving mid-wake is refused rather than queued.
+ */
 function publishedCatalogue() {
-  catalogue ??= db.university.findMany({
-    where: { status: "PUBLISHED" },
-    orderBy: { name: "asc" },
-    select: DETAIL_FIELDS,
+  catalogue ??= withTransientRetry(
+    () => db.university.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { name: "asc" },
+      select: DETAIL_FIELDS,
+    }),
+    { label: "published catalogue" },
+  ).catch((error: unknown) => {
+    catalogue = null;
+    throw error;
   }) as unknown as Promise<Array<Record<string, unknown>>>;
   return catalogue;
 }
@@ -182,10 +202,10 @@ export async function generateStaticParams() {
   // Every page, in every language, read from the database at build time. The cross
   // product is still known before the first request; it is now a query rather than an
   // import.
-  const universities = await db.university.findMany({
-    where: { status: "PUBLISHED" },
-    select: { slug: true },
-  });
+  const universities = await withTransientRetry(
+    () => db.university.findMany({ where: { status: "PUBLISHED" }, select: { slug: true } }),
+    { label: "static params" },
+  );
 
   return LOCALES.flatMap((locale) =>
     universities.map((u) => ({ locale, slug: u.slug })),
