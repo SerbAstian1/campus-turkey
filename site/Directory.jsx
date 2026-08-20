@@ -41,7 +41,7 @@ const CAMPUS_PHOTOS = {
   "anadolu-university": { src: "/university-campus/anadolu-university.webp", author: "Merhabaviki", licence: "CC0" },
   "ondokuz-may-s-university": { src: "/university-campus/ondokuz-may-s-university.webp", author: "İsmetby", licence: "CC BY-SA 4.0" },
   "mersin-university": { src: "/university-campus/mersin-university.webp", author: "Cobija", licence: "CC BY-SA 3.0" },
-  "dicle-university": { src: "/university-campus/dicle-university.webp", author: "Sralp2", licence: "CC BY-SA 4.0" },
+  "dicle-university": { src: "/university-campus/dicle-university.webp" },
   "trakya-university": { src: "/university-campus/trakya-university.webp", author: "Hamdigumus", licence: "CC0" },
   "pamukkale-university": { src: "/university-campus/pamukkale-university.webp", author: "Medelam", licence: "CC BY-SA 4.0" },
   "sakarya-university": { src: "/university-campus/sakarya-university.webp", author: "Kurmanbek", licence: "CC BY-SA 4.0" },
@@ -52,6 +52,8 @@ const CAMPUS_PHOTOS = {
   "anakkale-onsekiz-mart-university": { src: "/university-campus/anakkale-onsekiz-mart-university.webp", author: "Zafer", licence: "CC BY-SA 4.0" },
   "bayburt-university": { src: "/university-campus/bayburt-university.webp", author: "BAYBURT ÜNİVERSİTESİ", licence: "CC BY-SA 4.0" },
   "adana-alparslan-t-rke-science-and-technology-university": { src: "/university-campus/adana-alparslan-t-rke-science-and-technology-university.webp", author: "Chaelane", licence: "CC BY-SA 4.0" },
+  "bolu-abant-i-zzet-baysal-university": { src: "/university-campus/bolu-abant-i-zzet-baysal-university.webp" },
+  "erciyes-university": { src: "/university-campus/erciyes-university.webp" },
 };
 /*
  * The card image, or nothing. Campus photographs only: a card is a bare picture behind a
@@ -246,7 +248,7 @@ function UniversityDetailScreen({ data, slug }) {
           by a green wash — the same call the homepage hero makes, so the photograph still
           reads as a place. Decorative: the framed copy below carries the alt and credit. */}
       <section style={{ position: "relative", overflow: "hidden", background: "var(--gradient-brand-deep)", paddingTop: 150, paddingBottom: "calc(var(--section-y) + 40px)", marginBottom: "calc(var(--overlap) * -1)" }}>
-        {CAMPUS_PHOTOS[u.slug] ? (
+        {CAMPUS_PHOTOS[u.slug] && CAMPUS_PHOTOS[u.slug].author ? (
           <>
             <img src={`${AU}${CAMPUS_PHOTOS[u.slug].src}`} alt="" aria-hidden="true"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.45)" }} />

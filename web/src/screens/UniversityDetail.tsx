@@ -92,6 +92,14 @@ function PhotoCredit({ slug }: { slug: string }) {
   const photo = universityPhoto(slug);
   if (!photo) return null;
 
+  /*
+   * No licence means the client supplied the photograph, and their own picture needs no
+   * credit line. Rendering one anyway is not a harmless extra: it would name somebody who
+   * did not take it. Both halves are checked because a half-filled entry is a mistake
+   * rather than a third case.
+   */
+  if (!photo.licence || !photo.author) return null;
+
   const linkStyle = { color: "inherit", textDecoration: "underline" };
   return (
     <p style={{

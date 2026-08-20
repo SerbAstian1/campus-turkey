@@ -43,17 +43,23 @@ const PERMITTED = /^(cc0|cc by(-sa)?( \d(\.\d)?)?|public domain|fal)$/i;
  * blossom, a road at night, a valley seen from a hillside. An empty frame is the honest
  * result, and this list is what stops one of them quietly coming back.
  */
+/**
+ * The six with no photograph meeting the rule — a gate, a rectorate, or a building
+ * carrying the university's name. Each was searched across Commons categories, both
+ * Wikipedias, Wikidata `P18` and Openverse, under every name form including former ones.
+ *
+ * What they have instead: Harran's results are the ruins of the *ancient* Harran
+ * university; Van's are an aerial and a lecture theatre of identifiable students;
+ * Süleyman Demirel's best candidate turned out to be the Kazakhstan university of the
+ * same name; METU's are an interior ceiling and an unsigned stairway; İnönü's is an
+ * unsigned hospital block; and Iğdır returns nothing usable at all.
+ *
+ * The list is not a backlog to be cleared by whoever notices it — it is what stops a
+ * city photograph or a neighbouring campus being dropped in to fill the frame.
+ */
 const WITHOUT_PHOTO = [
   "harran-university", "van-y-z-nc-y-l-university", "s-leyman-demirel-university",
-  "middle-east-technical-university", "erciyes-university",
-  "i-n-n-university",
-  // Added to the directory so the client can feature them; their campus photography has
-  // not been sourced yet. Their logos have, which is what the marquee actually renders.
-  // Added to the directory so the client can feature them. Bayburt has its main gate and
-  // Adana its entrance gantry; Bolu and Iğdır have no free photograph of their campus at
-  // all — Bolu's search returns İzzet Baysal Caddesi, a street named after the same
-  // philanthropist, and Iğdır returns nothing on Commons or Openverse.
-  "i-d-r-university", "bolu-abant-i-zzet-baysal-university",
+  "middle-east-technical-university", "i-n-n-university", "i-d-r-university",
 ];
 
 describe("the campus photo map", () => {
@@ -90,16 +96,26 @@ describe("the campus photo map", () => {
     expect(broken).toEqual([]);
   });
 
-  it("carries the author, licence and source every entry is published under", () => {
-    const incomplete = Object.entries(universityPhotos)
-      .filter(([, p]) => !p.author.trim() || !p.licence.trim() || !p.source.trim())
+  it("carries either a full attribution or none at all", () => {
+    /*
+     * A Commons photograph is licensed only while its author and licence are stated, so
+     * a partial entry is a licence breach wearing the costume of a typo. A photograph the
+     * client supplies carries nothing, and `PhotoCredit` renders no line for it — giving
+     * it one would name somebody who did not take it, which is how Dicle came to credit a
+     * Commons photographer for the client's own gate.
+     */
+    const half = Object.entries(universityPhotos)
+      .filter(([, p]) => {
+        const fields = [p.author, p.licence, p.source].filter((f) => f && f.trim());
+        return fields.length !== 0 && fields.length !== 3;
+      })
       .map(([slug]) => slug);
-    expect(incomplete).toEqual([]);
+    expect(half).toEqual([]);
   });
 
-  it("uses only licences that permit commercial use", () => {
+  it("uses only licences that permit commercial use, where one is stated", () => {
     const unusable = Object.entries(universityPhotos)
-      .filter(([, p]) => !PERMITTED.test(p.licence.trim()))
+      .filter(([, p]) => p.licence && !PERMITTED.test(p.licence.trim()))
       .map(([slug, p]) => `${slug}: ${p.licence}`);
     expect(unusable).toEqual([]);
   });

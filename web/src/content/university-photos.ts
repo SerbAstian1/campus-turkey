@@ -62,12 +62,25 @@
  * shape of the remaining fix: a supplied photograph per university, converted by the same
  * route.
  */
+/**
+ * A campus photograph, and the attribution it is published under.
+ *
+ * The four attribution fields are optional together, and that is a distinction with
+ * consequences rather than a convenience. A photograph from Wikimedia Commons carries a
+ * licence that grants use *only while* the author and licence are stated, so all four are
+ * present and `PhotoCredit` renders them. A photograph the client supplies is their own:
+ * it needs no credit line, and giving it one would state something false.
+ *
+ * They were not optional before, which is how Dicle's page came to credit a Commons
+ * photographer for a gate photograph the client had taken — the image was replaced and
+ * the attribution beneath it was not.
+ */
 export interface UniversityPhoto {
   readonly src: string;
-  readonly author: string;
-  readonly licence: string;
-  readonly licenceUrl: string;
-  readonly source: string;
+  readonly author?: string;
+  readonly licence?: string;
+  readonly licenceUrl?: string;
+  readonly source?: string;
 }
 
 export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
@@ -247,11 +260,9 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     source: "https://commons.wikimedia.org/wiki/File:Mersin_%C3%9Cniversitesi_giri%C5%9F_kap%C4%B1s%C4%B1.jpg",
   },
   "dicle-university": {
+    // Client-supplied gate photograph. It replaced a Commons image whose credit stayed
+    // behind for two commits, naming a photographer who did not take this one.
     src: "/assets/university-campus/dicle-university.webp",
-    author: "Sralp2",
-    licence: "CC BY-SA 4.0",
-    licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
-    source: "https://commons.wikimedia.org/wiki/File:Dicle_%C3%9Cniversitesi_Kamp%C3%BCs%C3%BC.jpg",
   },
   "trakya-university": {
     src: "/assets/university-campus/trakya-university.webp",
@@ -322,6 +333,14 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     licence: "CC BY-SA 4.0",
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
     source: "https://commons.wikimedia.org/wiki/File:Alparslan_T%C3%BCrke%C5%9F_Bilim_ve_Teknoloji_%C3%9Cniversitesi.jpg",
+  },
+  "bolu-abant-i-zzet-baysal-university": {
+    // Client-supplied: the Abant İzzet Baysal monument sign.
+    src: "/assets/university-campus/bolu-abant-i-zzet-baysal-university.webp",
+  },
+  "erciyes-university": {
+    // Client-supplied: the Erciyes main gate.
+    src: "/assets/university-campus/erciyes-university.webp",
   },
 };
 
