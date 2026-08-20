@@ -9,6 +9,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { Badge, Card, Icon, ASSETS } from "@/ds";
 import { CardGrid } from "@/components/CardGrid";
 import { ImagePlaceholder } from "@/components/Common";
+import { PhotoCredit } from "@/components/PhotoCredit";
 import { useT } from "@/i18n/context";
 
 export function PageHero({
@@ -115,6 +116,19 @@ export function FaqLayout({ heading, children }: { heading: ReactNode; children:
 }
 
 /**
+ * The lecture room is the one frame here that is not the client's own photograph, so it is
+ * the one that carries a credit. CC BY-SA licenses it only while the author and licence are
+ * stated. It replaced a picture whose country could not be established — the brief for this
+ * site is Türkiye, and a lecture hall that could be anywhere asserts nothing.
+ */
+const CAMPUS_LIFE_CREDIT = {
+  author: "BSRF",
+  licence: "CC BY-SA 4.0",
+  licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
+  source: "https://commons.wikimedia.org/wiki/File:%C4%B0zmir_Bak%C4%B1r%C3%A7ay_University_07.jpg",
+};
+
+/**
  * The three student-life photographs, rendered identically by the study hub and by the
  * student-life page beneath it.
  *
@@ -130,7 +144,7 @@ export function FaqLayout({ heading, children }: { heading: ReactNode; children:
  *
  * The housing and city sources are 3:2 in a 4:3 frame, so `objectFit: cover` trims their
  * top and bottom. The ratio stays as agreed rather than bending to the files.
- * `campus-life.jpg` is a true 4:3 and fills its frame uncropped.
+ * `campus-life.webp` is a true 4:3 and fills its frame uncropped.
  *
  * `study-campus` was labelled "Campus life, students outdoors" while holding a lecture
  * hall. Nothing rendered wrong — the label is the placeholder's fallback text and never
@@ -145,8 +159,9 @@ export function StudentLifeFrames() {
     <CardGrid min={240} gap="var(--space-6)">
       <ImagePlaceholder slot="study-housing" src="/assets/student housing.jpg" label={t("Dormitory or student housing")} ratio="4 / 3"
         alt={t("A Turkish apartment building with balconies, a Turkish flag hanging from one of them and an orange tree in the foreground")} />
-      <ImagePlaceholder slot="study-campus" src="/assets/campus-life.jpg" label={t("Teaching, a full lecture hall")} ratio="4 / 3"
-        alt={t("Students seated in a tiered university lecture hall, facing a lecturer and a projected slide")} />
+      <ImagePlaceholder slot="study-campus" src="/assets/campus-life.webp" label={t("Teaching, a full lecture hall")} ratio="4 / 3"
+        alt={t("A tiered lecture room at a Turkish university, desks facing the front")} />
+      <PhotoCredit photo={CAMPUS_LIFE_CREDIT} />
       <ImagePlaceholder slot="study-city" src="/assets/street-life.webp" label={t("City street, everyday costs")} ratio="4 / 3"
         alt={t("A busy city street with döner kebab and street-food counters, vendors in aprons serving customers and pedestrians walking past")} />
     </CardGrid>

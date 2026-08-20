@@ -30,11 +30,11 @@ export const articlePhotos: Readonly<Record<string, ArticlePhoto>> = {
   },
   "student-visa-documents": {
     src: "/assets/article-photos/student-visa-documents.webp",
-    alt: "Passport pages covered in entry and exit stamps",
-    author: "Dennis Sylvester Hurd",
-    licence: "CC BY 2.0",
-    licenceUrl: "https://creativecommons.org/licenses/by/2.0",
-    source: "https://commons.wikimedia.org/wiki/File:Out_of_Pages_-_Flickr_-_Dennis_S._Hurd.jpg",
+    alt: "The inner pages of a Republic of Türkiye passport",
+    author: "Boy from far",
+    licence: "CC BY-SA 3.0",
+    licenceUrl: "https://creativecommons.org/licenses/by-sa/3.0",
+    source: "https://commons.wikimedia.org/wiki/File:Turkish_passport_page.jpg",
   },
   "first-week-in-istanbul": {
     src: "/assets/article-photos/first-week-in-istanbul.webp",
