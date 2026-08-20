@@ -41,17 +41,21 @@ const SIZE = 88;
 const INSET = 0.96;
 
 /**
- * Lockups too wide to survive the circle whole. Each carries a self-contained emblem,
- * which is all the frame needs: the marquee prints the university's name as text
- * immediately beside the logo, so the artwork does not also have to spell it.
+ * Lockups too wide to survive the circle whole, cropped to the emblem they carry.
  *
- * `x` splits beside, `y` splits above — Marmara stacks its seal over its wordmark.
+ * **Only where the emblem still says who it is.** Akdeniz, Marmara and Bayburt set their
+ * name inside a circular seal, and İTÜ and ATÜ are monograms — cropping those loses
+ * nothing. Koç and Karadeniz Teknik are the opposite: their marks are an abstract fan and
+ * an abstract arch, so cropping left two tiles that read as decoration rather than a
+ * logo, which is exactly how they were reported. Both now render whole. The wordmark is
+ * small at 44px and that is the correct trade — a legible name beats a crisp shape nobody
+ * recognises, and the marquee is a wall of logos rather than a wall of ornaments.
+ *
+ * `x` splits beside, `y` splits above.
  */
 const EMBLEM = {
   "akdeniz-university": "x",
-  "koc-university": "x",
   "istanbul-technical-university": "x",
-  "karadeniz-technical-university": "x",
   "marmara-university": "y",
   // 4.6:1 — the widest of the set, and unreadable whole at 44px.
   "adana-alparslan-t-rke-science-and-technology-university": "x",
