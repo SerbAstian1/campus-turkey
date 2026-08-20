@@ -54,6 +54,12 @@ const CAMPUS_PHOTOS = {
   "adana-alparslan-t-rke-science-and-technology-university": { src: "/university-campus/adana-alparslan-t-rke-science-and-technology-university.webp", author: "Chaelane", licence: "CC BY-SA 4.0" },
   "bolu-abant-i-zzet-baysal-university": { src: "/university-campus/bolu-abant-i-zzet-baysal-university.webp" },
   "erciyes-university": { src: "/university-campus/erciyes-university.webp" },
+  "harran-university": { src: "/university-campus/harran-university.webp" },
+  "i-n-n-university": { src: "/university-campus/i-n-n-university.webp" },
+  "i-d-r-university": { src: "/university-campus/i-d-r-university.webp" },
+  "middle-east-technical-university": { src: "/university-campus/middle-east-technical-university.webp" },
+  "s-leyman-demirel-university": { src: "/university-campus/s-leyman-demirel-university.webp" },
+  "van-y-z-nc-y-l-university": { src: "/university-campus/van-y-z-nc-y-l-university.webp" },
 };
 /*
  * The card image, or nothing. Campus photographs only: a card is a bare picture behind a
@@ -273,7 +279,7 @@ function UniversityDetailScreen({ data, slug }) {
           {/* The credit sits with the photograph, which is now the hero. It used to sit
               under a framed copy of the same image further down — two prints of one
               photograph, both on screen at once. */}
-          {CAMPUS_PHOTOS[u.slug] ? (
+          {CAMPUS_PHOTOS[u.slug] && CAMPUS_PHOTOS[u.slug].author ? (
             <p style={{ margin: "var(--space-4) 0 0", fontFamily: "var(--font-ui)", fontSize: "var(--fs-micro)", color: "rgba(255,255,255,.72)" }}>
               Photo: {CAMPUS_PHOTOS[u.slug].author} · {CAMPUS_PHOTOS[u.slug].licence} · via Wikimedia Commons
             </p>

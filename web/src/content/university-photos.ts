@@ -342,6 +342,30 @@ export const universityPhotos: Readonly<Record<string, UniversityPhoto>> = {
     // Client-supplied: the Erciyes main gate.
     src: "/assets/university-campus/erciyes-university.webp",
   },
+  "harran-university": {
+    // Client-supplied: the Harran main gate.
+    src: "/assets/university-campus/harran-university.webp",
+  },
+  "i-n-n-university": {
+    // Client-supplied: the İnönü entrance canopy.
+    src: "/assets/university-campus/i-n-n-university.webp",
+  },
+  "i-d-r-university": {
+    // Client-supplied: the Iğdır campus sign.
+    src: "/assets/university-campus/i-d-r-university.webp",
+  },
+  "middle-east-technical-university": {
+    // Client-supplied: the METU monument, named in both languages.
+    src: "/assets/university-campus/middle-east-technical-university.webp",
+  },
+  "s-leyman-demirel-university": {
+    // Client-supplied: the SDÜ building, Isparta.
+    src: "/assets/university-campus/s-leyman-demirel-university.webp",
+  },
+  "van-y-z-nc-y-l-university": {
+    // Client-supplied: the Yüzüncü Yıl gate.
+    src: "/assets/university-campus/van-y-z-nc-y-l-university.webp",
+  },
 };
 
 /** The campus photograph for a university, or `undefined` where none is verified. */

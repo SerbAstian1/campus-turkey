@@ -34,33 +34,19 @@ const diskPath = (webPath: string) => join(ASSETS_ROOT, webPath.replace(/^\/asse
 const PERMITTED = /^(cc0|cc by(-sa)?( \d(\.\d)?)?|public domain|fal)$/i;
 
 /**
- * No free photograph of their campus exists that meets the rule — a gate, a rectorate, or
- * a building carrying the university's name. See the module's own note for what each one's
- * candidates actually were.
+ * Universities with no photograph meeting the rule — a gate, a rectorate, or a building
+ * carrying the university's name.
  *
- * The last four were deliberately *deleted* rather than left as they were: each held a
- * real photograph of the right campus that identified nothing — a misty plaza, a lawn in
- * blossom, a road at night, a valley seen from a hillside. An empty frame is the honest
- * result, and this list is what stops one of them quietly coming back.
+ * **Empty, for the first time.** The last six were supplied by the client rather than
+ * found: Harran's gate in particular, because every free search for it returns the ruins
+ * of the *ancient* Harran university a thousand years older than the campus.
+ *
+ * It stays as a list rather than being deleted because the rule it encodes outlives the
+ * current coverage: a university added tomorrow starts here, and an empty frame is the
+ * correct rendering until a photograph of the right place exists. What it forbids is
+ * filling that frame with a city, a landmark or a neighbouring campus.
  */
-/**
- * The six with no photograph meeting the rule — a gate, a rectorate, or a building
- * carrying the university's name. Each was searched across Commons categories, both
- * Wikipedias, Wikidata `P18` and Openverse, under every name form including former ones.
- *
- * What they have instead: Harran's results are the ruins of the *ancient* Harran
- * university; Van's are an aerial and a lecture theatre of identifiable students;
- * Süleyman Demirel's best candidate turned out to be the Kazakhstan university of the
- * same name; METU's are an interior ceiling and an unsigned stairway; İnönü's is an
- * unsigned hospital block; and Iğdır returns nothing usable at all.
- *
- * The list is not a backlog to be cleared by whoever notices it — it is what stops a
- * city photograph or a neighbouring campus being dropped in to fill the frame.
- */
-const WITHOUT_PHOTO = [
-  "harran-university", "van-y-z-nc-y-l-university", "s-leyman-demirel-university",
-  "middle-east-technical-university", "i-n-n-university", "i-d-r-university",
-];
+const WITHOUT_PHOTO: string[] = [];
 
 describe("the campus photo map", () => {
   it("points only at campus photographs, never a stand-in", () => {
