@@ -18,7 +18,7 @@ export const services: Service[] = [
     lead: "Treatment in accredited Turkish hospitals, arranged end to end. You get a written quote before you travel.",
     points: [
       { icon: "clipboard-list", title: "Free first consultation", body: "Send your reports. A doctor reviews them and we come back with options and a price." },
-      { icon: "building-2", title: "Hospital and doctor matching", body: "We work with JCI accredited hospitals in Istanbul, Ankara and Izmir." },
+      { icon: "building", title: "Hospital and doctor matching", body: "We work with JCI accredited hospitals in Istanbul, Ankara and Izmir." },
       { icon: "plane", title: "Invitation, visa and travel", body: "Invitation letter, visa support, airport transfer, hotel and a translator with you at every appointment." },
     ],
     tags: ["Hair transplant", "Dental treatment", "Eye surgery", "Cardiology", "Orthopaedics", "IVF and fertility", "Oncology", "Cosmetic surgery"],

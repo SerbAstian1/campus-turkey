@@ -135,7 +135,7 @@ export default function About() {
             {offices.map((o, i) => (
               <ScrollReveal key={o.city} delay={i * 70} style={{ display: "flex" }}>
                 <Card padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                  <ImagePlaceholder slot={`office-${o.city}`} label={t("{city} office, 16:9", { city: o.city })} ratio="16 / 9" icon="building-2" />
+                  <ImagePlaceholder slot={`office-${o.city}`} label={t("{city} office, 16:9", { city: o.city })} ratio="16 / 9" icon="building" />
                   <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                     <span className="ct-eyebrow">{o.role}</span>
                     <h3 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>{o.city}</h3>

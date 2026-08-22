@@ -366,7 +366,7 @@ function ReferForm({ onDone }: { onDone: () => void }) {
         <Input id="rs-name" label={t("Student's full name")} icon="user" required
           placeholder={t("Amina Yusuf")} value={form.name} onChange={set("name")}
           style={{ gridColumn: "span 2" }} />
-        <Input id="rs-uni" label={t("University")} icon="building-2" required
+        <Input id="rs-uni" label={t("University")} icon="building" required
           placeholder={t("Akdeniz University")} value={form.universityName} onChange={set("universityName")} />
         <Input id="rs-prog" label={t("Programme")} required
           placeholder={t("Dentistry")} value={form.program} onChange={set("program")} />

@@ -83,7 +83,7 @@ function useRoles(): { key: Role; label: string; icon: string }[] {
 
   return [
     { key: "STUDENT", label: t("Student"), icon: "graduation-cap" },
-    { key: "PARTNER", label: t("Partner"), icon: "building-2" },
+    { key: "PARTNER", label: t("Partner"), icon: "building" },
     { key: "REPRESENTATIVE", label: t("Representative"), icon: "users" },
     { key: "STAFF", label: t("Staff"), icon: "shield" },
   ];
@@ -310,7 +310,7 @@ export default function PartnerLogin() {
                       {t("This sends an application. Campus Turkey reviews it and creates your login. Accounts are not opened automatically.")}
                     </p>
 
-                    <Input id="r-org" label={t("Organisation name")} icon="building-2"
+                    <Input id="r-org" label={t("Organisation name")} icon="building"
                       placeholder={t("Bright Futures Education")} required
                       value={reg.org} onChange={setReg("org")} />
                     <Input id="r-name" label={t("Your full name")} icon="user"
@@ -418,8 +418,12 @@ const levelForLabel = (label: string) =>
  * choice persists across the sign-in and register tabs below, and a tab pattern would
  * promise that switching replaces everything under it.
  *
- * `auto-fit` rather than four fixed columns, so the row stays horizontal while there is
- * room and folds to two-by-two instead of crushing "Representative" into three lines.
+ * Compact by request: 24px tall, icon and label on one line, wrapping rather than
+ * stretching. That is exactly WCAG 2.2 SC 2.5.8's floor for a pointer target (24 by 24
+ * CSS pixels) and it is met on the nose rather than comfortably, which is worth knowing
+ * if these ever gain a sibling control: every other control on this page sits at 40 to
+ * 44px. The `gap` between them is what keeps the spacing exception satisfied, so the
+ * buttons must not be packed flush together later.
  */
 function RoleChooser({
   roles, value, onChange,
@@ -436,7 +440,7 @@ function RoleChooser({
       <div
         role="group"
         aria-label={t("Choose your role")}
-        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(116px,1fr))", gap: "var(--space-2)" }}
+        style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}
       >
         {roles.map((role) => {
           const active = role.key === value;
@@ -447,10 +451,10 @@ function RoleChooser({
               aria-pressed={active}
               onClick={() => onChange(role.key)}
               style={{
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                gap: 6, minHeight: 76, padding: "var(--space-3) var(--space-2)",
-                borderRadius: "var(--radius-md)", cursor: "pointer",
-                fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)",
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                gap: 6, height: 24, padding: "0 var(--space-3)",
+                borderRadius: "var(--radius-pill)", cursor: "pointer", whiteSpace: "nowrap",
+                fontFamily: "var(--font-ui)", fontSize: "var(--fs-caption)",
                 fontWeight: active ? "var(--fw-semibold)" : "var(--fw-regular)",
                 // Border and weight carry the active state, not a brand fill: white on
                 // --action-primary measures 2.84:1 and fails AA, the same reason the
@@ -461,7 +465,7 @@ function RoleChooser({
                 transition: "background var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out)",
               }}
             >
-              <Icon name={role.icon} size={20} color={active ? "var(--green-600)" : "var(--text-muted)"} />
+              <Icon name={role.icon} size={14} color={active ? "var(--green-600)" : "var(--text-muted)"} />
               {role.label}
             </button>
           );
@@ -486,7 +490,7 @@ function StaffNotice({ onBack }: { onBack: () => void }) {
       <Icon name="shield" size={28} color="var(--green-600)" />
       <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{t("Staff accounts are created for you")}</h3>
       <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)", lineHeight: "var(--lh-body)" }}>
-        {t("Campus Turkey opens staff accounts internally. There is no sign-up here. Ask your administrator, and you will receive an email inviting you to set a password.")}
+        {t("Campus Turkey opens staff accounts internally, and there is no sign-up here. Ask an administrator to create yours. They will pass you a one-time password directly, never by email or chat, and you should change it the first time you sign in.")}
       </p>
       <Button variant="secondary" size="lg" fullWidth onClick={onBack}>{t("Back to sign in")}</Button>
     </Card>

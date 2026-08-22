@@ -89,7 +89,7 @@ export const institutions: Institution[] = [
   },
   {
     slug: "chambers",
-    icon: "building-2",
+    icon: "building",
     eyebrow: "For institutions",
     title: "For chambers of commerce",
     lead: "Trade missions that produce meetings, not sightseeing. We build the programme, verify the counterparties and travel with your delegation.",

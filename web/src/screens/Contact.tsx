@@ -87,7 +87,7 @@ export default function Contact() {
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero eyebrow={t("Contact")} title={t("Book a consultation")}
         lead={t("A 30 minute call with someone who knows your case. Free, and no obligation afterwards.")}
-        actions={<Button variant="outlineOnDark" size="lg" icon="building-2" onClick={() => go("about")}>{t("See our offices")}</Button>} />
+        actions={<Button variant="outlineOnDark" size="lg" icon="building" onClick={() => go("about")}>{t("See our offices")}</Button>} />
 
       <PageBody>
         <div className="ct-faq-inner" style={{ display: "grid", gridTemplateColumns: "1fr minmax(280px,340px)", gap: "var(--space-12)", alignItems: "start" }}>

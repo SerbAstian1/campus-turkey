@@ -115,7 +115,7 @@ export function RepresentativeForm() {
 
           {/* Optional, and labelled as such. A representative may be an individual with
               no company, and a required field here would push them to invent one. */}
-          <Input id="r-org" label={t("Organisation (optional)")} icon="building-2"
+          <Input id="r-org" label={t("Organisation (optional)")} icon="building"
             hint={t("If you already work through a company.")}
             placeholder={t("Eze Education Consultants")}
             value={form.organizationName} onChange={set("organizationName")}

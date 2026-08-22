@@ -91,7 +91,7 @@ export function PartnerForm({
           }}
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-5)" }}>
           {intro ? <p style={{ gridColumn: "span 2", margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>{intro}</p> : null}
-          <Input id="p-org" label={t("Organisation name")} icon="building-2" placeholder={t("Bright Futures Education")} required value={form.org} onChange={set("org")} style={{ gridColumn: "span 2" }} />
+          <Input id="p-org" label={t("Organisation name")} icon="building" placeholder={t("Bright Futures Education")} required value={form.org} onChange={set("org")} style={{ gridColumn: "span 2" }} />
           <Select id="p-kind" label={t("You are a")} required options={kindOptions.options}
             value={kindOptions.display(form.kind)}
             onChange={(e) => setForm((f) => ({ ...f, kind: kindOptions.toEnglish(e.target.value) }))} />

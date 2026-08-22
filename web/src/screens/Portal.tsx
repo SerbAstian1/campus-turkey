@@ -750,7 +750,7 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
             <Card padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
               <h2 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{t("Organisation details")}</h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-5)" }}>
-                <Input id="a-org" label={t("Organisation name")} icon="building-2" defaultValue={account.org} />
+                <Input id="a-org" label={t("Organisation name")} icon="building" defaultValue={account.org} />
                 <Input id="a-person" label={t("Contact person")} icon="user" defaultValue={account.person} />
                 <Input id="a-email" label={t("Work email")} type="email" icon="mail" defaultValue="samuel@brightfutures.ng" />
                 <Input id="a-phone" label={t("WhatsApp number")} icon="phone" defaultValue="+234 800 000 0000" />

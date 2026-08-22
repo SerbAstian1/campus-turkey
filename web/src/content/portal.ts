@@ -79,7 +79,7 @@ const payoutOptions: PayoutOption[] = [
     regions: "Available in 140 countries", eta: "1 to 3 working days", fee: "Free over $500, otherwise $8",
     fields: [
       { label: "Account holder", icon: "user", placeholder: "As printed on the account" },
-      { label: "Bank name", icon: "building-2", placeholder: "GTBank" },
+      { label: "Bank name", icon: "building", placeholder: "GTBank" },
       { label: "IBAN or account number", icon: "hash", placeholder: "NG00 0000 0000 0000" },
       { label: "SWIFT or BIC", icon: "globe", placeholder: "GTBINGLA" },
     ],
