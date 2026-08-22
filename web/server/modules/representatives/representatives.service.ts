@@ -19,6 +19,7 @@ import { ConflictError, NotFoundError, UnprocessableError } from "@/server/lib/e
 import type { RequestLogger } from "@/server/lib/logger";
 import { sendMail, welcomeEmail } from "@/server/lib/mail";
 import { setPasswordUrl } from "@/server/modules/onboarding/onboarding.service";
+import { recordAudit } from "@/server/modules/audit/audit.service";
 import type { SubmitRepresentativeApplicationBody } from "./representatives.schema";
 
 /**
@@ -182,6 +183,30 @@ export async function approveRepresentativeApplication(
       data: { status: "APPROVED", reviewedByUserId: actor.id, reviewedAt: new Date() },
     });
 
+    /*
+     * Recorded inside the transaction for the reason `applications.service` gives about
+     * its own: an audit row written after a commit that then failed describes something
+     * that never happened. This is the entry that answers who admitted this partner.
+     *
+     * `log.audit` below is not this. That writes a line to the log stream, which is not
+     * queryable from the console and is not what `/api/staff/audit-logs` reads — the
+     * decisions were being logged and never recorded, which is why that table was empty.
+     */
+    await recordAudit(
+      {
+        action: "representative_application.approved",
+        entityType: "representative_application",
+        entityId: input.applicationId,
+        actorUserId: actor.id,
+        metadata: {
+          representativeId: representative.id,
+          userId: user.id,
+          ...(input.territory?.trim() ? { territory: input.territory.trim() } : {}),
+        },
+      },
+      tx,
+    );
+
     return { user, representative };
   });
 
@@ -241,14 +266,35 @@ export async function rejectRepresentativeApplication(
     );
   }
 
-  await db.representativeApplication.update({
-    where: { id: application.id },
-    data: {
-      status: "REJECTED",
-      reviewNote: input.note,
-      reviewedByUserId: actor.id,
-      reviewedAt: new Date(),
-    },
+  /*
+   * The update and the record go in one transaction. Separately, a rejection could be
+   * stored with no entry saying who made it, which is the one thing this row exists to
+   * answer when the decision is questioned later.
+   */
+  await db.$transaction(async (tx: Db) => {
+    await tx.representativeApplication.update({
+      where: { id: application.id },
+      data: {
+        status: "REJECTED",
+        reviewNote: input.note,
+        reviewedByUserId: actor.id,
+        reviewedAt: new Date(),
+      },
+    });
+
+    await recordAudit(
+      {
+        action: "representative_application.rejected",
+        entityType: "representative_application",
+        entityId: application.id,
+        actorUserId: actor.id,
+        // The note is the whole of the decision, so it is stored verbatim. Redaction
+        // strips forbidden *keys*, not prose — a reviewer who types a secret into a
+        // rejection reason has put it somewhere append-only. §26 accepts that trade.
+        metadata: { note: input.note },
+      },
+      tx,
+    );
   });
 
   log.audit("representative_application.rejected", {

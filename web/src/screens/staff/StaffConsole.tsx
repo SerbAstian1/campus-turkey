@@ -28,10 +28,11 @@ import { WithdrawalQueue } from "./WithdrawalQueue";
 import { CommissionQueue } from "./CommissionQueue";
 import { LeadInbox } from "./LeadInbox";
 import { RepresentativeQueue } from "./RepresentativeQueue";
+import { AuditLog } from "./AuditLog";
 
 export type StaffRole = "SUPPORT" | "FINANCE" | "ADMIN";
 
-type View = "withdrawals" | "commissions" | "leads" | "representatives";
+type View = "withdrawals" | "commissions" | "leads" | "representatives" | "audit";
 
 interface NavItem {
   key: View;
@@ -72,6 +73,22 @@ const NAV: NavItem[] = [
     lead: "People asking to represent Campus Turkey. Approving one creates their login and the balance it will hold.",
     // Reading is every staff role; deciding is admin only and is passed separately.
     // `actionRoles` drives the read-only notice, and support genuinely may read here.
+    actionRoles: ["SUPPORT", "FINANCE", "ADMIN"],
+  },
+  {
+    key: "audit",
+    label: "Record",
+    icon: "history",
+    lead: "What was done, by whom, and when. Append-only: nothing on this screen can be changed, including by an admin.",
+    /*
+     * Every staff role, and no read-only notice.
+     *
+     * `READ_AUDIT_LOGS` sits in the base STAFF permission list, so support and finance
+     * are as entitled to read this as an admin is. Listing all three suppresses the
+     * notice — which is correct here for a different reason than on the queues: there is
+     * no action to be denied. "You can read this queue" beside a table nobody can write
+     * to would invent a restriction rather than explain one.
+     */
     actionRoles: ["SUPPORT", "FINANCE", "ADMIN"],
   },
 ];
@@ -231,6 +248,9 @@ export function StaffConsole({
             rather than processing one already in the system. Support and finance read the
             queue and see the history; neither gets the buttons. */}
         {view === "representatives" ? <RepresentativeQueue canDecide={role === "ADMIN"} /> : null}
+        {/* No role prop: the audit log is read-only for everyone, and the endpoint's
+            READ_AUDIT_LOGS is held by every staff role. */}
+        {view === "audit" ? <AuditLog /> : null}
       </main>
     </div>
   );

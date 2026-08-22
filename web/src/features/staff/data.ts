@@ -221,6 +221,105 @@ export const useRepresentativeApplications = (status?: RepresentativeApplication
     `/api/staff/representative-applications?limit=50${status ? `&status=${status}` : ""}`,
   );
 
+/**
+ * One recorded fact. Mirrors what `/api/staff/audit-logs` selects.
+ *
+ * `metadata` is whatever the call site passed, minus the keys §26 forbids — so it is
+ * genuinely unknown-shaped and typed as such rather than pretending to a schema the
+ * table does not enforce.
+ */
+export interface AuditEvent {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  metadata: Record<string, unknown> | null;
+  ipPrefix: string | null;
+  createdAt: string;
+  actor: { name: string | null; email: string; role: string } | null;
+}
+
+export interface AuditFeed {
+  state: Feed<AuditEvent>;
+  /** Null when there is no further page. Calling it appends rather than replaces. */
+  more: (() => void) | null;
+  loadingMore: boolean;
+}
+
+/**
+ * The audit log, paged.
+ *
+ * The other four queues load one page and stop, which is right for a queue — work waiting
+ * on a decision is a bounded list. A log is the opposite: it only grows, and the question
+ * asked of it ("what happened to this application?") is often answered by an entry older
+ * than the newest fifty. So this one follows `nextCursor` instead of truncating, and
+ * appends, because a reader who has scrolled back a month should not lose their place.
+ */
+export function useAuditLog(filter: { entityType?: string; action?: string } = {}): AuditFeed {
+  const { entityType, action } = filter;
+  const [state, setState] = useState<Feed<AuditEvent>>({ status: "loading" });
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // The first page of a *new* filter replaces; every later page appends. Tracking the
+  // request that is in flight avoids a slow first page landing on top of a newer filter.
+  const query = `${entityType ?? ""}|${action ?? ""}`;
+
+  useEffect(() => {
+    let live = true;
+    setState({ status: "loading" });
+    setCursor(null);
+
+    const path = `/api/staff/audit-logs?limit=50${entityType ? `&entityType=${encodeURIComponent(entityType)}` : ""}${action ? `&action=${encodeURIComponent(action)}` : ""}`;
+
+    get<{ items: AuditEvent[]; nextCursor: string | null }>(path)
+      .then((data) => {
+        if (!live) return;
+        setState({ status: "ready", items: data.items });
+        setCursor(data.nextCursor);
+      })
+      .catch((error: unknown) => {
+        if (!live) return;
+        const expired = error instanceof Error && error.message === "session";
+        setState({
+          status: "failed",
+          message: expired
+            ? "Your session has expired. Sign in again."
+            : "We could not load the audit log. Nothing has been changed.",
+        });
+      });
+
+    return () => { live = false; };
+  }, [query, entityType, action]);
+
+  const more = useCallback(() => {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+
+    const path = `/api/staff/audit-logs?limit=50&cursor=${cursor}${entityType ? `&entityType=${encodeURIComponent(entityType)}` : ""}${action ? `&action=${encodeURIComponent(action)}` : ""}`;
+
+    get<{ items: AuditEvent[]; nextCursor: string | null }>(path)
+      .then((data) => {
+        setState((prev) =>
+          // Appending to a feed that is no longer "ready" would resurrect a failed load
+          // as a partial one; the filter changed underneath and this page is stale.
+          prev.status === "ready"
+            ? { status: "ready", items: [...prev.items, ...data.items] }
+            : prev,
+        );
+        setCursor(data.nextCursor);
+      })
+      .catch(() => {
+        // The page already on screen stays. A failed *next* page is not a reason to
+        // replace a log the reader is in the middle of.
+        setCursor(null);
+      })
+      .finally(() => setLoadingMore(false));
+  }, [cursor, loadingMore, entityType, action]);
+
+  return { state, more: cursor ? more : null, loadingMore };
+}
+
 /** Money formatting. Minor units in, display string out; never float arithmetic. */
 export const money = (minor: number, currency: string) =>
   new Intl.NumberFormat("en", { style: "currency", currency }).format(minor / 100);

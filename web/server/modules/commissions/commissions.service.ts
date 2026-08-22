@@ -14,6 +14,7 @@
 import { serializable, type Db } from "@/server/lib/db";
 import { ConflictError, NotFoundError, UnprocessableError } from "@/server/lib/errors";
 import type { RequestLogger } from "@/server/lib/logger";
+import { recordAudit } from "@/server/modules/audit/audit.service";
 import {
   checkCommissionTransition,
   confirmedAtFor,
@@ -151,7 +152,7 @@ export async function transitionCommission(
   return serializable(async (tx) => {
     const current = await tx.commission.findUnique({
       where: { id: input.commissionId },
-      select: { id: true, state: true, partnerId: true, amountMinor: true },
+      select: { id: true, state: true, partnerId: true, amountMinor: true, currency: true },
     });
     if (!current) throw new NotFoundError("We could not find that commission.");
 
@@ -184,6 +185,36 @@ export async function transitionCommission(
       actorUserId: actor.id,
       note: input.note,
     });
+
+    /*
+     * The same fact, durably.
+     *
+     * `log.audit` above writes to the log stream: not queryable by entity, not visible
+     * from the console, gone when retention rolls. Confirming a commission is what makes
+     * money withdrawable, so "who confirmed this, and when" has to survive as a row —
+     * withdrawals keep their own `withdrawalEvent` history and commissions had nothing
+     * equivalent. Written inside the serializable transaction so a rolled-back transition
+     * cannot leave a record claiming it happened.
+     */
+    await recordAudit(
+      {
+        action: "commission.transitioned",
+        entityType: "commission",
+        entityId: current.id,
+        actorUserId: actor.id,
+        metadata: {
+          partnerId: current.partnerId,
+          from: current.state,
+          to: input.to,
+          amountMinor: current.amountMinor,
+          // Carried with the amount, never inferred. A bare integer in an audit row is
+          // unformattable later without guessing the currency it was denominated in.
+          currency: current.currency,
+          ...(input.note ? { note: input.note } : {}),
+        },
+      },
+      tx,
+    );
 
     /*
      * Reversing a confirmed commission can push a partner negative if the money has
