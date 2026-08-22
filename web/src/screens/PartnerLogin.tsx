@@ -153,6 +153,29 @@ export default function PartnerLogin() {
                   {signingIn ? t("Signing in…") : t("Sign in")}
                 </Button>
               </form>
+
+              {/*
+                * Staff use this door too, and nothing else on the site says so.
+                *
+                * There is one sign-in page. The heading beside it says "partner and
+                * representative", the tab above says "Partner login", and a Campus
+                * Turkey staff member reading either would reasonably conclude they are
+                * in the wrong place and go looking for a door that does not exist.
+                *
+                * A link in the public footer was the alternative and is worse for them:
+                * signed out, `/staff` only redirects back to this page, so it would be a
+                * signpost pointing at the room they are already standing in, shown to
+                * every visitor to earn it. This says the same thing to the people who
+                * need it, at the moment they hesitate, and to nobody else.
+                *
+                * It names the console by name so the redirect that follows is expected
+                * rather than surprising. It is not access control and does not pretend
+                * to be: `/staff` resolves the session server-side and every staff
+                * endpoint checks the role independently.
+                */}
+              <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "var(--fs-body-sm)", lineHeight: "var(--lh-body)" }}>
+                {t("Campus Turkey staff sign in here too. You will be taken to the staff console.")}
+              </p>
             </>
           ) : (
             <>
