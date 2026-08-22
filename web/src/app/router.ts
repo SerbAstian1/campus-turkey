@@ -297,7 +297,7 @@ export function usePlaceholderLinks(): void {
  *
  * The rules are ordered and optionally scoped, because one placeholder is ambiguous.
  * `Navbar` hardcodes `href="#consultation"` on its secondary button and exposes no prop
- * to change it — only `secondaryLabel`. This app reuses that slot for "Partner Login",
+ * to change it — only `secondaryLabel`. This app reuses that slot for the "Login" button,
  * so inside the navbar that placeholder means the portal, while everywhere else it
  * still means what it says.
  *

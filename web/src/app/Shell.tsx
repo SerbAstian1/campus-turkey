@@ -192,7 +192,7 @@ export function Shell({ children }: { children: ReactNode }) {
              `href="#consultation"` and exposes no prop to change it — only the label.
              `usePlaceholderLinks` resolves it to the portal when the click comes from
              inside the navbar. See the rule table in ./router. */
-          secondaryLabel={narrow ? "" : "Partner Login"}
+          secondaryLabel={narrow ? "" : t("Login")}
           onSelect={(item, e) => {
             /* A group trigger has no destination. Without this it falls through to the
                design system's placeholder href and navigates away, which is the only

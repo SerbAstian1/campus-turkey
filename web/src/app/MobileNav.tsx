@@ -63,7 +63,7 @@ export function MobileNav({
       [t("For universities"), "partnerships/universities", "landmark"],
       [t("For agencies"), "institutions/agencies", "users"],
       [t("For hospitals"), "institutions/hospitals", "stethoscope"],
-      [t("Partner Login"), "portal", "log-in"]] },
+      [t("Login"), "portal", "log-in"]] },
     { key: "company", label: t("Company"), icon: "info", links: [
       [t("About us"), "about", "info"],
       [t("Contact"), "contact", "phone"]] },

@@ -88,7 +88,7 @@ function Shell() {
         items={[{ label: "Study in Türkiye", href: "/study-in-turkiye" }]}
         ctaLabel="Apply Now"
         ctaHref="/apply"
-        secondaryLabel="Partner Login"
+        secondaryLabel="Login"
       />
     </div>
   );
@@ -108,21 +108,21 @@ describe("the real Navbar", () => {
     // system gives the button a real href or a prop, this assertion fails and the
     // workaround in router.ts can be deleted.
     render(<Shell />);
-    const button = screen.getByText("Partner Login").closest("a");
+    const button = screen.getByText("Login").closest("a");
     expect(button).not.toBeNull();
     expect(button!.getAttribute("href")).toBe("#consultation");
   });
 
-  it("navigates to /portal when Partner Login is clicked", () => {
+  it("navigates to /portal when Login is clicked", () => {
     // The bug, asserted against the real rendered button and the real path.
     render(<Shell />);
-    fireEvent.click(screen.getByText("Partner Login"));
+    fireEvent.click(screen.getByText("Login"));
     expect(push).toHaveBeenCalledWith("/portal");
   });
 
   it("does not navigate to the contact page", () => {
     render(<Shell />);
-    fireEvent.click(screen.getByText("Partner Login"));
+    fireEvent.click(screen.getByText("Login"));
     expect(push).not.toHaveBeenCalledWith("/contact");
   });
 
@@ -149,7 +149,7 @@ describe("the real Navbar", () => {
     // Following `#consultation` natively would leave the URL on a hash no route
     // matches, so this click must be prevented.
     render(<Shell />);
-    const anchor = screen.getByText("Partner Login").closest("a");
+    const anchor = screen.getByText("Login").closest("a");
 
     const click = new MouseEvent("click", { bubbles: true, cancelable: true });
     anchor!.dispatchEvent(click);
@@ -161,7 +161,7 @@ describe("the real Navbar", () => {
     // The classic client-router regression: intercepting every click breaks
     // middle-click and cmd-click.
     render(<Shell />);
-    const anchor = screen.getByText("Partner Login").closest("a");
+    const anchor = screen.getByText("Login").closest("a");
 
     const click = new MouseEvent("click", { bubbles: true, cancelable: true, metaKey: true });
     anchor!.dispatchEvent(click);
