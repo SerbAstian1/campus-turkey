@@ -98,6 +98,32 @@ export interface QueueLead {
   latest: QueueInquiry | null;
 }
 
+export type RepresentativeApplicationStatus = "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
+
+/**
+ * A representative applying to work with Campus Turkey.
+ *
+ * Mirrors what `/api/staff/representative-applications` selects, field for field. The
+ * decision fields are nullable together: an application that has not been decided has no
+ * reviewer, no note and no timestamp, and rendering any of them alone would imply a
+ * decision that has not happened.
+ */
+export interface QueueRepresentativeApplication {
+  id: string;
+  fullName: string;
+  organizationName: string | null;
+  country: string | null;
+  territory: string | null;
+  email: string;
+  phone: string | null;
+  message: string | null;
+  status: RepresentativeApplicationStatus;
+  reviewNote: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  reviewedBy: { name: string | null; email: string } | null;
+}
+
 export type Feed<T> =
   | { status: "loading" }
   | { status: "ready"; items: T[] }
@@ -189,6 +215,11 @@ export const useCommissionQueue = (state?: CommissionState) =>
 
 export const useLeadInbox = (kind?: LeadType) =>
   useFeed<QueueLead>(`/api/staff/leads?limit=50${kind ? `&kind=${kind}` : ""}`);
+
+export const useRepresentativeApplications = (status?: RepresentativeApplicationStatus) =>
+  useFeed<QueueRepresentativeApplication>(
+    `/api/staff/representative-applications?limit=50${status ? `&status=${status}` : ""}`,
+  );
 
 /** Money formatting. Minor units in, display string out; never float arithmetic. */
 export const money = (minor: number, currency: string) =>

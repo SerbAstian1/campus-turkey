@@ -27,10 +27,11 @@ import { BrandDivider, Icon, Logo, ASSETS } from "@/ds";
 import { WithdrawalQueue } from "./WithdrawalQueue";
 import { CommissionQueue } from "./CommissionQueue";
 import { LeadInbox } from "./LeadInbox";
+import { RepresentativeQueue } from "./RepresentativeQueue";
 
 export type StaffRole = "SUPPORT" | "FINANCE" | "ADMIN";
 
-type View = "withdrawals" | "commissions" | "leads";
+type View = "withdrawals" | "commissions" | "leads" | "representatives";
 
 interface NavItem {
   key: View;
@@ -62,6 +63,15 @@ const NAV: NavItem[] = [
     label: "Enquiries",
     icon: "inbox",
     lead: "Everything the public forms have sent. Medical enquiries are held separately.",
+    actionRoles: ["SUPPORT", "FINANCE", "ADMIN"],
+  },
+  {
+    key: "representatives",
+    label: "Applications",
+    icon: "user-check",
+    lead: "People asking to represent Campus Turkey. Approving one creates their login and the balance it will hold.",
+    // Reading is every staff role; deciding is admin only and is passed separately.
+    // `actionRoles` drives the read-only notice, and support genuinely may read here.
     actionRoles: ["SUPPORT", "FINANCE", "ADMIN"],
   },
 ];
@@ -216,6 +226,11 @@ export function StaffConsole({
             endpoint. Passed explicitly rather than derived from `canAct`, because this
             queue's `actionRoles` includes SUPPORT for reading. */}
         {view === "leads" ? <LeadInbox canApprove={role === "ADMIN"} /> : null}
+        {/* Deciding is ADMIN only — the endpoint requires
+            APPROVE_REPRESENTATIVE_APPLICATION, because approving admits a new principal
+            rather than processing one already in the system. Support and finance read the
+            queue and see the history; neither gets the buttons. */}
+        {view === "representatives" ? <RepresentativeQueue canDecide={role === "ADMIN"} /> : null}
       </main>
     </div>
   );

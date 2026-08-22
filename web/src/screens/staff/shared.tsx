@@ -31,6 +31,9 @@ const STATUS_TONE: Record<string, { dot: string; label: string }> = {
   PAID: { dot: "var(--green-600)", label: "Paid" },
   REJECTED: { dot: "var(--status-danger)", label: "Rejected" },
   PENDING: { dot: "var(--status-warning)", label: "Pending" },
+  // Representative applications only. Without it the fallback prints the enum itself —
+  // "UNDER_REVIEW" in a column where every neighbour reads as English.
+  UNDER_REVIEW: { dot: "var(--status-warning)", label: "Under review" },
   CONFIRMED: { dot: "var(--green-600)", label: "Confirmed" },
   REVERSED: { dot: "var(--status-danger)", label: "Reversed" },
   NEW: { dot: "var(--status-warning)", label: "New" },
