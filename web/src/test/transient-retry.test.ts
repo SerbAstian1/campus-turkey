@@ -38,6 +38,51 @@ describe("recognising a transient connection failure", () => {
   });
 });
 
+/**
+ * The shape a cold Neon compute actually throws.
+ *
+ * Not a `code` in sight: `errorCode` is undefined and the class is the only signal. This
+ * is the error that failed the production build at page 332 of 1,331 — twice, months
+ * apart — while a retry written for exactly this case sat in front of it doing nothing,
+ * because it keyed on `code`.
+ */
+const initError = (message: string) =>
+  Object.assign(new Error(message), {
+    name: "PrismaClientInitializationError",
+    clientVersion: "6.19.3",
+    errorCode: undefined,
+  });
+
+describe("a connection that fails before the pool is up", () => {
+  it("is recognised even though it carries no code", () => {
+    expect(
+      isTransientConnectionError(
+        initError("Can't reach database server at `ep-cold-band.eu-west-2.aws.neon.tech:5432`"),
+      ),
+    ).toBe(true);
+  });
+
+  it("is recognised when the connection is refused or times out", () => {
+    expect(isTransientConnectionError(initError("Connection refused"))).toBe(true);
+    expect(isTransientConnectionError(initError("Operation timed out"))).toBe(true);
+  });
+
+  it("does not retry a malformed connection string", () => {
+    // The same class, a different problem. Repeating a configuration error wastes the
+    // build's time and then fails anyway, which is worse than failing immediately.
+    expect(
+      isTransientConnectionError(
+        initError("Error validating datasource `db`: the URL must start with the protocol `postgresql://`"),
+      ),
+    ).toBe(false);
+  });
+
+  it("reads errorCode when that is where the code lives", () => {
+    expect(isTransientConnectionError({ errorCode: "P1001" })).toBe(true);
+    expect(isTransientConnectionError({ errorCode: "P2002" })).toBe(false);
+  });
+});
+
 describe("withTransientRetry", () => {
   it("returns the value without retrying when the first call works", async () => {
     const run = vi.fn().mockResolvedValue("catalogue");

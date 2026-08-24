@@ -236,8 +236,32 @@ export { Prisma };
 const TRANSIENT_CONNECTION_CODES = new Set(["P1001", "P1008", "P1017", "P2024"]);
 
 export function isTransientConnectionError(error: unknown): boolean {
-  const code = (error as { code?: unknown } | null)?.code;
-  return typeof code === "string" && TRANSIENT_CONNECTION_CODES.has(code);
+  const candidate = error as { code?: unknown; errorCode?: unknown; name?: unknown; message?: unknown } | null;
+
+  const code = candidate?.code ?? candidate?.errorCode;
+  if (typeof code === "string" && TRANSIENT_CONNECTION_CODES.has(code)) return true;
+
+  /*
+   * The case the code check misses, and the reason this function grew.
+   *
+   * When the pool is already up, an unreachable database arrives as a
+   * `PrismaClientKnownRequestError` carrying `P1001` and the check above catches it.
+   * When the *first* connection of a worker fails — a suspended Neon compute, a cold
+   * build worker — it arrives as `PrismaClientInitializationError`, which has no `code`
+   * at all: `errorCode` is `undefined` and nothing else identifies it. So the retry
+   * silently did not apply to the exact case it was written for, and the production
+   * build failed at page 332 of 1,331 twice, months apart, for the same reason.
+   *
+   * Matched on the message rather than the class alone, because the same class is thrown
+   * for a malformed `DATABASE_URL`. That is a configuration error: repeating it wastes
+   * the build's time and then fails anyway, which is worse than failing immediately.
+   */
+  const unreachable =
+    candidate?.name === "PrismaClientInitializationError" &&
+    typeof candidate.message === "string" &&
+    /can't reach database server|connection refused|timed out/i.test(candidate.message);
+
+  return unreachable;
 }
 
 /**
