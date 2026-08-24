@@ -14,7 +14,7 @@ import { services } from "@contracts/services";
 import { articles } from "@contracts/articles";
 import { institutions } from "@contracts/institutions";
 import { canonical } from "@/server/lib/seo";
-import { BCP47, LOCALES, localePath, DEFAULT_LOCALE } from "@/i18n/locales";
+import { BCP47, ADVERTISED_LOCALES, localePath, DEFAULT_LOCALE } from "@/i18n/locales";
 import { MOVED_FROM } from "@/app/moved-routes";
 
 /**
@@ -28,7 +28,8 @@ import { MOVED_FROM } from "@/app/moved-routes";
  */
 function alternates(path: string): { languages: Record<string, string> } {
   const languages: Record<string, string> = {};
-  for (const locale of LOCALES) {
+  // The sitemap makes the same claim hreflang does, so it draws on the same list.
+  for (const locale of ADVERTISED_LOCALES) {
     languages[BCP47[locale]] = canonical(localePath(path, locale));
   }
   return { languages };

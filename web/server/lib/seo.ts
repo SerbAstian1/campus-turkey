@@ -13,7 +13,7 @@
 import type { Metadata } from "next";
 import type { Article, Service } from "@contracts/types";
 import {
-  BCP47, DEFAULT_LOCALE, LOCALES, localePath, type Locale,
+  BCP47, DEFAULT_LOCALE, ADVERTISED_LOCALES, localePath, type Locale,
 } from "@/i18n/locales";
 import { env } from "./config";
 
@@ -61,7 +61,9 @@ export function canonical(path: string): string {
 export function alternatesFor(path: string, locale: Locale): Metadata["alternates"] {
   const languages: Record<string, string> = {};
 
-  for (const other of LOCALES) {
+  // Advertised, not available: see the note on ADVERTISED_LOCALES. A page that is
+  // mostly English must not carry `hreflang="tr"`.
+  for (const other of ADVERTISED_LOCALES) {
     languages[BCP47[other]] = canonical(localePath(path, other));
   }
   languages["x-default"] = canonical(localePath(path, DEFAULT_LOCALE));

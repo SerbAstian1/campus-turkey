@@ -23,6 +23,32 @@ export const LOCALES = [
   "fa", "ur", "hi", "bn", "id", "zh", "ha", "yo", "ig",
 ] as const;
 
+
+/**
+ * The locales advertised to search engines, as distinct from the ones that work.
+ *
+ * Every locale in `LOCALES` above has a route and a language switcher entry, and a
+ * visitor who picks one gets whatever has been translated with English underneath.
+ * That is a reasonable thing to offer. What is not reasonable is telling Google, via
+ * `hreflang` and the sitemap, that a page *is* in Turkish when 84% of its words are
+ * English — the tag is a claim about the page's content, and a wrong one gets the page
+ * demoted or the tag ignored across the whole set.
+ *
+ * So advertising is separated from availability. This list is the subset whose
+ * catalogues are substantially complete; `i18n-advertised.test.ts` measures the real
+ * files and fails if any entry here cannot back the claim.
+ *
+ * It is short right now because the catalogues are: five locales carry the reviewed
+ * phrases imported from the prototype and sit near 16%, and eleven have almost
+ * nothing. Fill them — `scripts/i18n-machine-translate.mjs` is the sweep, and a native
+ * speaker's review is what makes it shippable — then add the locale here and let the
+ * test confirm it earned the place. That was audit finding M4.
+ */
+export const ADVERTISED_LOCALES = [DEFAULT_LOCALE] as const;
+
+/** The share of the English catalogue a locale must carry before it may be advertised. */
+export const ADVERTISED_COVERAGE_FLOOR = 0.9;
+
 export type Locale = (typeof LOCALES)[number];
 
 /** Right-to-left scripts. Drives `dir` on `<html>` and the design system's RTL layout. */

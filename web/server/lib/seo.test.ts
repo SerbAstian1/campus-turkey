@@ -15,7 +15,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { alternatesFor, canonical } from "./seo";
-import { BCP47, DEFAULT_LOCALE, LOCALES, localePath, type Locale } from "@/i18n/locales";
+import { BCP47, DEFAULT_LOCALE, LOCALES, ADVERTISED_LOCALES, localePath, type Locale } from "@/i18n/locales";
 
 /** The value `vitest.config.ts` puts in the environment. Deliberately not a real site. */
 const TEST_ORIGIN = "https://test.campusturkey.invalid";
@@ -59,15 +59,33 @@ afterEach(() => {
 });
 
 describe("alternatesFor", () => {
-  it("advertises every locale plus x-default", () => {
+  it("advertises the locales whose catalogues can back the claim, plus x-default", () => {
     const alternates = alternatesFor("/study", DEFAULT_LOCALE);
     const languages = alternates?.languages ?? {};
 
-    // One entry per locale, and the x-default that decides what a searcher gets when
-    // none of the seventeen matches their browser.
-    expect(Object.keys(languages)).toHaveLength(LOCALES.length + 1);
-    for (const locale of LOCALES) expect(languages).toHaveProperty(BCP47[locale]);
+    /*
+     * `ADVERTISED_LOCALES`, not `LOCALES`. `hreflang` asserts that a page *is* in a
+     * language; a page tagged `tr` whose words are 84% English is a false claim about
+     * its own content, and search engines answer one by demoting the page or discarding
+     * the whole tag set. Availability and advertising were separated for that reason —
+     * audit finding M4 — and `i18n-advertised.test.ts` measures the catalogues that
+     * decide who qualifies.
+     */
+    expect(Object.keys(languages)).toHaveLength(ADVERTISED_LOCALES.length + 1);
+    for (const locale of ADVERTISED_LOCALES) expect(languages).toHaveProperty(BCP47[locale]);
     expect(languages).toHaveProperty("x-default");
+  });
+
+  it("does not advertise a locale that routes but is barely translated", () => {
+    const languages = alternatesFor("/study", DEFAULT_LOCALE)?.languages ?? {};
+
+    // Turkish still routes and still renders whatever has been translated. What it must
+    // not do is tell a search engine the page is in Turkish.
+    const unadvertised = LOCALES.filter(
+      (l) => !(ADVERTISED_LOCALES as readonly string[]).includes(l),
+    );
+    expect(unadvertised.length).toBeGreaterThan(0);
+    for (const locale of unadvertised) expect(languages).not.toHaveProperty(BCP47[locale]);
   });
 
   it("emits absolute URLs on the configured origin", () => {
@@ -86,10 +104,16 @@ describe("alternatesFor", () => {
     const languages = languagesOf("/study", "fr");
 
     expect(languages["x-default"]).toBe(canonical(localePath("/study", DEFAULT_LOCALE)));
-    expect(languages[BCP47["fr"]]).toBe(canonical(localePath("/study", "fr")));
+
+    // Every advertised locale points at its own path. French is deliberately absent
+    // from that set today — it routes, but its catalogue cannot back an `hreflang`
+    // claim — which is why this walks the advertised list rather than naming a locale.
+    for (const locale of ADVERTISED_LOCALES) {
+      expect(languages[BCP47[locale]]).toBe(canonical(localePath("/study", locale)));
+    }
 
     // The canonical follows the locale being rendered, while the alternate set does
-    // not — every translation of a page advertises the same seventeen siblings.
+    // not — every translation of a page advertises the same advertised siblings.
     expect(alternates?.canonical).toBe(canonical(localePath("/study", "fr")));
   });
 
@@ -97,7 +121,7 @@ describe("alternatesFor", () => {
     const languages = languagesOf("/study", DEFAULT_LOCALE);
 
     // x-default duplicates the default locale by design; every other pair must differ.
-    const perLocale = LOCALES.map((locale) => languages[BCP47[locale]]);
-    expect(new Set(perLocale).size).toBe(LOCALES.length);
+    const perLocale = ADVERTISED_LOCALES.map((locale) => languages[BCP47[locale]]);
+    expect(new Set(perLocale).size).toBe(ADVERTISED_LOCALES.length);
   });
 });

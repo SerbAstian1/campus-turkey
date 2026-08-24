@@ -19,3 +19,4 @@ coverage/
 
 # Local document storage. Development only; production refuses this provider.
 .uploads/
+.i18n-mt-cache.json

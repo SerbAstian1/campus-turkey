@@ -21,7 +21,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "i18n:extract": "node scripts/i18n-extract.mjs",
     "i18n:check": "node scripts/i18n-check.mjs",
-    "i18n:audit": "node scripts/i18n-extract.mjs --strict"
+    "i18n:audit": "node scripts/i18n-extract.mjs --strict",
+    "i18n:translate": "node scripts/i18n-machine-translate.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
