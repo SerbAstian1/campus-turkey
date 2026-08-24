@@ -125,6 +125,13 @@ attacker's budget rather than the victim's. Rate limiting runs *before* authenti
 because limiting after auth leaves the sign-in endpoint — the thing credential stuffing
 actually targets — unprotected.
 
+That ordering describes the `route()` pipeline, and **Better Auth's catch-all does not
+run through it**: it hands off to the library directly, so for a period it inherited none
+of the above while a comment in the file said otherwise. It now applies `RATE_LIMITS.auth`
+itself, before delegating, and only to the paths that carry a credential — `get-session`
+is polled by `useSession` on every mount and `sign-out` must never strand a signed-in
+user, so neither is throttled. See `app/api/auth/[...all]/route.ts`.
+
 **External calls**
 
 | Call | Timeout | Retry | On terminal failure |
@@ -256,7 +263,7 @@ the endpoints cannot be used to confirm that an id exists.
 | A04 | Insecure Design | Mitigated | Human approval before money moves, enforced by the state machine; idempotency; append-only audit |
 | A05 | Security Misconfiguration | Mitigated | Config refuses to boot without production requirements — **verified: the build failed until Sentry, Redis and captcha were supplied**; `poweredByHeader` off |
 | A06 | Vulnerable Components | **Partial** | Lockfile committed, `npm audit --omit=dev` in CI as report-only per handoff note 14. No automated update policy |
-| A07 | Auth Failures | Mitigated | Better Auth; sign-up disabled; 10 per 5 min per IP; 12-char minimum; email verification required |
+| A07 | Auth Failures | Mitigated | Better Auth; sign-up disabled; 10 per 5 min per IP on credential paths, Redis-backed and enforced before the handler; 12-char minimum; email verification required. Fails open on a Redis outage, falling back to the library's weaker per-instance limiter |
 | A08 | Data Integrity Failures | Mitigated | `npm ci` from lockfile; CSP with a per-request nonce and `strict-dynamic` |
 | A09 | Logging Failures | Mitigated | Structured JSON, correlation id on every line, redaction tested; alert thresholds are numbers |
 | A10 | SSRF | Mitigated | Only three outbound hosts, all from validated config; no user-supplied URL is ever fetched |
@@ -268,7 +275,7 @@ the endpoints cannot be used to confirm that an id exists.
 | Endpoints with a stated authorization rule | 13 / 13 — 11 enforced by the type system, 2 (`health`, `auth`) documented public |
 | Secrets committed to the repository | **0 — verified by scan**, not assumed. `.env` is gitignored; gitleaks runs on full history in CI |
 | Inputs validated at the boundary | 7 / 7 entry-point classes |
-| Rate limit stated per public endpoint | 4 / 4 |
+| Rate limit stated per public endpoint | 5 / 5 — the auth catch-all is now included; it was previously counted as out of scope |
 | OWASP items reviewed | 10 / 10 |
 
 | Dimension | Score | Justification |
