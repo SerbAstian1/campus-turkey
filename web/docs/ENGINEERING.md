@@ -355,12 +355,12 @@ claimed.
 
 ## 7. Quality Assurance (Dept 21)
 
-208 tests pass across nine files. Coverage detail in [TESTING.md](./TESTING.md).
+740 tests pass across 52 files. Coverage detail in [TESTING.md](./TESTING.md).
 
 ### Issue list
 
 **MAJOR — services, repositories and route handlers have no tests.**
-0% against an ≥80% target; overall line coverage ~17%. The SERIALIZABLE concurrency
+24.82% against an >=80% target, measured over the whole service layer. The SERIALIZABLE concurrency
 guarantee — the single load-bearing claim of the whole money path — has still never
 been executed, because PGlite is single-connection and a race needs two.
 
@@ -417,8 +417,9 @@ Both were found by review rather than by a failing test, which is the point of t
 | Minors | 4 · Nitpicks | 1 |
 | Money path coverage (balance, state machine, money) | **100%** lines/branches/functions — target 100%, **met** |
 | Error mapping coverage | **100%** — met |
-| Gated-set coverage | **99.61%** statements, 97.23% branches, 100% functions — gate green |
-| Service layer coverage | partial vs 80% target — **not met**; ownership-scoped reads, rate limiting and logging are covered, the remaining services are not |
+| Measured coverage (`server/modules/**` + money/error/log/rate-limit libs) | **24.82%** statements, 92.36% branches, 78.78% functions — floor enforced in CI at 24/92/78 |
+| Money-writing service coverage | **withdrawals 95%, commissions 84%, wallet 100%** statements — target 80%, **met** |
+| Remaining service layer coverage | 0% vs 80% target — **not met**; eight of sixteen module directories have no test |
 | Authorization rules with a negative test | **13 / 13** — 8 ownership rules at the service layer, plus the `route()` guard itself, which is where the other 5 are decided |
 | `any` types without a stated reason | **0** |
 | Production build | **passes** — 1,263 pages, 103 kB shared First Load JS, middleware 35.5 kB |
@@ -504,7 +505,7 @@ Everything below was run on this machine during this session.
 | **Query plans** | `tests/query-plans.test.ts` | **pass** — 3 heaviest queries observed; index-only scan confirmed; FK index audit clean |
 | Types | `tsc --noEmit` | **pass** — 0 errors |
 | Tests | `vitest run` | **pass** — 208/208, 9 files |
-| Coverage gate | `vitest run --coverage` | **pass** — 88.29% lines, 97.87% branches on the covered set; 100% on all four money-path modules |
+| Coverage gate | `vitest run --coverage` | **pass** — 24.82% statements over the full service layer, with the money path, error mapping and the three money services held at their own per-file floors |
 | Production build | `next build` | **pass** — 10 API routes, static sitemap and robots, middleware 35.2KB |
 | Config guard | `next build` without prod vars | **correctly failed**, naming Sentry, Redis and captcha |
 | Secret scan | filesystem + pattern scan | **0 found** |
@@ -548,9 +549,9 @@ PRODUCTION AUDIT — Campus Turkey (server layer)
                                 target-plus-mechanism with nothing deployed to profile
   9. Accessibility     PASS     EDSAI's targets preserved — pinch-zoom never disabled,
                                 error screens keep their recovery routes. Untouched
- 10. Testing           REQ IMP  Money path 100%, gated set 99.61%, 13/13 authorization
-                                rules denied with positive controls, 24 integration
-                                assertions. Remaining services still uncovered
+ 10. Testing           REQ IMP  Money path 100%, money services 84-100%, measured
+                                coverage 24.82% over the real service layer (was a
+                                six-file allowlist reporting 99.61%). Eight module
  11. Logging           PASS     Structured, correlated, two redaction layers, tested;
                                 no PII or secrets in output. `requestLogger` and the
                                 audit line shape now covered
@@ -647,7 +648,7 @@ limits 4/4 · OWASP 10/10 · env vars 22/22 · alert thresholds 9/9 · money-pat
 100% · error-mapping coverage 100% · `any` count 0 · files-per-feature 4 ·
 **`EXPLAIN` plans 3/3** · **constraints proven by violation 30/30**.
 
-Still missed: service-layer coverage 0% vs 80% · authorization denial tests 0/13 ·
+Still missed: service-layer coverage 24.82% vs 80% · authorization denial tests 0/13 ·
 p95/p99 unobserved · backup restore untested · rollback unrehearsed.
 
 ---

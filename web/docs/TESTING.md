@@ -12,10 +12,11 @@
 | **Query plans** | 3 heaviest | **3 observed + FK index audit** | met |
 | **Withdrawal service — concurrency, idempotency, state machine** | executed | **14 assertions against real Postgres** | met |
 | **Tenant isolation — payout methods, wallet, students, documents** | every rule denied at least once | **10 assertions, each with a positive control** | met |
-| **Other services, repositories, route handlers** | **≥80%** | partial — the ownership-scoped reads are covered, the rest is not | **NOT MET — QA issue #1** |
-| Overall statement coverage | ≥80% | ~17% lines | not met |
+| **Money-writing services — withdrawals, commissions, wallet** | **>=80%** | **95%, 84%, 100%** statements | met |
+| **Remaining services, repositories, route handlers** | **>=80%** | 0% — eight of sixteen module directories have no test at all | **NOT MET — QA issue #1** |
+| Measured coverage across `server/modules/**` + money/error/log/rate-limit libs | >=80% | **24.82% statements, 92.36% branches, 78.78% functions** | not met — this is the honest scope figure |
 
-**494 unit tests across 27 files, plus 24 integration tests against a real Postgres.**
+**740 unit tests across 52 files, plus 24 integration tests against a real Postgres.**
 
 The integration suite closed the gap that every previous pass had to leave open. PGlite is
 single-connection, so the write skew that SERIALIZABLE exists to prevent could not be
@@ -100,10 +101,15 @@ vacuuming, the identical query plans as a bitmap heap scan. In production that i
 autovacuum's job — disable it on these tables and the hottest financial query silently
 gets slower.
 
-The coverage gate in `vitest.config.ts` covers only the modules that are unit-testable,
-at high thresholds. A global threshold that can never pass is a threshold that gets
-deleted in the first red build — this way the gate is real for what it covers and the
-gap is a number here rather than a silence.
+The coverage gate in `vitest.config.ts` instruments the whole of `server/modules/**`
+plus the four `server/lib` files that carry the money, error, logging and rate-limit
+rules. Nothing is excluded for lacking a test.
+
+It used to instrument six hand-picked files, and v8 prints its summary row as
+`All files` — so the gate reported **99.61%** over those six and read as though it
+described the server. That gap is audit finding M2. The number is now 24.82%, which is
+worse to look at and true, and the per-file thresholds that held the money path at 100%
+are still there underneath it.
 
 ## What the unit suite does cover, and why those things
 

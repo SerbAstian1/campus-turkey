@@ -110,15 +110,53 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     coverage: {
       provider: "v8",
+      /*
+       * The whole service layer, not a shortlist of the parts that already pass.
+       *
+       * This was six files: the money path, the error taxonomy, the logger and the
+       * rate limiter. They genuinely hold their thresholds — but v8 prints the
+       * summary row as `All files`, so a six-file allowlist reported 99.61% and read
+       * as though it described the server. The audit's M2 is that number, not the
+       * tests behind it.
+       *
+       * Nothing under `server/modules` is excluded, including the files with no test
+       * at all. An exclude list that quietly drops whatever is uncovered is the same
+       * flattery in a different shape, and the point of widening this is to make the
+       * gap visible in CI rather than in an audit a year later.
+       *
+       * The four `server/lib` files stay: they are the security and money
+       * infrastructure the per-file thresholds below hold at 100%, and dropping them
+       * here would retire those gates.
+       */
       include: [
-        "server/modules/wallet/balance.ts",
-        "server/modules/withdrawals/withdrawal.state.ts",
+        "server/modules/**/*.ts",
         "server/lib/money.ts",
         "server/lib/errors.ts",
         "server/lib/logger.ts",
         "server/lib/ratelimit.ts",
       ],
       thresholds: {
+        /*
+         * The global floor, set at what the widened scope actually measures.
+         *
+         * 24.82% statements across `server/modules/**` plus the four `server/lib`
+         * files. It is not a good number and it is not presented as one: eight of
+         * the sixteen module directories have no test at all. It is here so the
+         * figure cannot quietly fall while nobody is looking, and so the next person
+         * to widen coverage raises it deliberately rather than discovering it drifted.
+         *
+         * Before this the include list was six hand-picked files and v8 printed
+         * `All files 99.61%` over them — a true number about a scope nobody could
+         * infer from the label. That gap is audit finding M2.
+         *
+         * Department 21's target is >=80% on the service layer. This is 24.82%. Raise
+         * these as tests land; do not lower them to make a build pass.
+         */
+        lines: 24,
+        statements: 24,
+        functions: 78,
+        branches: 92,
+
         // The money path and the error boundary are held at 100%. These are the
         // payment and data-exposure paths Department 21 requires at 100%, and they
         // are the files where a missed branch is a missed refusal.
@@ -143,6 +181,23 @@ export default defineConfig({
         },
         "server/lib/ratelimit.ts": {
           lines: 55, functions: 50, branches: 85, statements: 55,
+        },
+        /*
+         * The money-writing services, at the level this pass reached.
+         *
+         * The orchestration around the state machines: idempotent replay, the
+         * refusals that must fire before an insert, the compare-and-swap that stops
+         * two reviewers confirming one commission. The uncovered remainder in each is
+         * its list endpoint, which is a paginated read with no money decision in it.
+         */
+        "server/modules/withdrawals/withdrawals.service.ts": {
+          lines: 90, functions: 70, branches: 90, statements: 90,
+        },
+        "server/modules/commissions/commissions.service.ts": {
+          lines: 80, functions: 66, branches: 95, statements: 80,
+        },
+        "server/modules/wallet/wallet.service.ts": {
+          lines: 100, functions: 100, branches: 100, statements: 100,
         },
       },
     },

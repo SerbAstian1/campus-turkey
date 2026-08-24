@@ -88,7 +88,7 @@ client-side, and payout details are held in browser state. All three are specifi
 **All three are now resolved on the server.** `web/` has a keyed translation proxy, a
 server-authoritative withdrawal that recomputes the balance inside the transaction that
 writes it, and a payout flow that stores only an opaque provider token and a masked
-label. The money path is at 100% test coverage.
+label. The money primitives — balance, admission rule, state machines, money arithmetic — are at 100% test coverage, and the services around them at 84-100%. Coverage across the whole service layer is 24.82%; see [TESTING.md](web/docs/TESTING.md).
 
 What remains is connecting them: the screens in `app/` do not call these endpoints yet,
 and routing there is still hash-based. The Production Audit returned **REQUIRES
