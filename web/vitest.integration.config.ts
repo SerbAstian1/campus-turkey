@@ -26,10 +26,17 @@ import { integrationDatabaseUrl, withConnectionTimeouts } from "./tests/integrat
  *      called directly, beneath the route guard.
  *   4. **The append-only trigger**, against a real Postgres rather than WASM.
  *
- * Run with `npm run test:integration`. It is not part of `npm test` and not part of the
- * CI gate — a suite that needs a live database would make the gate fail for reasons
- * that have nothing to do with the commit. Run it against a branch database before a
- * release; see docs/TESTING.md.
+ * Run with `npm run test:integration`. It is not part of `npm test` — the unit config
+ * injects a fake `DATABASE_URL`, so sweeping these in would fail every one of them on
+ * connection — but it **is** part of CI, as its own job with a Postgres service
+ * container (`.github/workflows/ci.yml`, job `integration`). It runs against a
+ * throwaway container there and should be run against a branch database locally.
+ *
+ * It was previously excluded from CI on the reasoning that a suite needing a live
+ * database would fail the gate for reasons unrelated to the commit. A container the
+ * workflow starts itself removes that objection, and the objection was costing more
+ * than it saved: these are the money path's only executable guarantees, and they ran
+ * only when somebody remembered. That was audit finding M3.
  *
  * **These tests write to whatever `DATABASE_URL` points at.** Every fixture is created
  * under a per-run namespace and torn down afterwards, but point this at a branch or a

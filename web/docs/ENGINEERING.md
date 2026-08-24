@@ -447,8 +447,11 @@ deliver was rendering unstyled.
 
 ## 8. Production Operations (Dept 22)
 
-**CI** (`.github/workflows/ci.yml`) — every step blocking: `npm ci` → `prisma generate`
-→ `tsc --noEmit` → tests with the coverage gate → `next build`. Plus gitleaks over full
+**CI** (`.github/workflows/ci.yml`) — every step blocking, across three jobs. `web`:
+`npm ci` → `prisma generate` → `tsc --noEmit` → tests with the coverage gate →
+`next build`. `integration`: a Postgres 16 service container → `prisma migrate deploy`
+→ the 24 integration assertions, which until recently ran only when somebody
+remembered the command (audit finding M3). Plus gitleaks over full
 history, and the existing Vite app kept green so it is not discovered broken on cutover
 day. `npm audit` is report-only, deliberately: handoff note 14 documents that the
 findings are dev-only and unreachable and that `--force` breaks the build, and a check
@@ -591,9 +594,10 @@ the next thing that should happen — before, not after, the remaining polish.
 
 ### Required before PASS
 
-1. ~~**Write the integration suite**~~ — done. 24 assertions against a real Postgres:
-   the withdrawal path, and tenant isolation across payout methods, wallet, students and
-   documents. Still worth running the concurrency case in a loop before a release.
+1. ~~**Write the integration suite**~~ — done, **and it now runs in CI** as its own job
+   against a service container. 24 assertions against a real Postgres: the withdrawal
+   path, and tenant isolation across payout methods, wallet, students and documents.
+   Still worth running the concurrency case in a loop before a release.
 2. ~~**Add authorization denial tests**~~ — done for the ownership-scoped surface, 8 of
    13, each paired with a positive control so it cannot pass on a service that is simply
    broken. The five not covered are the staff-permission endpoints, where the rule is

@@ -131,6 +131,78 @@ jobs:
         working-directory: web
         run: npm audit --omit=dev --audit-level=high || true
 
+  integration:
+    name: integration — the money path against a real Postgres
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Why this job exists, and why it is separate.
+    #
+    # `tests/integration/` proves the four things a single-connection database cannot
+    # express: two simultaneous requests for one balance producing exactly one
+    # withdrawal, idempotent replay returning the original row, the state machine
+    # refusing a PARTNER actor beneath the route guard, and the append-only trigger
+    # holding against real Postgres rather than WASM. Every one of them is on the money
+    # path, and none is reachable from the unit suite by construction.
+    #
+    # It used to run only when somebody remembered to type the command. A guarantee that
+    # depends on a person remembering is not a gate — that is audit finding M3.
+    #
+    # Separate from `web` rather than appended to it so the fast checks are not queued
+    # behind a database container starting; both must pass for the run to pass.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: campus
+          POSTGRES_PASSWORD: campus
+          POSTGRES_DB: campus_turkey_test
+        ports:
+          - 5432:5432
+        # Without a health check the first step races the container's boot and fails on
+        # connection refused, which reads as a broken test rather than a slow start.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # A throwaway container, torn down with the runner. The suite's own warning about
+      # never pointing this at production is satisfied by construction here.
+      DATABASE_URL: postgresql://campus:campus@localhost:5432/campus_turkey_test
+      DIRECT_DATABASE_URL: postgresql://campus:campus@localhost:5432/campus_turkey_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        working-directory: web
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: web
+        run: npx prisma generate
+
+      # `migrate deploy`, not `db push`: it applies the committed migration files in
+      # order, which is what production will run. `db push` would build the schema from
+      # `schema.prisma` and silently skip the triggers, CHECK constraints and the
+      # reference sequence that live only in the migration SQL — the very things
+      # `schema-integrity` and the append-only assertions are about.
+      - name: Apply migrations
+        working-directory: web
+        run: npx prisma migrate deploy
+
+      - name: Integration tests
+        working-directory: web
+        run: npm run test:integration
+
   secrets:
     name: secret scan
     runs-on: ubuntu-latest

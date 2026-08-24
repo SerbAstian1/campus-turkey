@@ -25,10 +25,14 @@ the code. It has now been run: two simultaneous requests for the whole of a $400
 produce exactly one withdrawal, and the loser is refused with a `ConflictError` rather than
 escaping as a 500.
 
-Run it with `npm run test:integration` against a branch database. It is deliberately not
-part of `npm test` or the CI gate — a suite needing a live database would fail the gate for
-reasons unrelated to the commit — and `vitest.config.ts` excludes `tests/integration/**`
-so the unit run cannot pick it up and fail on the fake `DATABASE_URL` it injects.
+Run it with `npm run test:integration` against a branch database. **It also runs in CI**,
+as its own job against a Postgres service container the workflow starts — see the
+`integration` job in `.github/workflows/ci.yml`. It is still not part of `npm test`:
+`vitest.config.ts` excludes `tests/integration/**` so the unit run cannot pick it up and
+fail on the fake `DATABASE_URL` it injects.
+
+Until recently it ran only on request, which is what audit finding M3 was about — the
+money path's only executable guarantees depending on somebody remembering a command.
 
 Two of those rows changed from "not measured" by running the migrations against
 **PGlite** — Postgres compiled to WebAssembly, so a real planner and real constraint
