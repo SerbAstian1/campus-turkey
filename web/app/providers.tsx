@@ -51,7 +51,6 @@ function BootScreen() {
       <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
         Loading Campus Turkey
       </span>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/assets/logo-lockup-reversed.png"
         alt=""

@@ -50,6 +50,14 @@ jobs:
         working-directory: web
         run: npx tsc --noEmit
 
+      # The rules `tsc` has no opinion about: the `jsx-a11y` set on the markup, and
+      # rules-of-hooks on the client components. Before `web/eslint.config.mjs` there
+      # was no lint layer here at all — `next lint` prompted for setup instead of
+      # running, so the check silently did nothing. Audit finding m4.
+      - name: Lint
+        working-directory: web
+        run: npm run lint
+
       - name: Test with coverage
         working-directory: web
         # The coverage thresholds in vitest.config.ts are part of this gate. The money

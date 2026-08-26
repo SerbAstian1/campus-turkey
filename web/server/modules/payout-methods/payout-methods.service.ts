@@ -23,7 +23,9 @@ import type { RequestLogger } from "@/server/lib/logger";
 import type { PayoutMethodRow } from "@/server/types/api";
 import * as repo from "./payout-methods.repository";
 
-const KINDS = ["BANK", "WISE", "STABLECOIN", "MOBILE_MONEY"] as const;
+/* The database enum spelling. A type, not an array: nothing reads these at
+   runtime — the only use is constraining the map below. */
+type Kind = "BANK" | "WISE" | "STABLECOIN" | "MOBILE_MONEY";
 
 /** The client sends the frontend spelling; the database uses the enum spelling. */
 const KIND_FROM_DTO = {
@@ -31,7 +33,7 @@ const KIND_FROM_DTO = {
   wise: "WISE",
   stablecoin: "STABLECOIN",
   "mobile-money": "MOBILE_MONEY",
-} as const satisfies Record<string, (typeof KINDS)[number]>;
+} as const satisfies Record<string, Kind>;
 
 export const setupTokenBody = z.object({
   kind: z.enum(["bank", "wise", "stablecoin", "mobile-money"]),

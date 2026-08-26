@@ -99,7 +99,8 @@ for (const u of universities) {
     update: data,
   });
 
-  existing ? updated++ : created++;
+  if (existing) updated++;
+  else created++;
 }
 
 const total = await db.university.count();

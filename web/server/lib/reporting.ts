@@ -35,9 +35,9 @@ async function client(): Promise<SentryModule | null> {
   // One initialisation even under concurrent errors, which is the moment several
   // requests are most likely to fail at once.
   initialising ??= (async () => {
-    const module = await import("@sentry/nextjs");
+    const sdk = await import("@sentry/nextjs");
 
-    module.init({
+    sdk.init({
       dsn: env.SENTRY_DSN,
       environment: env.NODE_ENV,
 
@@ -79,8 +79,8 @@ async function client(): Promise<SentryModule | null> {
       ],
     });
 
-    sentry = module;
-    return module;
+    sentry = sdk;
+    return sdk;
   })();
 
   return initialising;
@@ -102,10 +102,10 @@ export interface ReportContext {
  */
 export function reportError(error: unknown, context: ReportContext): void {
   void client()
-    .then((module) => {
-      if (!module) return;
+    .then((sdk) => {
+      if (!sdk) return;
 
-      module.withScope((scope) => {
+      sdk.withScope((scope) => {
         // The correlation id is the whole point — it is what joins a Sentry event to
         // the structured log line that carries the detail.
         scope.setTag("requestId", context.requestId);
@@ -115,7 +115,7 @@ export function reportError(error: unknown, context: ReportContext): void {
         if (context.userId) scope.setUser({ id: context.userId });
         if (context.partnerId) scope.setTag("partnerId", context.partnerId);
 
-        module.captureException(error);
+        sdk.captureException(error);
       });
     })
     .catch(() => {

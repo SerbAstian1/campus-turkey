@@ -206,6 +206,9 @@ function patchScrollReveal(ds: Record<string, unknown>) {
   const ScrollReveal: React.FC<Record<string, unknown>> = (props) => {
     const delay = (props["delay"] as number) ?? 0;
     const distance = props["distance"] == null ? 16 : (props["distance"] as number);
+    /* Read outside the effect: the effect must depend on the value, not on `props`,
+       which changes identity on every render and would re-observe on each one. */
+    const threshold = (props["threshold"] as number) ?? 0.12;
     const ref = React.useRef<HTMLElement>(null);
     const [shown, setShown] = React.useState(false);
 
@@ -233,7 +236,7 @@ function patchScrollReveal(ds: Record<string, unknown>) {
               io?.disconnect();
             }
           },
-          { threshold: (props["threshold"] as number) ?? 0.12, rootMargin: "0px 0px -8% 0px" },
+          { threshold, rootMargin: "0px 0px -8% 0px" },
         );
         io.observe(el);
       }, 0);
@@ -244,7 +247,7 @@ function patchScrollReveal(ds: Record<string, unknown>) {
         if (timer) clearTimeout(timer);
         io?.disconnect();
       };
-    }, [delay]);
+    }, [delay, threshold]);
 
     const style: React.CSSProperties = {
       opacity: shown ? 1 : 0,

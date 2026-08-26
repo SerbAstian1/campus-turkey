@@ -302,7 +302,7 @@ function ReadOnlyNotice(): ReactNode {
       }}
     >
       <Icon name="eye" size={16} color="var(--green-600)" />
-      You can read this queue. Approving and rejecting is finance's.
+      You can read this queue. Approving and rejecting is finance&apos;s.
     </p>
   );
 }
