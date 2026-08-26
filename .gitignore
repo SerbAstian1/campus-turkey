@@ -58,3 +58,10 @@ ref/
 # `ref/`, and the first strip pass missed those copies because it filtered by
 # directory. Match them by extension too, wherever they land.
 *.skill
+
+# Claude Code project skills. `.claude/skills/devpoint/` is the DEVPOINT skill
+# unpacked — the same material as the bundle above, in the form Claude Code reads.
+# It rode along in the initial commit and was published before anyone looked; it is
+# stripped from history for the same reason `ref/` is, and kept on disk so the skill
+# still loads locally. Settings under `.claude/` are not ignored, only the skills.
+.claude/skills/
