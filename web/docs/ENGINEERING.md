@@ -79,7 +79,7 @@ likely next feature: **4 files** (`withdrawal.state.ts`, `withdrawals.service.ts
 | Target | Result |
 |---|---|
 | Files touched by a plausible feature | 4 — healthy (1–3 ideal, ≥8 is a boundary problem) |
-| Import-direction rule enforced by tooling | **No — convention only.** No ESLint boundaries plugin configured |
+| Import-direction rule enforced by tooling | **No — convention only.** ESLint runs in CI since m4, but no boundaries plugin is configured |
 | Business logic reachable in tests without HTTP | All of it. The admission rule and state machine have zero I/O imports |
 
 | Dimension | Score | Justification |
@@ -386,11 +386,35 @@ status, so handoff note 12's actual requirement is met; the EDSAI-designed recov
 screen appears once step 2 of MIGRATION.md adds page routes.
 
 **MINOR — import direction is convention, not tooling.** The layer rules in
-ARCHITECTURE.md are followed but nothing enforces them. *Fix:* `eslint-plugin-boundaries`.
+ARCHITECTURE.md are followed but nothing enforces them. *Fix:* `eslint-plugin-boundaries`
+— now a one-plugin change rather than a new toolchain, since m4 put ESLint in place and
+CI already blocks on it.
 
-**MINOR — no Sentry client is wired.** `SENTRY_DSN` is required in production and
-validated at boot, but no SDK is initialised, so errors are logged and not reported.
-*Fix:* `@sentry/nextjs` with the DSN already in config.
+**MINOR — server-component render errors bypass Sentry.** `@sentry/nextjs` is wired and
+initialises lazily, Node-only, from `server/lib/reporting.ts`. What it does not see is a
+server component that throws: that reaches `app/[locale]/error.tsx`, not the route
+handler. *Fix:* none proposed — reporting from there would pull in the browser SDK and
+the client-bundle cost `reporting.ts` rejected on purpose. The reasoning is in both files.
+
+**CLOSED (m3) — the map was in the initial bundle.** `leaflet` and its stylesheet were
+imported statically by `screens/Universities.tsx`, which put the directory route over the
+170KB budget. The map is below the fold on every viewport and builds itself imperatively
+against a real DOM node, so it renders nothing on the server in any case. It is now
+`next/dynamic` with `ssr: false` in `screens/UniversitiesMap.tsx`, behind a placeholder
+holding the map's exact height so nothing below it moves when the chunk lands. Measured
+after: 129.5KB first-load gzipped for that route, with leaflet's 41.6KB deferred and
+present in no route's initial load.
+
+**CLOSED (m4) — there was no lint layer.** `next lint` prompted for setup rather than
+running, so the rules a typechecker cannot replicate — `jsx-a11y` on the markup,
+rules-of-hooks on the client components — were absent entirely, and their absence was
+indistinguishable from a pass. `web/eslint.config.mjs` now carries
+`next/core-web-vitals` and `next/typescript`, and CI blocks on it. The first run found
+27 errors; they are fixed rather than suppressed, with three exceptions argued in the
+config itself: `no-html-link-for-pages` and `no-img-element` are off because this
+application deliberately does neither (see `router.ts` and `next.config.ts`), and
+`no-new-func` is switched **on**, which is what makes the two existing disable comments
+in the test suite mean something.
 
 **MINOR — one slow test.** `sumMinor` overflow allocates a 5M-element array and costs
 ~1.3s of a 2.8s suite. Acceptable now; if the suite grows, mark it.
@@ -448,8 +472,10 @@ deliver was rendering unstyled.
 ## 8. Production Operations (Dept 22)
 
 **CI** (`.github/workflows/ci.yml`) — every step blocking, across three jobs. `web`:
-`npm ci` → `prisma generate` → `tsc --noEmit` → tests with the coverage gate →
-`next build`. `integration`: a Postgres 16 service container → `prisma migrate deploy`
+`npm ci` → `prisma generate` → `tsc --noEmit` → `eslint .` → tests with the coverage
+gate → `next build`. The lint step is new: before `web/eslint.config.mjs` there was no
+lint layer at all, because `next lint` prompted for setup instead of running and the
+absence looked like a pass (audit finding m4). `integration`: a Postgres 16 service container → `prisma migrate deploy`
 → the 24 integration assertions, which until recently ran only when somebody
 remembered the command (audit finding M3). Plus gitleaks over full
 history, and the existing Vite app kept green so it is not discovered broken on cutover
@@ -489,8 +515,8 @@ carry their own retention policy.
 | Reliability | 7 | Health check with its own timeout, maintenance from the edge — but rollback and restore are both written and unrehearsed |
 | Maintainability | 9 | Five documents, each answering one question, all current as of this run |
 | Design Fidelity | 8 | The 503 maintenance state renders EDSAI's copy from the edge, which is what note 12 asked for |
-| **Deployability** | 8 | Automated, repeatable, every check blocking; not higher because the pipeline has never actually executed — there is no git repository yet |
-| **Observability** | 7 | Correlated structured logs with tested redaction and numeric thresholds; no error-tracking SDK is initialised and no dashboard exists |
+| **Deployability** | 8 | Automated, repeatable, every check blocking; not higher because the pipeline has never actually executed — the repository exists but has no remote, so no workflow run has ever happened |
+| **Observability** | 7 | Correlated structured logs with tested redaction and numeric thresholds; Sentry initialises lazily from the request handler — but no dashboard exists and not one of the nine thresholds has ever fired |
 | **Recoverability** | 5 | Rollback documented and time-boxed, backups configured in principle, RPO/RTO stated — and **not one of the three has been demonstrated**. Unknown is not the same as fine |
 
 ---
@@ -507,7 +533,8 @@ Everything below was run on this machine during this session.
 | **Constraint enforcement** | `tests/schema-integrity.test.ts` | **pass** — 30 assertions, each proving a violation is refused |
 | **Query plans** | `tests/query-plans.test.ts` | **pass** — 3 heaviest queries observed; index-only scan confirmed; FK index audit clean |
 | Types | `tsc --noEmit` | **pass** — 0 errors |
-| Tests | `vitest run` | **pass** — 208/208, 9 files |
+| Tests | `vitest run` | **pass** — 750/750, 53 files |
+| **Lint** | `eslint .` | **pass** — 0 errors, 0 warnings, after 27 errors on the first run |
 | Coverage gate | `vitest run --coverage` | **pass** — 24.82% statements over the full service layer, with the money path, error mapping and the three money services held at their own per-file floors |
 | Production build | `next build` | **pass** — 10 API routes, static sitemap and robots, middleware 35.2KB |
 | Config guard | `next build` without prod vars | **correctly failed**, naming Sentry, Redis and captcha |
@@ -613,8 +640,10 @@ budget was spent. Both are described in TESTING.md and both are now covered.
 
 ### Non-blocking, worth closing soon
 
-- Initialise `@sentry/nextjs` (check 12). The DSN is already required and validated.
+- Stand up the Sentry dashboard and route the nine thresholds to their named recipient
+  (check 12). The SDK reports; nothing is yet watching what it sends.
 - Add `eslint-plugin-boundaries` so the import rules are enforced rather than observed.
+  ESLint itself is now configured and blocking, so this is one plugin, not a toolchain.
 - Get a staging deployment up and capture real p95 and three `EXPLAIN` plans (check 8).
 
 ---

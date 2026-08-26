@@ -12,19 +12,21 @@ import { fileURLToPath } from "node:url";
  * (error mapping, log redaction, rate-limit keying).
  *
  * NOT covered: repositories, services and route handlers, because they need a live
- * Postgres and an HTTP layer. Their coverage is 0% and the honest overall figure is
- * ~17% of lines, against Department 21's ≥80% service-layer target. **That target is
- * not met.** It is recorded as QA issue #1 rather than disguised.
+ * Postgres and an HTTP layer. Coverage measures them regardless — see `include` below
+ * — which is why the reported figure is 24.82% and not the 99.61% a six-file allowlist
+ * used to print over the same summary row. Department 21's target is ≥80% of the
+ * service layer. **That target is not met**, and the number now describes the scope a
+ * reader would assume it describes. That gap was audit finding M2.
  *
- * The excluded files below are excluded from the *gate*, not from the obligation. A
- * global threshold that can never pass is a threshold that gets deleted in the first
- * red build, and then nothing is gated at all. This way the gate is real for what it
- * covers, and the gap is a number in a document rather than a silence.
+ * Nothing is excluded from the gate in order to make the gate pass. The threshold is
+ * pinned at what the widened scope actually measures, so the figure cannot drift down
+ * while nobody is watching, and the next person to add tests raises it deliberately.
  *
  * `tests/integration/` is where the missing coverage goes. It needs a disposable
  * Postgres — see docs/TESTING.md for the compose file and the four cases that matter
  * most: concurrent withdrawal admission, idempotent replay, authorization denial, and
- * the append-only trigger.
+ * the append-only trigger. Since M3 it runs on every push against a Postgres service
+ * container, as a blocking job, rather than when somebody remembers to type it.
  */
 export default defineConfig({
   /**
