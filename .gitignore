@@ -41,3 +41,20 @@ Thumbs.db
 
 # Local PGlite database (scripts/dev-db.mjs)
 web/.pglite/
+
+# Reference material, deliberately untracked.
+#
+# `ref/` holds the client's design system PDF and the EDSAI and DEVPOINT skill
+# bundles the creative and engineering passes are run from. Nothing in the build
+# reads any of it — it was carried in git only because it happened to be in the
+# working directory when the repository was first created.
+#
+# The GitHub remote is public, so it was stripped from history rather than merely
+# deleted: a delete commit leaves the blobs reachable from every earlier commit.
+# Keep the files locally; do not commit them back.
+ref/
+
+# Both bundles also lived at the repository root before they were moved into
+# `ref/`, and the first strip pass missed those copies because it filtered by
+# directory. Match them by extension too, wherever they land.
+*.skill
