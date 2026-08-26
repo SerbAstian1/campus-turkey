@@ -45,11 +45,23 @@ export const journey: JourneyStep[] = [
 ];
 
 /**
- * Portraits are deliberately absent. Per the project README these need a signed release
- * from the person named, or the quote runs as text only — which is what it does here.
+ * Text only, at the client's request — no video and no imagery of any kind.
+ *
+ * The comment that stood here claimed the quotes already ran as text. They did not:
+ * every entry carried `video: true`, and the design system's `TestimonialCard` renders
+ * a 16:9 poster block with a play affordance whenever that flag is set. The claim was
+ * about the *portraits*, which were genuinely absent, and it read as though it covered
+ * the whole card.
+ *
+ * Nothing here may carry an image. `Testimonial` in `./types.ts` no longer has a field
+ * that can produce one, so this is enforced by the type rather than by this note — the
+ * previous arrangement is exactly what let the two drift apart.
+ *
+ * The portrait rule is unchanged and still applies if that decision is ever revisited:
+ * per the project README a face needs a signed release from the person named.
  */
 export const testimonials: Testimonial[] = [
-  { quote: "Campus Turkey handled my admission, my visa and my first week in Istanbul.", name: "Amina Yusuf", role: "Dentistry, 1st year", country: "Nigeria", video: true, duration: "2:14" },
-  { quote: "I compared six universities in one afternoon and knew exactly what each one would cost.", name: "Karim Haddad", role: "Computer Engineering", country: "Morocco", video: true, duration: "1:48" },
-  { quote: "We sent a delegation of nine people. Every meeting and every transfer was arranged.", name: "Grace Mwangi", role: "Trade delegation lead", country: "Kenya", video: true, duration: "3:02" },
+  { quote: "Campus Turkey handled my admission, my visa and my first week in Istanbul.", name: "Amina Yusuf", role: "Dentistry, 1st year", country: "Nigeria" },
+  { quote: "I compared six universities in one afternoon and knew exactly what each one would cost.", name: "Karim Haddad", role: "Computer Engineering", country: "Morocco" },
+  { quote: "We sent a delegation of nine people. Every meeting and every transfer was arranged.", name: "Grace Mwangi", role: "Trade delegation lead", country: "Kenya" },
 ];

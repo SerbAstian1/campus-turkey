@@ -151,13 +151,25 @@ export interface Article {
   sections: ArticleSection[];
 }
 
+/**
+ * Text only. The client asked for the video testimonials to go, and for it to be
+ * possible to run a testimonial with no imagery at all.
+ *
+ * `video`, `duration` and the design system's `poster` are deliberately not here. The
+ * component still accepts all three — see `TestimonialCardProps` in `@/ds`, which
+ * describes the design system as it actually is — so leaving them on this type would
+ * let a single `video: true` in a content file put the play button back with nothing to
+ * catch it. Removing them makes that a compile error instead of a review comment.
+ *
+ * What renders in this mode: the quote, the name, and a `role · country` line under a
+ * circle holding the first letter of the name. That initial is typography, not an
+ * image; no file is fetched for it.
+ */
 export interface Testimonial {
   quote: string;
   name: string;
   role: string;
   country: string;
-  video?: boolean;
-  duration?: string;
 }
 
 /* ----------------------------------------------------------------- study hub */
