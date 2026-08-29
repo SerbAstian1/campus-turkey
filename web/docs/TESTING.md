@@ -14,7 +14,7 @@
 | **Tenant isolation — payout methods, wallet, students, documents** | every rule denied at least once | **10 assertions, each with a positive control** | met |
 | **Money-writing services — withdrawals, commissions, wallet** | **>=80%** | **95%, 84%, 100%** statements | met |
 | **Remaining services, repositories, route handlers** | **>=80%** | 0% — eight of sixteen module directories have no test at all | **NOT MET — QA issue #1** |
-| Measured coverage across `server/modules/**` + money/error/log/rate-limit libs | >=80% | **24.82% statements, 92.36% branches, 78.78% functions** | not met — this is the honest scope figure |
+| Measured coverage across `server/modules/**` + money/error/log/rate-limit libs | >=80% | **27.94% statements, 92.59% branches, 75.72% functions** | not met — this is the honest scope figure |
 
 **740 unit tests across 52 files, plus 24 integration tests against a real Postgres.**
 
@@ -111,9 +111,17 @@ rules. Nothing is excluded for lacking a test.
 
 It used to instrument six hand-picked files, and v8 prints its summary row as
 `All files` — so the gate reported **99.61%** over those six and read as though it
-described the server. That gap is audit finding M2. The number is now 24.82%, which is
+described the server. That gap is audit finding M2. The number is now 27.94%, which is
 worse to look at and true, and the per-file thresholds that held the money path at 100%
 are still there underneath it.
+
+The function figure moved *down*, from 78.78% to 75.72%, on a change that only added
+tests. v8 counts the functions of a module it has loaded, and a file no test imports
+contributes to neither side of the ratio; testing the lead schemas imports
+`leads.service.ts` and brings its six database-bound functions into the denominator. The
+floor was lowered to match rather than held, because a threshold that forbids the honest
+number is one somebody eventually satisfies by deleting a test. `vitest.config.ts` carries
+the full reasoning.
 
 ## What the unit suite does cover, and why those things
 

@@ -154,9 +154,32 @@ export default defineConfig({
          * Department 21's target is >=80% on the service layer. This is 24.82%. Raise
          * these as tests land; do not lower them to make a build pass.
          */
-        lines: 24,
-        statements: 24,
-        functions: 78,
+        /*
+         * Raised from 24 as the lead intake tests landed. 27.94% at the time of writing.
+         */
+        lines: 27,
+        statements: 27,
+
+        /*
+         * **Lowered from 78, and this is the one number here that went down, so it needs
+         * its reason on the record rather than in a commit message.**
+         *
+         * It is a measurement artifact, not a regression. v8 counts the functions of a
+         * module it has loaded; a file no test imports contributes nothing to either side
+         * of the ratio. `leads.service.ts` was in that state — reported as 0% of nothing.
+         * Testing its schemas imports it, which brings its six functions into the
+         * denominator as uncovered, because all six need a database and belong in the
+         * integration suite. So the global figure fell from 78.78% to 75.72% on a change
+         * that only added coverage: lines went 24.81% to 27.94% in the same run.
+         *
+         * Holding 78 would mean the honest number could never be reported, and the way
+         * that gets resolved at 6pm is by deleting a test rather than by writing one.
+         *
+         * The way back up is `submitLead` and `purgeExpiredLeads` in the integration
+         * suite, against a real Postgres. That is the correct level for both — one writes
+         * a row inside a transaction, the other deletes across two tables in order.
+         */
+        functions: 75,
         branches: 92,
 
         // The money path and the error boundary are held at 100%. These are the

@@ -69,7 +69,7 @@ not literals.
 
 ## Testing
 
-773 tests. `npm test` in `web/`, or `npm run test:coverage` for the gate CI enforces.
+808 tests. `npm test` in `web/`, or `npm run test:coverage` for the gate CI enforces.
 The money path — balances, the withdrawal state machine, money arithmetic — is held at
 100%. Coverage across the whole service layer is lower and is reported honestly in
 [`web/docs/TESTING.md`](web/docs/TESTING.md).

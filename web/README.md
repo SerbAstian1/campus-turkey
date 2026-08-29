@@ -27,7 +27,7 @@ that needed one; the error names every variable that is missing.
 | `npm run dev` | Next dev server |
 | `npm run build` | `prisma generate` then `next build` |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Vitest — 165 unit tests |
+| `npm test` | Vitest — 808 unit tests |
 | `npm run test:coverage` | with the coverage gate |
 | `npm run db:migrate` | `prisma migrate deploy` — production |
 | `npm run db:migrate:dev` | `prisma migrate dev` — local |
