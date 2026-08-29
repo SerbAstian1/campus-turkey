@@ -54,6 +54,19 @@ function hasSessionCookie(request: NextRequest): boolean {
     .some((cookie) => cookie.name.endsWith("better-auth.session_token") && cookie.value !== "");
 }
 
+/**
+ * Whether this deployment should be withheld from search engines.
+ *
+ * Exactly `"off"`, and nothing else. Absent, empty, misspelled, `"false"`, `"no"` and
+ * `"0"` all mean indexing stays **on**, which is the direction a mistake has to fail in:
+ * the live site's whole purpose is being found, so an unrecognised value must never be
+ * read as permission to disappear from Google. Making the site invisible should require
+ * saying so precisely.
+ */
+export function searchIndexingDisabled(value: string | undefined): boolean {
+  return value === "off";
+}
+
 export function contentSecurityPolicy(tileHosts: string[], isProduction: boolean): string {
   return [
     "default-src 'self'",
@@ -331,9 +344,26 @@ export function middleware(request: NextRequest): NextResponse {
     "camera=(), microphone=(), geolocation=(), payment=(), interest-cohort=()",
   );
 
-  // The portal is a private application. Even with auth in front of it, a stray index
-  // of a dashboard URL is a support conversation nobody needs.
-  if (pathname.startsWith("/portal")) {
+  /*
+   * A whole deployment kept out of search results, for the preview clients are shown.
+   *
+   * This is set for the staging site and must never be set for the real one, so the
+   * default is to index: a variable nobody remembered to add cannot silently deindex the
+   * production site, which on a build whose entire purpose is organic search would be
+   * the most expensive possible misconfiguration.
+   *
+   * **The header, and deliberately not a `robots.txt` block.** Disallowing a path in
+   * `robots.txt` stops a crawler *fetching* it, which means the crawler never reads the
+   * `noindex` and the URL can still be listed from an external link, as a bare address
+   * with "no information available". Allowing the fetch and refusing the index is the
+   * combination that actually keeps a page out. `robots.txt` is therefore left
+   * permissive on purpose.
+   */
+  if (searchIndexingDisabled(process.env["SEARCH_INDEXING"])) {
+    response.headers.set("x-robots-tag", "noindex, nofollow");
+  } else if (pathname.startsWith("/portal")) {
+    // The portal is a private application. Even with auth in front of it, a stray index
+    // of a dashboard URL is a support conversation nobody needs.
     response.headers.set("x-robots-tag", "noindex, nofollow");
   }
 

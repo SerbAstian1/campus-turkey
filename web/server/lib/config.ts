@@ -153,6 +153,19 @@ const schema = z.object({
   MAINTENANCE_MODE: z.enum(["on", "off"]).default("off"),
   MAINTENANCE_RETRY_AFTER_SECONDS: z.coerce.number().int().positive().default(600),
 
+  /**
+   * `off` withholds the whole deployment from search engines, for the staging site
+   * clients are shown before launch.
+   *
+   * Read directly from `process.env` by `middleware.ts`, which runs on the edge and
+   * cannot import this module. Declared here so the variable is known to the schema and
+   * a typo is a refusal to boot rather than a site that quietly stays indexed.
+   *
+   * Defaults to `on`, and that direction is deliberate. This site exists to be found;
+   * a forgotten variable must not be able to deindex it.
+   */
+  SEARCH_INDEXING: z.enum(["on", "off"]).default("on"),
+
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
 });
 

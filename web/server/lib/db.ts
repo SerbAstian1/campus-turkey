@@ -235,6 +235,30 @@ export { Prisma };
  */
 const TRANSIENT_CONNECTION_CODES = new Set(["P1001", "P1008", "P1017", "P2024"]);
 
+/**
+ * The messages that mean "the connection did not survive", on an error carrying no code.
+ *
+ * Two distinct moments are covered, and the second was learned the hard way.
+ *
+ * **Never opened.** A suspended Neon compute refuses the first connection of a cold
+ * worker. That is `can't reach database server`, and it is what this list was written
+ * for.
+ *
+ * **Opened, then lost.** A connection already in use is dropped by the far end mid-build.
+ * Prisma reports it as `Error opening a TLS connection: An existing connection was
+ * forcibly closed by the remote host`, which contains none of the original three
+ * patterns, so it was not retried and the whole build died on it — at page 1,011 of
+ * 1,348, with the database perfectly healthy seconds later. The same publish succeeded on
+ * the next attempt, which is the signature of something that should have been retried.
+ *
+ * **Kept narrow on purpose.** A malformed `DATABASE_URL` throws this same class, and its
+ * message is about the URL's protocol. Retrying a configuration error costs fifteen
+ * seconds and then fails anyway, which is worse than failing at once and saying so. Every
+ * pattern below describes the transport, never the request or the credentials.
+ */
+const TRANSIENT_MESSAGES =
+  /can't reach database server|connection refused|timed out|connection reset|connection closed|closed the connection|broken pipe|forcibly closed|error opening a tls connection/i;
+
 export function isTransientConnectionError(error: unknown): boolean {
   const candidate = error as { code?: unknown; errorCode?: unknown; name?: unknown; message?: unknown } | null;
 
@@ -259,7 +283,7 @@ export function isTransientConnectionError(error: unknown): boolean {
   const unreachable =
     candidate?.name === "PrismaClientInitializationError" &&
     typeof candidate.message === "string" &&
-    /can't reach database server|connection refused|timed out/i.test(candidate.message);
+    TRANSIENT_MESSAGES.test(candidate.message);
 
   return unreachable;
 }
