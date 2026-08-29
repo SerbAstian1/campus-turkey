@@ -15,6 +15,7 @@ import { useLeadSubmit } from "@/features/leads/submit";
 import { useT } from "@/i18n/context";
 import { useTranslatedOptions } from "@/i18n/options";
 import { CaptchaField } from "@/features/leads/captcha";
+import { ConsentPrivacyNote } from "./shared";
 
 /**
  * The step names, as a hook.
@@ -197,6 +198,7 @@ export default function Apply() {
                 ))}
                 <Checkbox id="a-consent" label={t("Contact me on WhatsApp about my application")}
                   description={t("We reply within one working day. No marketing messages.")} checked={form.consent} onChange={set("consent")} />
+                <ConsentPrivacyNote />
               </div>
             ) : null}
 

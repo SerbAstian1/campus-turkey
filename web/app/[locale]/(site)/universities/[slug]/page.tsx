@@ -16,6 +16,8 @@ import { db, withTransientRetry } from "@/server/lib/db";
 import { pageMetadata, universityJsonLd, jsonLdScript } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
 import UniversityDetail from "@/screens/UniversityDetail";
+import { Hydrated } from "@/app/Hydrated";
+import { UniversityDetailSeo } from "@/components/seo/routes";
 
 /**
  * Any slug not returned by `generateStaticParams` is a genuine 404, refused before
@@ -229,7 +231,7 @@ export async function generateMetadata(
 }
 
 export default async function Page({ params }: { params: Promise<{ locale: string; slug: string }> }) {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const university = await findUniversity(slug);
 
   // The 404 a hash-routed SPA could not produce. Handoff note 12.
@@ -237,12 +239,47 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 
   const similar = await findSimilar(university);
 
+  /*
+   * The same facts, rendered twice on purpose, and only one of them reaches a browser
+   * that has run the bundle.
+   *
+   * `UniversityDetailSeo` is server-rendered into the HTML: the description, the tuition,
+   * the intake deadlines and the faculty list, as real text a crawler reads without
+   * executing anything. `UniversityDetail` is the design system screen and replaces it
+   * once `_ds_bundle.js` resolves. Before this the response carried a loading screen and
+   * these forty pages, the whole point of the routing migration, had no readable content
+   * at all.
+   */
+  const seo = (
+    <UniversityDetailSeo
+      locale={locale as Locale}
+      university={{
+        slug: university.slug,
+        name: university.name,
+        city: university.city,
+        type: university.type,
+        about: university.description,
+        languages: university.languages,
+        tuition: university.tuitionDisplay,
+        programs: university.programCount,
+        scholarship: university.scholarship,
+        founded: university.founded,
+        students: university.studentsDisplay,
+        ranking: university.ranking,
+        faculties: university.faculties,
+        deadlines: (university.deadlines as [string, string][] | null) ?? [],
+      }}
+      similar={similar.map((s) => ({ slug: s.slug, name: s.name, city: s.city }))}
+    />
+  );
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(universityJsonLd(university)) }}
       />
+      <Hydrated server={seo}>
       <UniversityDetail
         university={{
           slug: university.slug,
@@ -274,6 +311,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
           scholarship: s.scholarship,
         }))}
       />
+      </Hydrated>
     </>
   );
 }

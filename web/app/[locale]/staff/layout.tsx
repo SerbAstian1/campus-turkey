@@ -11,6 +11,7 @@
  */
 
 import type { Metadata } from "next";
+import { DesignSystemBoundary } from "../../providers";
 import { NavigationBridge } from "../portal/NavigationBridge";
 
 export const metadata: Metadata = {
@@ -21,5 +22,10 @@ export const metadata: Metadata = {
 };
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
-  return <NavigationBridge>{children}</NavigationBridge>;
+  /* Gated like the portal, and for the same reasons. See that layout. */
+  return (
+    <DesignSystemBoundary>
+      <NavigationBridge>{children}</NavigationBridge>
+    </DesignSystemBoundary>
+  );
 }

@@ -11,6 +11,8 @@ import { articles, getArticle } from "@/content/articles";
 import { pageMetadata, articleJsonLd, jsonLdScript } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
 import Article from "@/screens/Article";
+import { Hydrated } from "@/app/Hydrated";
+import { ArticleSeo } from "@/components/seo/routes";
 
 /**
  * Any slug not returned by `generateStaticParams` is a genuine 404, refused before
@@ -51,7 +53,7 @@ export async function generateMetadata(
 }
 
 export default async function Page({ params }: { params: Promise<{ locale: string; slug: string }> }) {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const article = getArticle(slug);
   if (!article) notFound();
 
@@ -61,7 +63,9 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(articleJsonLd(article)) }}
       />
-      <Article slug={slug} />
+      <Hydrated server={<ArticleSeo locale={locale as Locale} slug={slug} />}>
+        <Article slug={slug} />
+      </Hydrated>
     </>
   );
 }

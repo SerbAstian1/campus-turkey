@@ -25,9 +25,10 @@
 
 import { useEffect, useState } from "react";
 import { loadDesignSystem } from "@/ds/load";
+import { DesignSystemStatusContext, useDesignSystemStatus, type DesignSystemStatus } from "@/ds/status";
 import { useT } from "@/i18n/context";
 
-type Status = "loading" | "ready" | "failed";
+type Status = DesignSystemStatus;
 
 /**
  * The boot screen, transcribed from the Vite build's `index.html`.
@@ -102,6 +103,21 @@ function BootFailure() {
   );
 }
 
+/**
+ * Loads the bundle once and publishes its status. It no longer withholds the page.
+ *
+ * **Why that changed.** Withholding was the reason this site sent crawlers a loading
+ * screen. `children` never rendered on the server, so every one of the 1,348 pages
+ * arrived as a spinner with correct metadata attached to no content: `<h1>`, `<main>`
+ * and the university facts existed only after the bundle had been fetched and run. On a
+ * build whose stated purpose is organic search, that is the expensive half missing.
+ *
+ * Publishing the status instead lets each subtree decide what to show while waiting.
+ * The public pages show their real text, server-rendered, and swap to the design
+ * system's version once it resolves. The portal shows the boot screen exactly as before
+ * (see `DesignSystemBoundary`), because it is `noindex` and auth-gated, so there is
+ * nothing there for a crawler to want.
+ */
 export function DesignSystemProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
 
@@ -121,6 +137,25 @@ export function DesignSystemProvider({ children }: { children: React.ReactNode }
       mounted = false;
     };
   }, []);
+
+  return (
+    <DesignSystemStatusContext.Provider value={status}>
+      {children}
+    </DesignSystemStatusContext.Provider>
+  );
+}
+
+/**
+ * The old gate, kept for the subtrees that genuinely want it.
+ *
+ * The portal and the staff console are applications rather than documents: they are
+ * `noindex`, they require a session, and their screens are built almost entirely from
+ * design system components, so a server-rendered version of them would be an empty
+ * shell that helps nobody. They keep the boot screen, which is the behaviour this
+ * provider used to impose on every page.
+ */
+export function DesignSystemBoundary({ children }: { children: React.ReactNode }) {
+  const status = useDesignSystemStatus();
 
   if (status === "loading") return <BootScreen />;
   if (status === "failed") return <BootFailure />;

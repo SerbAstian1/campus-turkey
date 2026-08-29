@@ -38,6 +38,7 @@ import { signInWithPassword } from "@/features/auth/client";
 import { useLeadSubmit } from "@/features/leads/submit";
 import { useT } from "@/i18n/context";
 import { useTranslatedOptions } from "@/i18n/options";
+import { ConsentPrivacyNote } from "./shared";
 
 type Role = "STUDENT" | "PARTNER" | "REPRESENTATIVE" | "STAFF";
 
@@ -381,6 +382,7 @@ export default function PartnerLogin() {
                     <Checkbox id="s-consent" label={t("Campus Turkey may contact me about this enquiry")}
                       checked={study.consent}
                       onChange={(e) => setStudy("consent")(e as never)} />
+                    <ConsentPrivacyNote />
 
                     {enquired.status === "failed" ? (
                       <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>

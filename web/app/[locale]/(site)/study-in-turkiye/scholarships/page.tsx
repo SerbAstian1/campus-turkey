@@ -12,6 +12,8 @@ import { pageMetadata } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
 import { getTranslator } from "@/i18n/messages";
 import Scholarships from "@/screens/study/Scholarships";
+import { Hydrated } from "@/app/Hydrated";
+import { ScholarshipsSeo } from "@/components/seo/routes";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -31,6 +33,14 @@ export async function generateMetadata(
   });
 }
 
-export default function Page() {
-  return <Scholarships />;
+export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+
+  /* Server-rendered text first, the design system over it once the bundle resolves.
+     See src/app/Hydrated.tsx for why the fallback is the content and not a spinner. */
+  return (
+    <Hydrated server={<ScholarshipsSeo locale={locale as Locale} />}>
+      <Scholarships />
+    </Hydrated>
+  );
 }

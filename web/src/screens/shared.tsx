@@ -11,6 +11,7 @@ import { CardGrid } from "@/components/CardGrid";
 import { ImagePlaceholder } from "@/components/Common";
 import { PhotoCredit } from "@/components/PhotoCredit";
 import { useT } from "@/i18n/context";
+import { useHref } from "@/app/router";
 
 export function PageHero({
   eyebrow, title, lead, actions, badge,
@@ -171,3 +172,33 @@ export function StudentLifeFrames() {
 export const splitStyle: CSSProperties = {
   display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-12)", alignItems: "start",
 };
+
+/**
+ * The privacy link that sits under a consent checkbox.
+ *
+ * A sibling rather than part of the checkbox, and not by preference: the design system
+ * types `CheckboxProps.description` as `string`, so a link cannot go inside it without
+ * changing the bundle. Rendering it underneath keeps the anchor a real `<a>` with a real
+ * href, which is what a consent line needs to be.
+ *
+ * `useHref` rather than a literal `/privacy`, so a reader on `/fr/...` is sent to
+ * `/fr/privacy` instead of being bounced there by the middleware's redirect.
+ *
+ * Used by every public form that asks for consent to be contacted. The partner portal's
+ * own consent checkbox is deliberately not one of them: there a signed-in partner is
+ * attesting that a student agreed, which is a different statement to a different person.
+ */
+export function ConsentPrivacyNote() {
+  const t = useT();
+  const href = useHref();
+
+  return (
+    <p style={{ margin: 0, fontSize: "var(--fs-caption)", color: "var(--text-muted)", lineHeight: "var(--lh-body)" }}>
+      {t("Read")}{" "}
+      <a href={href("privacy")} style={{ color: "var(--green-700)", textDecoration: "underline" }}>
+        {t("how we handle your information")}
+      </a>
+      {t(", including how long we keep it and how to ask us to delete it.")}
+    </p>
+  );
+}

@@ -26,6 +26,7 @@ import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
 import { useRepresentativeApplication } from "@/features/representatives/submit";
 import { useT } from "@/i18n/context";
+import { ConsentPrivacyNote } from "./shared";
 
 export function RepresentativeForm() {
   const t = useT();
@@ -140,6 +141,7 @@ export function RepresentativeForm() {
             <Checkbox id="r-consent" label={t("Campus Turkey may contact me about this application")}
               description={t("We use your details to review and respond. Nothing else.")}
               checked={form.consent} onChange={set("consent")} />
+            <ConsentPrivacyNote />
 
             {state.status === "failed" ? (
               <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>

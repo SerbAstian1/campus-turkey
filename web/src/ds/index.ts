@@ -313,7 +313,21 @@ export interface ScrollProgressProps extends CommonProps {
 
 /* ------------------------------------------------------------------ resolver */
 
-const namespace = () => window[DS_NAMESPACE];
+/**
+ * The design system namespace, or `undefined` when it is not there yet.
+ *
+ * The `typeof window` guard is load-bearing rather than defensive. Screens are client
+ * components, and a client component still renders **on the server** to produce the
+ * initial HTML — so this runs in Node, where `window` is not merely empty but
+ * undeclared, and a bare `window[...]` is a ReferenceError that fails the whole render.
+ *
+ * It never fired while `DesignSystemProvider` withheld every screen until the bundle had
+ * loaded, because nothing below the gate reached the server at all. Now that the gate
+ * publishes its status instead of blanking the page, the chrome renders server-side with
+ * the bundle absent, and `bind` needs a `undefined` here rather than a crash.
+ */
+const namespace = () =>
+  typeof window === "undefined" ? undefined : window[DS_NAMESPACE];
 
 /**
  * Binds a name in the design system namespace to a typed component.

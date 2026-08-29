@@ -15,6 +15,8 @@ import { pageMetadata } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
 import { getTranslator } from "@/i18n/messages";
 import Contact from "@/screens/Contact";
+import { Hydrated } from "@/app/Hydrated";
+import { ContactSeo } from "@/components/seo/routes";
 
 /**
  * Prerendered in every language. 17 locales x this page.
@@ -36,6 +38,14 @@ export async function generateMetadata(
   });
 }
 
-export default function Page() {
-  return <Contact />;
+export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+
+  /* Server-rendered text first, the design system over it once the bundle resolves.
+     See src/app/Hydrated.tsx for why the fallback is the content and not a spinner. */
+  return (
+    <Hydrated server={<ContactSeo locale={locale as Locale} />}>
+      <Contact />
+    </Hydrated>
+  );
 }

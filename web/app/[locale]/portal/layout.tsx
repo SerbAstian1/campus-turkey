@@ -9,6 +9,7 @@
  */
 
 import type { Metadata } from "next";
+import { DesignSystemBoundary } from "../../providers";
 import { NavigationBridge } from "./NavigationBridge";
 
 export const metadata: Metadata = {
@@ -20,5 +21,12 @@ export const metadata: Metadata = {
 };
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
-  return <NavigationBridge>{children}</NavigationBridge>;
+  /* The boot screen still gates this subtree. The portal is noindex and auth-gated, so
+     there is no crawler to serve here, and its screens are almost entirely design system
+     components — a server-rendered version would be an empty frame. */
+  return (
+    <DesignSystemBoundary>
+      <NavigationBridge>{children}</NavigationBridge>
+    </DesignSystemBoundary>
+  );
 }

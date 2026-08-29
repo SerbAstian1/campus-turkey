@@ -11,6 +11,8 @@ import { institutions, getInstitution } from "@/content/institutions";
 import { pageMetadata } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
 import Institution from "@/screens/Institution";
+import { Hydrated } from "@/app/Hydrated";
+import { InstitutionSeo } from "@/components/seo/routes";
 
 /**
  * Any slug not returned by `generateStaticParams` is a genuine 404, refused before
@@ -59,7 +61,12 @@ export async function generateMetadata(
 }
 
 export default async function Page({ params }: { params: Promise<{ locale: string; slug: string }> }) {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   if (!getInstitution(slug)) notFound();
-  return <Institution slug={slug} />;
+
+  return (
+    <Hydrated server={<InstitutionSeo locale={locale as Locale} slug={slug} />}>
+      <Institution slug={slug} />
+    </Hydrated>
+  );
 }

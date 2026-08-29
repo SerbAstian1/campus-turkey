@@ -17,7 +17,7 @@ import { go } from "@/app/router";
 import { useLeadSubmit, type LeadType } from "@/features/leads/submit";
 import { CaptchaField } from "@/features/leads/captcha";
 import { useT } from "@/i18n/context";
-import { PageBody, PageHero } from "./shared";
+import { ConsentPrivacyNote, PageBody, PageHero } from "./shared";
 
 /**
  * The topic someone picks decides which desk receives the enquiry.
@@ -160,6 +160,7 @@ export default function Contact() {
                   <textarea id="c-msg" rows={4} value={form.message} onChange={set("message")} placeholder={t("Your grades, your treatment, your sector. Whatever is relevant.")}
                     style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-subtle)", background: "var(--white)", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", color: "var(--green-900)", resize: "vertical" }} />
                   <Checkbox id="c-consent" label={t("Contact me on WhatsApp")} description={t("We reply within one working day. No marketing messages.")} checked={form.consent} onChange={set("consent")} />
+                  <ConsentPrivacyNote />
 
                   {/* The failure path. Without this the form can only ever appear to
                       succeed, which is the specific thing worse than having no form. */}

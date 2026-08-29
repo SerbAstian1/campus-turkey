@@ -77,6 +77,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry("/resources", now, "weekly", 0.7),
     entry("/about", now, "yearly", 0.5),
     entry("/contact", now, "yearly", 0.6),
+    // Low priority, but present: a privacy notice that cannot be found is not a notice.
+    entry("/privacy", now, "yearly", 0.3),
   ];
 
   /**
