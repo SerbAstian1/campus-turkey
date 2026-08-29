@@ -15,6 +15,7 @@
 
 import React from "react";
 import { DS_NAMESPACE } from "./load";
+import { useDesignSystemStatus } from "./status";
 
 /* ---------------------------------------------------------------- prop types */
 
@@ -334,9 +335,29 @@ const namespace = () =>
  *
  * The lookup happens on render, not on import. In development a missing name is loud —
  * a silent null here would look like a styling bug three screens away.
+ *
+ * **`useDesignSystemStatus` is subscribed to for its re-render, not for its value.** The
+ * lookup below can only succeed once the bundle has assigned the global, and a component
+ * that rendered before that has no reason of its own to render again. Reading the status
+ * makes every bound component a consumer of the context the loader publishes, so the
+ * moment it flips to `ready` React re-renders them and the lookup resolves.
+ *
+ * Without it the failure is narrow and very confusing: anything rendered *inside* a
+ * `Hydrated` boundary works, because that boundary consumes the status itself and mounts
+ * its subtree fresh after the flip, while anything rendered *outside* one renders `null`
+ * for ever. That shipped. The navbar and the footer live in `Shell`, which is outside,
+ * so the deployed site had a perfect page body with no navigation and no footer, and
+ * every local component around them rendered normally.
+ *
+ * The gate that used to be in `DesignSystemProvider` hid this by construction: it
+ * withheld every child until the bundle had loaded, so a bound component's first render
+ * was always its successful one. Removing the gate removed that guarantee, and this is
+ * the piece that has to replace it.
  */
 function bind<P extends object>(name: string): React.FC<P> {
   const Bound: React.FC<P> = (props) => {
+    useDesignSystemStatus();
+
     const Impl = namespace()?.[name] as React.ComponentType<P> | undefined;
     if (!Impl) {
       if (process.env.NODE_ENV !== "production") console.error(`Design system component "${name}" is not available.`);
