@@ -131,10 +131,20 @@ jobs:
           NEXT_PUBLIC_MAPTILER_KEY: placeholder
           CRON_SECRET: ci-placeholder-cron-secret
 
-      # Handoff note 14 is explicit that `npm audit fix --force` breaks this build and
-      # that the reported findings are dev-only and unreachable. So this reports and
-      # does not block: an advisory count that fails CI trains people to ignore CI.
-      # `--omit=dev` narrows it to what actually ships.
+      # Reports, does not block. An advisory count that fails CI trains people to ignore
+      # CI, and handoff note 14 is explicit that `npm audit fix --force` breaks this
+      # build.
+      #
+      # **The claim this comment used to make is no longer true and is worth correcting
+      # rather than deleting.** It said the findings were dev-only. They are not:
+      # `--omit=dev` currently reports eleven, including `postcss` and `sharp`, which
+      # arrive through `next` itself and are therefore in the shipped tree.
+      #
+      # What still holds is the reachability argument, which is the one that matters.
+      # Nothing in this application uses `next/image`, so `sharp` is never invoked, and
+      # no user-controlled CSS reaches `postcss`. The remedy is a major upgrade of Next,
+      # which is a scheduled decision rather than a patch — so this stays a report, and
+      # the reason is recorded here instead of being assumed.
       - name: Audit production dependencies (report only)
         working-directory: web
         run: npm audit --omit=dev --audit-level=high || true

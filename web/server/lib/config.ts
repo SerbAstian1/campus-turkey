@@ -120,11 +120,19 @@ const schema = z.object({
    * Read directly from `process.env` by that route. Declared here so the variable is
    * at least *known* to the schema rather than invisible to it.
    *
-   * Deliberately **not** enforced in production, because that would be a behaviour
-   * change unrelated to the map work this was added alongside. It arguably should be:
-   * without it the purge returns 503 and never runs, so personal data is retained past
-   * the window the consent notice promised — a silent compliance failure rather than an
-   * outage, which is the kind nothing reports. Worth its own change.
+   * **Now required in production**, by the cross-check below. It was previously left
+   * unenforced because adding the rule was unrelated to the work it arrived alongside,
+   * with a note that it arguably should be. This is that change.
+   *
+   * The argument for enforcing it: without the variable the purge route answers 503 and
+   * the daily job never runs, so leads are retained past the window the consent notice
+   * promises — 90 days for a medical enquiry, two years otherwise. That is a compliance
+   * failure rather than an outage, and it is the kind nothing reports. No error is
+   * logged, no page breaks, and the first anyone knows is a subject access request
+   * turning up data that should have been deleted a year earlier.
+   *
+   * A refusal to boot is the right severity for a promise the site makes in writing to
+   * every person who ticks the consent box.
    */
   CRON_SECRET: z.string().optional(),
 
@@ -176,7 +184,7 @@ export type Env = z.infer<typeof schema>;
  * is a misconfiguration that would otherwise surface as a runtime failure on the first
  * request that needed it.
  */
-function crossCheck(env: Env): string[] {
+export function crossCheck(env: Env): string[] {
   const problems: string[] = [];
 
   if (env.TRANSLATE_PROVIDER !== "disabled" && !env.TRANSLATE_API_KEY) {
@@ -255,6 +263,14 @@ function crossCheck(env: Env): string[] {
     }
     if (!env.SITE_ORIGIN.startsWith("https://")) {
       problems.push("SITE_ORIGIN must be https in production — cookies are Secure-only");
+    }
+    if (!env.CRON_SECRET) {
+      // Without it `/api/cron/purge-leads` answers 503 for ever and the retention purge
+      // never runs. Nothing reports that: no error, no broken page, just personal data
+      // kept past the window the consent notice promised.
+      problems.push(
+        "CRON_SECRET is required in production — without it the lead retention purge never runs and personal data is kept past its stated window",
+      );
     }
     if (!env.NEXT_PUBLIC_MAPTILER_KEY) {
       // Without it the map falls back to OpenStreetMap's public tile server, which

@@ -40,6 +40,68 @@ variable discovered by a 500 at 3am is a documentation failure, not an ops failu
    `undefined`. On Vercel, set it for the build. Then restrict the key to the production
    origin in MapTiler Cloud → Keys → Allowed origins: it is public by necessity, and the
    restriction is the only thing standing between it and someone else's tile budget.
+8. **Seed the university catalogue, and create the first staff account.** Two commands,
+   both easy to miss, and both fail in ways that read as a broken build rather than a
+   missed step. See the next section but one.
+
+## The two commands a fresh database needs
+
+A migrated database has the right shape and no rows in it. Two things have to be put
+there before the site is usable, and neither happens as part of a deploy.
+
+### The university catalogue
+
+```bash
+node scripts/seed-universities.mjs
+```
+
+The forty universities live in `src/content/universities.ts` and the directory reads them
+from Postgres. Without this the directory renders empty, `generateStaticParams` returns
+nothing, and the forty university pages — the ones the whole routing migration was for —
+do not exist. The build still succeeds, which is what makes this worth a heading.
+
+Idempotent, upserted on `slug`. Safe to re-run after correcting the content file.
+
+Programmes are deliberately **not** seeded. The content records carry a programme *count*
+and a faculty list, not a catalogue, and generating rows from a count would put invented
+degree names in front of applicants. Real `Program` rows arrive when the client supplies
+them.
+
+### The first staff account
+
+```bash
+node scripts/create-staff.mjs boss@campusturkey.org ADMIN "Elif Demir"
+```
+
+`disableSignUp` is on, which is correct: an open registration endpoint on a system that
+pays money out is not a feature. The consequence is that the first staff account cannot be
+created through the site, and **nothing else about the non-public surface works until one
+exists** — partners and representatives are onboarded by staff approving their
+application, so with no staff there is no path to a partner account at all.
+
+Roles, lowest first: `SUPPORT` reads the queues; `FINANCE` approves withdrawals and
+records commissions; `ADMIN` is everything `FINANCE` is. Grant the lowest that does the
+job.
+
+The script prints a generated password once and stores it nowhere. Hand it over through a
+password manager and have the holder change it.
+
+### What each account type needs to exist at all
+
+Worth stating together, because the dependency runs one way and a missing link looks like
+a broken feature rather than an unfinished setup:
+
+| Who | How their account is created | Depends on |
+|---|---|---|
+| Staff | `create-staff.mjs`, by hand | the database only |
+| Partner | staff approve a `PARTNER` lead | **a staff account**, and mail |
+| Representative | staff decide an application | **a staff account**, and mail |
+| Student | claims a referred record with a code | a partner having referred them, and mail |
+
+Mail is on every row after the first for the same reason: accounts are created with no
+password at all, and the holder sets one through an emailed link. That design is why no
+member of staff ever knows a partner's password. It also means that with
+`MAIL_PROVIDER=disabled`, nobody but staff can ever sign in.
 
 ## Design system assets
 
