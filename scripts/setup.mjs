@@ -1,73 +1,28 @@
 /**
- * One-time setup. Copies the design tokens and the brand assets out of the design
- * system into web/public, where Next serves them.
- *
- * These are not committed into web/ because the design system is the source of truth
- * for the tokens, and duplicating them is how the two drift apart. Re-run this after
- * the design system changes.
+ * One-time setup, run from the repository root.
  *
  *   npm run setup
  *
- * `lucide` is a devDependency of the *root* package for this script alone. It used to
- * arrive by workspace hoisting from `app/`, which is deleted — and a copy step whose
- * source silently disappears leaves every icon a 404 rather than an error.
+ * **The copying itself lives in `web/scripts/sync-design-system.mjs`,** and this is a
+ * thin wrapper over it. It used to be the other way round, and that is what broke the
+ * first deployment: the only implementation was here, at the root, so a platform whose
+ * root directory is `web/` had no way to run it. The build then produced a site whose
+ * every stylesheet, font and icon was a 404, and did so without failing.
+ *
+ * Keeping one implementation matters more than which end it sits at. Two copy scripts
+ * would drift the moment the design system gains a folder, and the failure that follows
+ * is silent in exactly the same way.
+ *
+ * Re-run this after the design system in `_ds/` changes.
  */
-import { cp, mkdir, readdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+
+import { spawnSync } from "node:child_process";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const script = join(root, "web", "scripts", "sync-design-system.mjs");
 
-async function findDesignSystem() {
-  const dsRoot = join(root, "_ds");
-  if (!existsSync(dsRoot)) return null;
-  const dirs = await readdir(dsRoot, { withFileTypes: true });
-  const match = dirs.find((d) => d.isDirectory() && d.name.startsWith("campus-turkey-design-system"));
-  return match ? join(dsRoot, match.name) : null;
-}
+const result = spawnSync(process.execPath, [script], { stdio: "inherit" });
 
-const ds = await findDesignSystem();
-if (!ds) {
-  console.error("Could not find _ds/campus-turkey-design-system-*. Run this from the project root.");
-  process.exit(1);
-}
-
-/**
- * `web/` is the application. It used to be `["app", "web"]`, because the Vite frontend
- * was still being served while the Next.js one was built; `app/` is deleted and the
- * migration is complete, so there is one target again.
- */
-const targets = ["web"].filter((dir) => existsSync(join(root, dir)));
-
-const jobs = targets.flatMap((target) => [
-  [join(ds, "tokens"), join(root, target, "public/ds/tokens")],
-  // The design system's own assets, kept as a sibling of tokens/ because fonts.css
-  // reaches them with `url("../assets/fonts/...")`. Copying tokens/ without this
-  // leaves every @font-face pointing at a 404 and the brand type silently falls
-  // back to system fonts. Distinct from the root assets/ below, which is artwork.
-  [join(ds, "assets"), join(root, target, "public/ds/assets")],
-  [join(root, "assets"), join(root, target, "public/assets")],
-  // The component bundle itself. It is a classic script that reads a global `React`
-  // and assigns to `window.CampusTurkeyDesignSystem_4d33e7`, so it is served from
-  // public/ and loaded by a <script> tag rather than imported — see src/ds/load.ts.
-  [join(ds, "_ds_bundle.js"), join(root, target, "public/ds/_ds_bundle.js")],
-  // Lucide, pinned to the version the prototype loads from unpkg. The design system's
-  // Icon component calls window.lucide.createElement, so it needs the UMD build and
-  // not lucide-react. 0.454.0 still ships the brand marks (Instagram, Facebook,
-  // LinkedIn, YouTube) that later versions removed and the footer uses.
-  [join(root, "node_modules/lucide/dist/umd/lucide.min.js"), join(root, target, "public/ds/lucide.min.js")],
-]);
-
-let copied = 0;
-for (const [from, to] of jobs) {
-  if (!existsSync(from)) {
-    console.warn(`Skipped, not found: ${from}`);
-    continue;
-  }
-  await mkdir(dirname(to), { recursive: true });
-  await cp(from, to, { recursive: true });
-  copied++;
-}
-
-console.log(`Setup done — ${copied} copies into ${targets.join(", ")}.`);
+process.exit(result.status ?? 1);
