@@ -80,10 +80,32 @@ export function loadDesignSystem(): Promise<void> {
     const endpoint = process.env["NEXT_PUBLIC_TRANSLATE_ENDPOINT"];
     if (endpoint) window.CT_TRANSLATE_ENDPOINT = endpoint;
 
-    /* Lucide first: the design system's Icon calls window.lucide.createElement in an
-       effect, so an icon that mounts before lucide exists renders as an empty span. */
-    await loadScript("/ds/lucide.min.js");
-    await loadScript("/ds/_ds_bundle.js");
+    /*
+     * Both requested at once, and still executed in order.
+     *
+     * Lucide has to *run* before the design system does: its `Icon` calls
+     * `window.lucide.createElement` in an effect, and an icon that mounts before lucide
+     * exists renders as an empty span. That ordering is preserved, but it never required
+     * the two to be *fetched* one after the other, which is what awaiting the first did.
+     *
+     * The cost of the old shape was the whole of the second round trip. These are
+     * roughly 80KB and 27KB gzipped, they gate the first paint of every page, and a good
+     * part of this site's audience is on a phone in Lagos or Dhaka where a round trip is
+     * not a rounding error. Appending both synchronously lets the browser open both
+     * connections immediately.
+     *
+     * `el.async = false` in `loadScript` is what keeps execution ordered: a dynamically
+     * inserted script with `async` explicitly false joins the in-order list, so the
+     * browser may download them in either order and will still run them in insertion
+     * order. `Promise.all` then waits for both rather than sequencing them.
+     *
+     * The `<link rel="preload">` pair in `app/[locale]/layout.tsx` starts these fetches
+     * earlier still, with the document rather than after hydration. This function stays
+     * correct without them.
+     */
+    const lucide = loadScript("/ds/lucide.min.js");
+    const bundle = loadScript("/ds/_ds_bundle.js");
+    await Promise.all([lucide, bundle]);
     /*
      * `/site/i18n.js` is no longer loaded.
      *

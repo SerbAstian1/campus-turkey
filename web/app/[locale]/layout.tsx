@@ -78,6 +78,23 @@ export default async function LocaleLayout({
   return (
     <html lang={BCP47[locale as Locale]} dir={dirFor(locale as Locale)}>
       <head>
+        {/*
+          * Start the two design system downloads with the document.
+          *
+          * They are fetched by `src/ds/load.ts` from an effect, which cannot run until
+          * React has hydrated — so without these the browser learns the site's largest
+          * two assets exist only after the page bundle has downloaded, parsed and
+          * mounted. A preload hint moves that discovery to the first bytes of the HTML,
+          * while the parser is still working, and costs nothing when the effect later
+          * asks for a file the browser already has.
+          *
+          * `as="script"` and not `<script defer>`: these must execute in the order and at
+          * the moment `load.ts` decides, because `window.React` has to be assigned first.
+          * A preload fetches without executing, which is exactly the half that is wanted
+          * here.
+          */}
+        <link rel="preload" href="/ds/lucide.min.js" as="script" />
+        <link rel="preload" href="/ds/_ds_bundle.js" as="script" />
         <script
           type="application/ld+json"
           // Server-rendered and escaped by `jsonLdScript`. Structured data injected
