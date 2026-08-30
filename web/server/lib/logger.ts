@@ -11,7 +11,7 @@
  */
 
 import pino from "pino";
-import { env, isProduction, isTest } from "./config";
+import { configurationFingerprint, env, isProduction, isTest } from "./config";
 
 /**
  * Keys whose values are replaced wherever they appear, at any depth.
@@ -186,3 +186,23 @@ export function requestLogger(context: LogContext) {
 export type RequestLogger = ReturnType<typeof requestLogger>;
 
 export const logger = base;
+
+/**
+ * One line per cold start saying what this process is pointed at.
+ *
+ * Logged here rather than in `config.ts` because the dependency runs that way: the
+ * logger needs `LOG_LEVEL` from the config, so the config cannot reach back for the
+ * logger without a cycle. This module is the first thing that has both.
+ *
+ * Not in tests, where it would print on every file, and not in development, where the
+ * answer is always localhost and the noise costs more than the line is worth. It exists
+ * for the deployed environments, and specifically for the day the developer's database,
+ * bucket and mail account are swapped for the client's on a site that is already live.
+ * A swap that silently did not apply looks exactly like a swap that did.
+ *
+ * `configurationFingerprint` carries hosts and provider names only. See its docblock for
+ * why every value there is either public or a `set` / `MISSING`.
+ */
+if (isProduction) {
+  base.info({ config: configurationFingerprint() }, "configuration");
+}

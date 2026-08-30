@@ -332,3 +332,65 @@ export const env: Env = load();
 
 export const isProduction = env.NODE_ENV === "production";
 export const isTest = env.NODE_ENV === "test";
+
+/**
+ * The host of a connection string, or a word saying why there isn't one.
+ *
+ * Host and port only. A Postgres URL carries a username and a password, an Upstash URL
+ * carries a token in some forms, and a Sentry DSN is a key with a hostname attached — so
+ * this deliberately reaches for `URL.host` and never the whole string. Anything that
+ * throws is reported as unparseable rather than echoed back, because a malformed value
+ * is exactly the case where echoing it would print a secret that had a typo in it.
+ */
+function hostOf(value: string | undefined): string {
+  if (!value) return "none";
+  try {
+    return new URL(value).host || "unparseable";
+  } catch {
+    return "unparseable";
+  }
+}
+
+/** The domain half of an address. `no-reply@campusturkey.org` becomes the domain. */
+const domainOf = (address: string | undefined): string => address?.split("@")[1] ?? "none";
+
+/**
+ * What this process is actually pointed at, with no secret in it.
+ *
+ * **Written for the moment credentials change hands.** The developer's database, bucket
+ * and mail account are being used to launch, and the client's will replace them later,
+ * on a site that is already live and already holding real enquiries. The dangerous
+ * failure there is not an error — it is a swap that *looks* like it worked: the
+ * application boots, every page renders, and it is still writing to the old database,
+ * because one variable in one environment was missed.
+ *
+ * Nothing in the request path reveals which backend answered it. This line does, once
+ * per cold start, in terms an operator can compare against what they just set. A wrong
+ * swap becomes a thing you can see in the log within a minute instead of a thing you
+ * discover when the client asks where their leads went.
+ *
+ * Hosts, providers and identifiers only. `hostOf` exists precisely so that a connection
+ * string is never printed whole, and the two secrets with no host at all — the session
+ * key and the cron token — are reported as `set` or `MISSING`, never as themselves.
+ */
+export function configurationFingerprint(source: Env = env): Record<string, string> {
+  return {
+    environment: source.NODE_ENV,
+    siteOrigin: source.SITE_ORIGIN,
+    database: hostOf(source.DATABASE_URL),
+    databaseDirect: hostOf(source.DIRECT_DATABASE_URL),
+    storage:
+      source.STORAGE_PROVIDER === "s3"
+        ? `s3 ${source.S3_BUCKET ?? "no-bucket"} @ ${hostOf(source.S3_ENDPOINT)}`
+        : source.STORAGE_PROVIDER,
+    mail: source.MAIL_PROVIDER === "disabled" ? "disabled" : `${source.MAIL_PROVIDER} from ${domainOf(source.MAIL_FROM)}`,
+    captcha: source.CAPTCHA_PROVIDER,
+    rateLimit: hostOf(source.UPSTASH_REDIS_REST_URL),
+    errorTracking: hostOf(source.SENTRY_DSN),
+    payouts: source.PAYOUT_PROVIDER,
+    translation: source.TRANSLATE_PROVIDER,
+    searchIndexing: source.SEARCH_INDEXING,
+    sessionSecret: source.SESSION_SECRET ? "set" : "MISSING",
+    cronSecret: source.CRON_SECRET ? "set" : "MISSING",
+  };
+}

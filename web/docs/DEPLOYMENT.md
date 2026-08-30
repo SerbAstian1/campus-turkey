@@ -115,26 +115,29 @@ component library. `next build` does not need any of it to succeed. So a deploy 
 skips the copy step builds green, deploys green, and serves **unstyled markup with no
 components and no icons**, with nothing anywhere reporting an error.
 
-`prebuild` now refuses to build in that state and names the fix. What remains is a
-choice about the deploy, and it has to be made deliberately:
+**This is now automatic, and the manual choice that used to be here is gone.**
 
-| Option | Vercel Root Directory | Build command | Trade |
-|---|---|---|---|
-| **A — build from the repo root** *(recommended)* | repository root | `npm run setup && npm run build --prefix web` | Keeps one home for the design system. Needs the root directory set to the repo, not `web/`. |
-| **B — vendor the copies** | `web/` | unchanged | `web/` becomes genuinely self-contained. Costs ~2.3MB committed and a second copy that can drift from `_ds/` — remove `web/public/ds/` and `web/public/assets/` from `.gitignore` and commit them. |
+`prebuild` runs `scripts/sync-design-system.mjs`, which copies the design system out of
+`_ds/` and `assets/` — both committed — into `public/`, and then `check-design-system.mjs`
+refuses the build if anything is still missing. `npm ci && npm run build` inside `web/`
+therefore produces a complete site on its own, whichever directory a platform treats as
+its root.
 
-A is recommended: the drift in B is the exact problem the gitignore entry was added to
-prevent, and it drifts silently. If B is chosen anyway, add a CI step that re-runs
-`npm run setup` and fails on a non-empty `git diff`, so the copies cannot go stale
-unnoticed.
+That was not always true, and the failure is worth keeping on the record. The copy step
+lived only in the root `scripts/setup.mjs`, wired to `web`'s `prebuild` — and Vercel's
+Next.js preset builds with `next build` rather than `npm run build` unless a build command
+is set explicitly, so npm lifecycle scripts never ran. `prebuild` never fired, the guard
+written to refuse exactly this never ran, and the deploy went out green serving a site
+whose every stylesheet, font and icon was a 404. `web/vercel.json` now sets
+`buildCommand` explicitly so the preset cannot skip it again.
 
-Whichever is chosen, verify it the same way — deploy, then `view-source:` the homepage
-and confirm `/ds/_ds_bundle.js` returns 200 rather than 404. A 404 there is the blank
-site, and it looks identical to a styling bug from the outside.
+Verify it the same way regardless — deploy, then load `/ds/_ds_bundle.js` and confirm it
+returns 200 rather than 404. A 404 there is the blank site, and it looks identical to a
+styling bug from the outside.
 
 ## The build needs a real database
 
-`next build` prerenders **1,263 pages**, and the university catalogue moved into Postgres
+`next build` prerenders **1,348 pages**, and the university catalogue moved into Postgres
 in P04 — so `generateStaticParams` and every university page read from the database at
 build time. `DATABASE_URL` must point at a reachable instance during the build. A
 placeholder URL does not degrade gracefully; the build fails.
@@ -235,6 +238,15 @@ An untested backup is a hypothesis. Before handover, run this once and record th
 2. Point a preview deployment at it.
 3. Sign in as a seeded partner; confirm the wallet balance and withdrawal list render.
 4. Record the wall-clock time from step 1 to step 3. That number is the real RTO.
+
+## Changing credentials after launch
+
+Swapping the developer's database, bucket and service accounts for the client's, on a
+site that is already live, is its own procedure with its own ordering. Two of those
+variables hold state and cannot simply be swapped: everything written to the old one
+stays there while the site carries on working perfectly against an empty replacement.
+
+See [ROTATION.md](ROTATION.md).
 
 ## Maintenance mode
 
