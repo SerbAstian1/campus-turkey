@@ -174,7 +174,34 @@ export function Shell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div>
+    /*
+     * `id="root"` is load-bearing, and not a leftover.
+     *
+     * `styles/base.css` was transcribed from the prototype rule for rule, and the
+     * prototype mounted React into `<div id="root">`, so eight of its rules are scoped
+     * to `#root`. This application reproduced the prototype's DOM faithfully and dropped
+     * that one attribute, which silently disabled every one of them — CSS does not report
+     * a selector that matches nothing.
+     *
+     * The most expensive was the mobile navigation switch. At 768px and below,
+     * `#root>div>header{display:none}` is what removes the desktop header so the compact
+     * bar can replace it. With the id gone the rule never fired, both navigations
+     * rendered, and the desktop header pushed every page wider than the viewport: on a
+     * 360px phone the heading, the body copy and the buttons were all clipped mid-word.
+     * That is the "looks broken on mobile" report, and it was one attribute.
+     *
+     * Also restored by this: the navbar's overflow guard for long translated labels, the
+     * mega-menu height fix, the reduced top padding on phones, and the hover
+     * neutralisation on touch screens.
+     *
+     * Restoring the id rather than rewriting the eight selectors is deliberate. This
+     * file's own header says to keep it in step with the prototype and that a dropped
+     * rule is a visual regression that no test will catch; re-pointing the selectors
+     * would take it further from the document it is meant to mirror. The element that
+     * carries the id has to be this one, because `#root>div>header` counts depth from
+     * here.
+     */
+    <div id="root">
       <a className="ct-skip" href="#main">{t("Skip to content")}</a>
       <ScrollProgress />
 

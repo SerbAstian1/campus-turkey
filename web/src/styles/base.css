@@ -84,7 +84,19 @@ div[style*="transition: width"]{box-sizing:content-box!important}
 @media (max-width:1000px){.ct-split{grid-template-columns:1fr!important}.ct-portal{grid-template-columns:1fr!important}.ct-portal-aside{position:static!important;height:auto!important}.ct-portal-aside nav{flex-direction:row!important;flex-wrap:wrap}
   .ct-cardgrid{grid-template-columns:repeat(var(--cg-medium,2),minmax(0,1fr))}}
 @media (max-width:900px){.ct-faq-inner{grid-template-columns:1fr!important;gap:var(--space-8)!important}.ct-faq-inner>div[style*="sticky"],.ct-faq-inner>aside{position:static!important}.ct-detail-grid{grid-template-columns:1fr!important}.ct-detail-grid>div[style*="sticky"],.ct-detail-grid>aside{position:static!important}}
-@media (max-width:760px){form{grid-template-columns:1fr!important}form>*{grid-column:span 1!important}#root section[style*="grid-template-columns: 1.05fr"]{grid-template-columns:1fr!important}}
+/* The last rule collapses the portal sign-in split, and it had two things wrong with it,
+   both of which made it match nothing at all.
+
+   It was scoped to `#root`, and the portal is the one area that does not render inside
+   `Shell` — it has its own layout, so nothing above it carries that id. And it named a
+   `section`, while `PartnerLogin` renders the split as a `div`. Either alone was enough
+   to stop it firing; together they left the sign-in page two-column on a phone, with the
+   form pushed off the right edge of the viewport where `overflow-x:clip` hides it.
+
+   Now unscoped and element-agnostic. The attribute selector is specific enough on its
+   own, and not naming the tag means a future change from `div` to `section` cannot break
+   it again the same way. */
+@media (max-width:760px){form{grid-template-columns:1fr!important}form>*{grid-column:span 1!important}[style*="grid-template-columns: 1.05fr"]{grid-template-columns:1fr!important}}
 
 /* Grid items default to min-width:auto, so a field's min-content width can push a
    two-column form past a narrow container. Every form cell is allowed to shrink.
@@ -213,3 +225,30 @@ form label,form label>*{min-width:0}
    hiding it here would still ship the message to the page source. */
 .ct-error-detail{margin:var(--space-4) 0 0;padding:var(--space-4);max-width:560px;border-radius:var(--radius-md);background:rgba(0,0,0,.25);color:rgba(255,255,255,.8);font-family:var(--font-mono,ui-monospace,monospace);font-size:var(--fs-micro);white-space:pre-wrap;overflow-wrap:anywhere}
 .ct-error-detail summary{cursor:pointer;color:rgba(255,255,255,.6)}
+
+/* ---- Footer columns on a phone ------------------------------------------------
+   The single reason every page overflowed horizontally on a phone, and it was not
+   visible in any test.
+
+   The design system's `Footer` writes its link columns inline as
+   `grid-template-columns: repeat(4, minmax(140px, auto))`. The `minmax` floor is the
+   problem: four columns can never be narrower than 4x140 plus three gaps, about 680px.
+   Measured on a 360px viewport, the document was 700px wide against a 345px container.
+
+   What made it invisible rather than merely ugly: `body{overflow-x:clip}`. The excess is
+   not a scrollbar the reader can drag, it is cut off and unreachable, so the right-hand
+   third of the footer — and the right edge of every heading and button on the page —
+   simply is not there. Nothing reports it. The build is green and the page is wrong.
+
+   An inline style cannot be overridden by a media query inside the design system and
+   cannot be reached by an ordinary rule here, so this is one of the corrections this
+   file exists for. Two columns down to 520px, then one, which keeps the longest label
+   ("University directory") on at most two lines at 360px. */
+@media (max-width:900px){
+  footer div[style*="repeat(4, minmax(140px"]{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:var(--space-8)!important}
+}
+@media (max-width:520px){
+  footer div[style*="repeat(4, minmax(140px"]{
+    grid-template-columns:minmax(0,1fr)!important;gap:var(--space-6)!important}
+}
