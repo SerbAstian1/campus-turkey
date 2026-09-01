@@ -163,6 +163,61 @@ export function useNavigate(): (route: string) => void {
  */
 let pushRoute: ((route: string) => void) | null = null;
 
+/**
+ * How long a client transition may take before the browser is asked to do it instead.
+ *
+ * A healthy App Router transition is well under 300ms. This is deliberately several
+ * times that, because the rescue costs a full document load and firing it on a
+ * transition that was merely slow would be a downgrade, not a fix.
+ */
+const TRANSITION_RESCUE_MS = 2500;
+
+/** The address as the rescue compares it: path and query, ignoring the hash. */
+const currentAddress = (): string => window.location.pathname + window.location.search;
+
+/**
+ * Run a client transition, and fall back to a real navigation if nothing happens.
+ *
+ * **This exists because a dead link is indistinguishable from a slow one.** Every
+ * internal link on this site is intercepted: the handler calls `preventDefault()` and
+ * hands the address to the router. That is correct when the router is ready. When it is
+ * not — the page is still hydrating, an RSC fetch stalls — the click has already had the
+ * browser's own navigation cancelled out from under it, so it does nothing at all, for
+ * ever, with no spinner and no error. Clicking again does nothing again.
+ *
+ * That was reproduced on the live site: on a freshly loaded homepage, three clicks on a
+ * navbar link over forty seconds left the reader on the homepage; the same link worked
+ * immediately on a page that had been open for several minutes.
+ *
+ * So the interception keeps its benefit and loses its failure mode. If the address has
+ * not moved by `TRANSITION_RESCUE_MS`, the browser is asked to navigate normally —
+ * slower than a client transition and identical to what the plain `<a>` would have done
+ * if nothing had intercepted it.
+ *
+ * The equality check before scheduling matters: pushing the address you are already on
+ * legitimately leaves the address unchanged, and rescuing that would reload the page
+ * under someone who clicked the link for the section they are already reading. The check
+ * after the timer matters for the same reason in reverse — if the reader clicked
+ * something else while this was pending, the address has moved and this must not drag
+ * them back.
+ */
+function withNavigationRescue(destination: string, transition: () => void): void {
+  if (typeof window === "undefined") {
+    transition();
+    return;
+  }
+
+  const from = currentAddress();
+  transition();
+
+  // Already there. Nothing to rescue, and reloading would be actively wrong.
+  if (destination === from) return;
+
+  window.setTimeout(() => {
+    if (currentAddress() === from) window.location.assign(destination);
+  }, TRANSITION_RESCUE_MS);
+}
+
 export function useNavigationBridge(): void {
   const router = useRouter();
   const locale = useLocale();
@@ -177,7 +232,10 @@ export function useNavigationBridge(): void {
      * seventeen languages. The bridge is a hook, so the locale is reachable here and
      * the fix is one line rather than fifty-seven.
      */
-    pushRoute = (route: string) => router.push(localePath(pathFor(route), locale));
+    pushRoute = (route: string) => {
+      const destination = localePath(pathFor(route), locale);
+      withNavigationRescue(destination, () => router.push(destination));
+    };
     return () => {
       pushRoute = null;
     };
@@ -257,7 +315,8 @@ export function usePlaceholderLinks(): void {
       const placeholder = resolvePlaceholder(anchor);
       if (placeholder) {
         event.preventDefault();
-        router.push(localePath(pathFor(placeholder), locale));
+        const target = localePath(pathFor(placeholder), locale);
+        withNavigationRescue(target, () => router.push(target));
         return;
       }
 
@@ -282,7 +341,9 @@ export function usePlaceholderLinks(): void {
 
       if (internal && !opensElsewhere) {
         event.preventDefault();
-        router.push(destination);
+        // The branch every navbar, mega-menu, footer and CTA link takes, and the one the
+        // dead-click report was about. See `withNavigationRescue`.
+        withNavigationRescue(destination, () => router.push(destination));
       }
     };
 
