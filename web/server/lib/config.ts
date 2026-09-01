@@ -279,10 +279,60 @@ export function crossCheck(env: Env): string[] {
       problems.push(
         "NEXT_PUBLIC_MAPTILER_KEY is required in production — the map would fall back to OpenStreetMap's public tiles, which its usage policy forbids. It must be set at build time too; Next inlines it.",
       );
+    } else if (looksLikePlaceholder(env.NEXT_PUBLIC_MAPTILER_KEY)) {
+      /*
+       * A key that is present but obviously fake, which the check above cannot see.
+       *
+       * This shipped. `get_a_free_key_from_maptiler` sat in the deployed build, every
+       * tile came back 403, and the directory served an empty grey rectangle where the
+       * map of Türkiye should be. Nothing reported it: the variable was set, so the boot
+       * check passed, and a tile request is a browser's problem rather than the server's.
+       *
+       * It then cost a second round of confusion, because replacing the value in the
+       * platform is not enough on its own — `NEXT_PUBLIC_*` is inlined at compile time,
+       * so a redeploy that reuses the build cache can keep serving the old string. That
+       * is exactly the situation this message needs to name, because from the outside it
+       * looks identical to "the new key does not work".
+       */
+      problems.push(
+        `NEXT_PUBLIC_MAPTILER_KEY is a placeholder, not a key: "${env.NEXT_PUBLIC_MAPTILER_KEY}". ` +
+          "Set the real key from MapTiler Cloud → Keys. It is inlined at build time, so " +
+          "redeploy with the build cache DISABLED — a cached build keeps the old value and " +
+          "the map stays broken with no error anywhere.",
+      );
     }
   }
 
   return problems;
+}
+
+/**
+ * Values that are plainly not a credential.
+ *
+ * **Deliberately short, and it got shorter while being written.** The cost of a false
+ * positive here is a refused deployment, so a marker has to be something no generated key
+ * could plausibly contain. `example` and `xxxx` were both in this list until the test
+ * that asserts a real key is accepted failed on `pk3IqPCbEXAMPLEkey01` — a fixture that
+ * looks exactly like a real key and happens to contain the word. A key is random
+ * alphanumeric; any English word is a coincidence waiting to happen, and four repeated
+ * characters even more so.
+ *
+ * What remains are phrases a person types, not ones a generator emits. MapTiler's own
+ * documentation uses the first, and it is the one that actually reached production.
+ */
+const PLACEHOLDER_MARKERS = [
+  "get_a_free_key",
+  "your_key",
+  "your-key",
+  "yourkey",
+  "placeholder",
+  "changeme",
+  "change_me",
+];
+
+function looksLikePlaceholder(value: string): boolean {
+  const normalised = value.trim().toLowerCase();
+  return PLACEHOLDER_MARKERS.some((marker) => normalised.includes(marker));
 }
 
 /**

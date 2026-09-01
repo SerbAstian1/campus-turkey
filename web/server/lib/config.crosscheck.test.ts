@@ -182,3 +182,39 @@ describe("development is not held to the production rules", () => {
     expect(crossCheck(dev)).toEqual([]);
   });
 });
+
+describe("a key that is present but fake", () => {
+  it("refuses the placeholder that actually reached production", () => {
+    /*
+     * The real one. It sat in the deployed build, every tile came back 403, and the
+     * directory served an empty grey rectangle. The variable was set, so the presence
+     * check passed and nothing anywhere reported it.
+     */
+    expect(
+      complaint(productionEnv({ NEXT_PUBLIC_MAPTILER_KEY: "get_a_free_key_from_maptiler" }), "placeholder"),
+    ).toBe(true);
+  });
+
+  it("names the build cache, which is the second half of the trap", () => {
+    // Replacing the value in the platform is not enough: NEXT_PUBLIC_* is inlined at
+    // compile time, so a cached build keeps the old string and looks like a bad key.
+    const problems = crossCheck(productionEnv({ NEXT_PUBLIC_MAPTILER_KEY: "your_key_here" }));
+    expect(problems.join(" ")).toMatch(/build cache/i);
+  });
+
+  it("catches the other shapes a template leaves behind", () => {
+    for (const fake of ["YOUR-KEY", "placeholder", "changeme", "change_me", "your_key_here"]) {
+      expect(complaint(productionEnv({ NEXT_PUBLIC_MAPTILER_KEY: fake }), "placeholder"), fake).toBe(true);
+    }
+  });
+
+  it("does not refuse a real key", () => {
+    // The cost of a false positive here is a refused deployment, so the markers are
+    // deliberately narrow. The second of these contains the word EXAMPLE and must still
+    // be accepted: an English word inside a random key is a coincidence, not a template.
+    for (const real of ["pk3IqPCbEXAMPLEkey01", "AbC123dEf456GhI789jK"]) {
+      expect(complaint(productionEnv({ NEXT_PUBLIC_MAPTILER_KEY: real }), "placeholder"), real).toBe(false);
+    }
+    expect(crossCheck(productionEnv())).toEqual([]);
+  });
+});
