@@ -68,3 +68,33 @@ export const MOVED_ROUTES: readonly MovedRoute[] = [
 
 /** Every address that has moved, for the sitemap to exclude. */
 export const MOVED_FROM = new Set(MOVED_ROUTES.map((route) => route.from));
+
+/**
+ * Has this concrete address moved?
+ *
+ * `MOVED_FROM` answers that for the literal entries and quietly gets it wrong for the
+ * parameterised ones: `/university/:slug` is never equal to a real path, so a set lookup
+ * reports "not moved" for every address those four patterns cover. A caller filtering
+ * generated paths gets a confident false negative, which is worse than no answer.
+ *
+ * So this compares segment by segment, with `:param` matching exactly one segment — the
+ * same shape `next.config.ts` hands to Next as a redirect source, which is what makes the
+ * two agree about what has moved.
+ *
+ * Concrete paths only, without a locale prefix: `/blog/istanbul-guide`, not `/tr/blog/…`
+ * and not `/blog/:slug`. The locale dimension is added by the consumer, exactly as the
+ * `from` field above is documented to be.
+ */
+export function hasMoved(path: string): boolean {
+  if (MOVED_FROM.has(path)) return true;
+
+  const segments = path.split("/").filter(Boolean);
+
+  return MOVED_ROUTES.some(({ from }) => {
+    if (!from.includes(":")) return false;
+    const pattern = from.split("/").filter(Boolean);
+    // A `:param` matches one segment, never several, so the lengths must agree first.
+    if (pattern.length !== segments.length) return false;
+    return pattern.every((part, i) => part.startsWith(":") || part === segments[i]);
+  });
+}

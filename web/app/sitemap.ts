@@ -15,7 +15,7 @@ import { articles } from "@contracts/articles";
 import { institutions } from "@contracts/institutions";
 import { canonical } from "@/server/lib/seo";
 import { BCP47, ADVERTISED_LOCALES, localePath, DEFAULT_LOCALE } from "@/i18n/locales";
-import { MOVED_FROM } from "@/app/moved-routes";
+import { hasMoved } from "@/app/moved-routes";
 
 /**
  * One entry per page, carrying every language as an alternate.
@@ -82,16 +82,71 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ];
 
   /**
-   * A moved address must never appear here.
+   * A page whose address has moved is advertised where it now lives, not where it was.
+   *
+   * The lists below are derived from content, and content outlives routing: an item can
+   * legitimately still exist while the page describing it has been given a new address.
+   * `/institutions/universities` is the live example — `institutions.ts` still carries a
+   * `universities` entry, but that page is now `/partnerships/universities`, which the
+   * static list above already advertises. Emitting the old path put a 308 in the sitemap.
+   *
+   * Dropping it is right *because* the destination is advertised separately. This filter
+   * is not a way to make an address disappear.
+   */
+  const notMoved = (path: string) => !hasMoved(path);
+
+  const universityRoutes = universities
+    .map((u) => `/universities/${u.slug}`)
+    .filter(notMoved)
+    .map((path) => entry(path, now, "monthly", 0.8));
+
+  const serviceRoutes = services
+    .map((s) => `/services/${s.slug}`)
+    .filter(notMoved)
+    .map((path) => entry(path, now, "monthly", 0.8));
+
+  const institutionRoutes = institutions
+    .map((i) => `/institutions/${i.slug}`)
+    .filter(notMoved)
+    .map((path) => entry(path, now, "monthly", 0.5));
+
+  const articleRoutes = articles
+    .filter((a) => notMoved(`/resources/${a.slug}`))
+    // The article's own date, not today's. Claiming every article changed today is how
+    // a sitemap's `lastModified` stops being believed.
+    .map((a) => entry(`/resources/${a.slug}`, new Date(a.date), "yearly", 0.6));
+
+  // The portal is deliberately absent. It is noindex, auth-gated, and listing it would
+  // undo both.
+  const all = [
+    ...staticRoutes,
+    ...universityRoutes,
+    ...serviceRoutes,
+    ...articleRoutes,
+    ...institutionRoutes,
+  ];
+
+  /**
+   * A moved address must never appear here — asserted over what is actually returned.
    *
    * A sitemap that advertises a URL which answers 308 is telling a crawler to index a
-   * redirect — it wastes crawl budget and, worse, keeps the old address alive in the
-   * index competing with the one that replaced it. Asserted rather than trusted, because
-   * this list and `MOVED_ROUTES` are edited months apart.
+   * redirect: it wastes crawl budget and keeps the old address alive in the index,
+   * competing with the one that replaced it.
+   *
+   * **This used to check `staticRoutes` alone, and that is exactly how the bug it exists
+   * to prevent reached production.** The four generated lists were appended after the
+   * check and never passed through it, so `/institutions/universities` sat in the live
+   * sitemap answering 308 while a guard written for that precise failure looked the other
+   * way. Checking the assembled array is the difference between asserting the invariant
+   * and asserting one contributor to it.
+   *
+   * It is a backstop, not the mechanism: the filters above keep derived paths out. What
+   * this still catches is a hand-written entry in `staticRoutes` pointing at an address
+   * that has since moved, and a *new* generated list added later without the filter.
    */
-  const advertisedButMoved = staticRoutes
+  const advertisedButMoved = all
     .map((route) => new URL(route.url).pathname)
-    .filter((path) => MOVED_FROM.has(path));
+    .filter(hasMoved);
 
   if (advertisedButMoved.length > 0) {
     throw new Error(
@@ -99,29 +154,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     );
   }
 
-  const universityRoutes = universities.map((u) =>
-    entry(`/universities/${u.slug}`, now, "monthly", 0.8),
-  );
-
-  const serviceRoutes = services.map((s) => entry(`/services/${s.slug}`, now, "monthly", 0.8));
-
-  const institutionRoutes = institutions.map((i) =>
-    entry(`/institutions/${i.slug}`, now, "monthly", 0.5),
-  );
-
-  const articleRoutes = articles.map((a) =>
-    // The article's own date, not today's. Claiming every article changed today is how
-    // a sitemap's `lastModified` stops being believed.
-    entry(`/resources/${a.slug}`, new Date(a.date), "yearly", 0.6),
-  );
-
-  // The portal is deliberately absent. It is noindex, auth-gated, and listing it would
-  // undo both.
-  return [
-    ...staticRoutes,
-    ...universityRoutes,
-    ...serviceRoutes,
-    ...articleRoutes,
-    ...institutionRoutes,
-  ];
+  return all;
 }
