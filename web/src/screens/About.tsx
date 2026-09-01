@@ -43,7 +43,7 @@ export default function About() {
         } />
 
       <PageBody>
-        <ScrollReveal><ImagePlaceholder slot="about-hero" label={t("Team or office photography, 21:9 hero band")} ratio="21 / 9" /></ScrollReveal>
+        <ScrollReveal><ImagePlaceholder slot="about-hero" label={t("Team or office photography, 21:9 hero band")} ratio="21 / 9" reserved /></ScrollReveal>
 
         <CardGrid min={200} gap="var(--space-10)">
           {stats.map((s, i) => (
@@ -65,7 +65,7 @@ export default function About() {
               <Button variant="secondary" onClick={() => go("resources")}>{t("Read our guides")}</Button>
             </div>
           </ScrollReveal>
-          <ScrollReveal delay={80}><ImagePlaceholder slot="about-founders" label={t("Founders or advising session, 4:3")} ratio="4 / 3" /></ScrollReveal>
+          <ScrollReveal delay={80}><ImagePlaceholder slot="about-founders" label={t("Founders or advising session, 4:3")} ratio="4 / 3" reserved /></ScrollReveal>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
@@ -91,7 +91,7 @@ export default function About() {
             {leadership.map((p, i) => (
               <ScrollReveal key={p.name} delay={i * 60} style={{ display: "flex" }}>
                 <Card padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                  <ImagePlaceholder slot={`person-${p.name}`} label={t("Portrait, 1:1")} ratio="1 / 1" icon="user" />
+                  <ImagePlaceholder slot={`person-${p.name}`} label={t("Portrait, 1:1")} ratio="1 / 1" icon="user" reserved />
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <h3 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>{p.name}</h3>
                     <span className="ct-eyebrow">{p.role}</span>
@@ -135,7 +135,7 @@ export default function About() {
             {offices.map((o, i) => (
               <ScrollReveal key={o.city} delay={i * 70} style={{ display: "flex" }}>
                 <Card padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                  <ImagePlaceholder slot={`office-${o.city}`} label={t("{city} office, 16:9", { city: o.city })} ratio="16 / 9" icon="building" />
+                  <ImagePlaceholder slot={`office-${o.city}`} label={t("{city} office, 16:9", { city: o.city })} ratio="16 / 9" icon="building" reserved />
                   <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                     <span className="ct-eyebrow">{o.role}</span>
                     <h3 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>{o.city}</h3>

@@ -25,6 +25,11 @@ export default function Institution({ slug }: { slug: string }) {
   const inst = getInstitution(slug);
   if (!inst) return <ErrorScreen state="notFound" />;
 
+  /* Hospitals and chambers have no photograph — Commons offers chambers in Greece and
+     Wisconsin, and its Turkish hospital categories return a museum. See
+     `institution-photos.ts`. Read once here rather than three times in the JSX below. */
+  const photo = institutionPhoto(inst.slug);
+
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero eyebrow={inst.eyebrow} title={inst.title} lead={inst.lead}
@@ -59,11 +64,16 @@ export default function Institution({ slug }: { slug: string }) {
               ))}
             </Card>
           </ScrollReveal>
-          <ScrollReveal delay={80}>
-            <ImagePlaceholder slot={`inst-${inst.title}`} label={`${inst.title} photography, 4:3`} ratio="4 / 3"
-              {...(institutionPhoto(inst.slug) ? { src: institutionPhoto(inst.slug)!.src, alt: institutionPhoto(inst.slug)!.alt } : {})} />
-            <PhotoCredit photo={institutionPhoto(inst.slug)} />
-          </ScrollReveal>
+          {/* The whole column is conditional, not just the frame. An empty `ScrollReveal`
+              still occupies its half of the split, so dropping only the image would trade
+              a dashed box for an equally visible gap. */}
+          {photo ? (
+            <ScrollReveal delay={80}>
+              <ImagePlaceholder slot={`inst-${inst.title}`} label={`${inst.title} photography, 4:3`} ratio="4 / 3"
+                src={photo.src} alt={photo.alt} />
+              <PhotoCredit photo={photo} />
+            </ScrollReveal>
+          ) : null}
         </div>
 
         <ScrollReveal>

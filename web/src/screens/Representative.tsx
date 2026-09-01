@@ -4,7 +4,7 @@
 
 import { Accordion, BrandDivider, Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, TimelineTrack, ASSETS } from "@/ds";
 import { representative, representativeSteps } from "@/content";
-import { ImagePlaceholder, scrollToId } from "@/components/Common";
+import { scrollToId } from "@/components/Common";
 import { IconCard, PageBody, PageHero, PriceTable, FaqLayout, splitStyle } from "./shared";
 import { RepresentativeForm } from "./RepresentativeForm";
 import { CardGrid } from "@/components/CardGrid";
@@ -43,7 +43,6 @@ export default function Representative() {
                 </span>
               ))}
             </Card>
-            <ImagePlaceholder slot="rep-office" label={t("Representative office or fair stand photography")} ratio="4 / 3" />
           </ScrollReveal>
 
           <ScrollReveal delay={80} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>

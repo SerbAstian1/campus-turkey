@@ -43,9 +43,11 @@ export default function Article({ slug }: { slug: string | null }) {
       <section style={{ position: "relative", zIndex: 10, background: "var(--surface-subtle)", borderRadius: "var(--radius-xl) var(--radius-xl) 0 0", padding: "var(--section-y) 0" }}>
         <div className="ct-container ct-detail-grid" style={{ display: "grid", gridTemplateColumns: "1fr minmax(260px,320px)", gap: "var(--space-12)", alignItems: "start" }}>
           <article style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)", maxWidth: 720 }}>
-            {/* The lead image where one has been sourced, the reserved frame where it
-                has not — two of the six articles have no free photograph of the right
-                country. See `article-photos.ts`. */}
+            {/* The lead image where one has been sourced, and nothing at all where it has
+                not — two of the six articles have no free photograph of the right country.
+                A dashed box captioned "Article lead image, 16:9" above a finished guide
+                reads as an unfinished site, which is worse than opening on the text. See
+                `article-photos.ts`. */}
             <ImagePlaceholder slot={`post-${post.slug}`} label={t("Article lead image, 16:9")} ratio="16 / 9"
               {...(articlePhoto(post.slug) ? { src: articlePhoto(post.slug)!.src, alt: articlePhoto(post.slug)!.alt } : {})} />
             <PhotoCredit photo={articlePhoto(post.slug)} />

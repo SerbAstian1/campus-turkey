@@ -124,7 +124,7 @@ export function WhatsAppAction({
  */
 export function ImagePlaceholder({
   slot, label, ratio = "4 / 3", height, icon = "image", round, style,
-  src, alt, priority,
+  src, alt, priority, reserved,
 }: {
   slot: string;
   label?: string;
@@ -139,6 +139,20 @@ export function ImagePlaceholder({
   alt?: string;
   /** Above the fold: load eagerly and at high priority. Everything else stays lazy. */
   priority?: boolean;
+  /**
+   * Hold the frame open when there is no photograph, instead of rendering nothing.
+   *
+   * Opt-in, because the two situations look identical at the call site and are not the
+   * same thing. A frame on `/about` is a commitment: the client is supplying team and
+   * office photography, the slot is agreed, and showing the dashed outline is how the
+   * page says so. A frame on an article that has no free photograph of the right country
+   * is just an absence, and a dashed box captioned "Article lead image, 16:9" tells a
+   * prospective student the site is unfinished.
+   *
+   * Defaulting to *not* rendering is what makes the difference deliberate. A new call
+   * site that forgets this prop shows nothing, which is the safe way to be wrong.
+   */
+  reserved?: boolean;
 }) {
   if (src) {
     return (
@@ -169,6 +183,9 @@ export function ImagePlaceholder({
       />
     );
   }
+
+  // No photograph and no commitment to one: render nothing rather than a dashed box.
+  if (!reserved) return null;
 
   return (
     <div data-slot={slot} style={{

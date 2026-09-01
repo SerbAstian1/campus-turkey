@@ -182,7 +182,7 @@ function AffiliateMarquee() {
                     Universities without a sourced logo pass no `src` and keep the
                     reserved frame, so the row stays even rather than gapped.
                   */}
-                  <ImagePlaceholder slot={`logo-${u.slug}`} label="" round
+                  <ImagePlaceholder slot={`logo-${u.slug}`} label="" round reserved
                     src={universityLogo(u.slug)} alt=""
                     style={{ width: 44, height: 44, flex: "none", aspectRatio: "auto" }} />
                   <span style={{ display: "flex", flexDirection: "column", gap: 2, whiteSpace: "nowrap" }}>
