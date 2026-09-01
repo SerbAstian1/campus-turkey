@@ -86,11 +86,23 @@ describe("moved routes", () => {
 });
 
 describe("site navigation", () => {
+  /**
+   * A fragment names a position inside a page, not a page.
+   *
+   * The footer's "Become a Partner" and "Become a Representative" links carry
+   * `#partner-form` and `#rep-form` so they land the reader on the registration form
+   * rather than the top of a long marketing page. Both checks below ask about the
+   * *page*, so the fragment is stripped before either runs — otherwise `pageExists`
+   * looks for a route file named after an anchor and reports a link that is perfectly
+   * good.
+   */
+  const withoutFragment = (path: string): string => path.split("#")[0] ?? path;
+
   /** Every destination the chrome offers, as unprefixed paths. */
   const destinations = [
     ...nav.filter((entry) => entry.route).map((entry) => `/${entry.route}`),
     ...footerColumns.flatMap((column) => column.links.map((link) => `/${link.route}`)),
-  ];
+  ].map(withoutFragment);
 
   it("never links to an address that redirects", () => {
     // A nav link into a 308 works and costs every visitor a round trip. It also reads,

@@ -87,8 +87,8 @@ export function useMega(): Record<string, ReactNode> {
           title: "Work with us",
           links: [
             { label: "All partnerships", description: "Which one you are", icon: "handshake", href: href("partnerships") },
-            { label: "Become a Partner", description: "Agencies and consultants", icon: "briefcase", href: href("partnerships/agents") },
-            { label: "Become a Representative", description: "Country representatives", icon: "globe", href: href("partnerships/representatives") },
+            { label: "Become a Partner", description: "Agencies and consultants", icon: "briefcase", href: href("partnerships/agents#partner-form") },
+            { label: "Become a Representative", description: "Country representatives", icon: "globe", href: href("partnerships/representatives#rep-form") },
             { label: "Login", description: "Students, partners, representatives and staff", icon: "log-in", href: href("portal") },
           ],
         },

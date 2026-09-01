@@ -58,8 +58,8 @@ export function MobileNav({
       [t("Educational tours"), "services/tours", "bus-front"]] },
     { key: "partners", label: t("Partners"), icon: "handshake", links: [
       [t("All partnerships"), "partnerships", "handshake"],
-      [t("Become a Partner"), "partnerships/agents", "briefcase"],
-      [t("Become a Representative"), "partnerships/representatives", "globe"],
+      [t("Become a Partner"), "partnerships/agents#partner-form", "briefcase"],
+      [t("Become a Representative"), "partnerships/representatives#rep-form", "globe"],
       [t("For universities"), "partnerships/universities", "landmark"],
       [t("For agencies"), "institutions/agencies", "users"],
       [t("For hospitals"), "institutions/hospitals", "stethoscope"],

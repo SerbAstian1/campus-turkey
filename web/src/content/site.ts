@@ -51,8 +51,8 @@ export const footerColumns: FooterColumn[] = [
     title: "Partners",
     links: [
       { label: "Partnerships", route: "partnerships" },
-      { label: "Become a Partner", route: "partnerships/agents" },
-      { label: "Become a Representative", route: "partnerships/representatives" },
+      { label: "Become a Partner", route: "partnerships/agents#partner-form" },
+      { label: "Become a Representative", route: "partnerships/representatives#rep-form" },
       { label: "For universities", route: "partnerships/universities" },
       { label: "Partner Login", route: "portal" },
     ],

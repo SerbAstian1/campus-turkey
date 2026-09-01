@@ -213,7 +213,7 @@ function AboutSection() {
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)" }}>
               <Button variant="primary" onClick={() => go("apply")}>{t("Apply Now")}</Button>
-              <Button variant="secondary" onClick={() => go("partners")}>{t("Become a Partner")}</Button>
+              <Button variant="secondary" onClick={() => go("partners#partner-form")}>{t("Become a Partner")}</Button>
               <Button variant="ghost" icon="message-circle" onClick={() => go("contact")}>{t("Contact us")}</Button>
             </div>
           </div>
@@ -499,8 +499,8 @@ function PartnerStrip() {
               <p style={{ color: "var(--text-body)", margin: 0 }}>{t("Agencies, consultants, universities and country representatives get a portal, published commission rates and a named contact.")}</p>
             </div>
             <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
-              <Button variant="primary" onClick={() => go("partners")}>{t("Become a Partner")}</Button>
-              <Button variant="secondary" icon="globe" onClick={() => go("representative")}>{t("Become a Representative")}</Button>
+              <Button variant="primary" onClick={() => go("partners#partner-form")}>{t("Become a Partner")}</Button>
+              <Button variant="secondary" icon="globe" onClick={() => go("representative#rep-form")}>{t("Become a Representative")}</Button>
             </div>
           </Card>
         </ScrollReveal>

@@ -21,7 +21,7 @@ import { WhatsAppAction } from "@/components/Common";
 import { ErrorScreen, OfflineGuard } from "@/screens/Errors";
 import { MobileNav } from "./MobileNav";
 import { useMega } from "./mega";
-import { routeKey, useRoute, usePlaceholderLinks, useNavigationBridge, useLegacyHashRedirect, useHref, go } from "./router";
+import { routeKey, useRoute, usePlaceholderLinks, useNavigationBridge, useLegacyHashRedirect, useHashTarget, useHref, go } from "./router";
 import { subscribeToToasts } from "./toast";
 
 /**
@@ -116,6 +116,9 @@ export function Shell({ children }: { children: ReactNode }) {
   usePlaceholderLinks();
   // Rescues inbound `#/study`-style links published while the prototype was live.
   useLegacyHashRedirect();
+  /* Deep links such as /partnerships/agents#partner-form land before the design system
+     has rendered the target, so the scroll waits for the element. See the hook. */
+  useHashTarget();
 
   /*
    * The runtime translation sweep is gone.

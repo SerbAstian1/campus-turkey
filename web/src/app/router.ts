@@ -22,6 +22,7 @@ import { useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { localePath } from "@/i18n/locales";
 import { useLocale } from "@/i18n/context";
+import { scrollToId } from "@/components/Common";
 
 export interface Route {
   /** First path segment. `home` at the root, matching the old hash router. */
@@ -81,15 +82,33 @@ const NAME_FOR: Record<string, string> = {
  * this migration a change to one file instead of to every screen.
  */
 export function pathFor(route: string): string {
-  const cleaned = String(route).replace(/^#?\/?/, "");
-  if (cleaned === "") return "/";
+  /*
+   * A trailing fragment is carried through rather than resolved.
+   *
+   * `go("partners#partner-form")` has to reach `/partnerships/agents#partner-form`, so
+   * the fragment is split off before the route name is looked up and re-attached after.
+   * Without this the whole string became the name, `PATH_FOR` missed it, and the reader
+   * was sent to `/partners#partner-form` — a route that does not exist.
+   *
+   * The leading-`#` strip below is a different thing and still needed: it handles the
+   * prototype's own `#/apply` addresses.
+   */
+  const raw = String(route);
+  /* A `#` at position zero is the prototype's legacy prefix (`#/apply`), not a fragment,
+     which is why the search starts at 1. */
+  const fragmentAt = raw.indexOf("#", 1);
+  const address = fragmentAt >= 0 ? raw.slice(0, fragmentAt) : raw;
+  const fragment = fragmentAt >= 0 ? raw.slice(fragmentAt) : "";
+
+  const cleaned = address.replace(/^#?\/?/, "");
+  if (cleaned === "") return `/${fragment}`;
 
   const [name = "", ...rest] = cleaned.split("/");
   const segment = PATH_FOR[name] ?? name;
   const tail = rest.filter(Boolean).join("/");
 
   const path = [segment, tail].filter(Boolean).join("/");
-  return `/${path}`;
+  return `/${path}${fragment}`;
 }
 
 /**
@@ -417,3 +436,51 @@ function isPlainLeftClick(event: MouseEvent): boolean {
 
 export { PLACEHOLDERS };
 export { isPlainLeftClick };
+
+/**
+ * Scroll to the element a deep link names, once that element exists.
+ *
+ * The browser's own fragment handling is not enough here, and the reason is this
+ * application's shape rather than anything unusual about hashes. A reader arriving at
+ * `/partnerships/agents#partner-form` gets the server-rendered text first; the element
+ * with that id belongs to the design system screen, which mounts once `_ds_bundle.js`
+ * has loaded. By the time it exists the browser has long since looked for the target,
+ * failed to find it, and given up. `scrollToId` would do the same: it returns silently
+ * when the id is not in the document, which is exactly the moment it is called.
+ *
+ * So this waits for the element rather than for a moment in time. It gives up after a
+ * few seconds, because a fragment naming something that will never appear is a typo in a
+ * link, not a slow page, and retrying for ever would leave a timer running on every
+ * navigation.
+ *
+ * Re-runs on route change so a deep link followed from inside the site behaves the same
+ * as one opened cold.
+ */
+export function useHashTarget(): void {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id) return;
+
+    let cancelled = false;
+    const giveUpAt = Date.now() + 8000;
+
+    const attempt = () => {
+      if (cancelled) return;
+      if (document.getElementById(id)) {
+        scrollToId(id);
+        return;
+      }
+      if (Date.now() < giveUpAt) window.setTimeout(attempt, 150);
+    };
+
+    // One tick late, so a synchronous render that is already in flight has landed.
+    const start = window.setTimeout(attempt, 0);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(start);
+    };
+  }, [pathname]);
+}

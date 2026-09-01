@@ -158,3 +158,29 @@ describe("the rescue is wired into every path a click can take", () => {
     expect(clickPaths).not.toMatch(/\n\s*router\.push\(/);
   });
 });
+
+describe("deep links to a form on another page", () => {
+  it("resolves the route and keeps the fragment", async () => {
+    /*
+     * `go("partners#partner-form")` has to reach `/partnerships/agents#partner-form`.
+     * Before `pathFor` split the fragment off, the whole string was looked up as a route
+     * name, `PATH_FOR` missed it, and the reader was sent to `/partners#partner-form` —
+     * an address with no page behind it.
+     */
+    const { pathFor } = await import("@/app/router");
+
+    expect(pathFor("partners#partner-form")).toBe("/partnerships/agents#partner-form");
+    expect(pathFor("representative#rep-form")).toBe("/partnerships/representatives#rep-form");
+  });
+
+  it("still resolves plain routes and the prototype's leading-hash form", () => {
+    // The leading `#` is the prototype's own address shape (`#/apply`) and is not a
+    // fragment. Confusing the two would break every legacy link at once.
+    return import("@/app/router").then(({ pathFor }) => {
+      expect(pathFor("partners")).toBe("/partnerships/agents");
+      expect(pathFor("#/apply")).toBe("/apply");
+      expect(pathFor("university/itu")).toBe("/universities/itu");
+      expect(pathFor("home")).toBe("/");
+    });
+  });
+});
