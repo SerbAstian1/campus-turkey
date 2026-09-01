@@ -373,11 +373,25 @@ export const universityPhoto = (slug: string): UniversityPhoto | undefined =>
   universityPhotos[slug];
 
 /**
- * The image for a `UniversityCard`. The same photograph the page uses, or nothing.
+ * The image for a `UniversityCard` — a 640px variant, not the page's photograph.
  *
  * Kept as its own function because the card's empty state differs from the page's: a card
  * with no photograph falls back to `--gradient-brand` and the design system's building
- * icon, while the page falls back to `ImagePlaceholder`'s reserved frame.
+ * icon, while the page falls back to `ImagePlaceholder`'s reserved frame. That separation
+ * is now doing a second job.
+ *
+ * **The directory was downloading forty-four hero photographs to fill thumbnails.** These
+ * files are 1600x900, sized for the full-bleed image at the top of a university's own
+ * page, and the card renders them a few hundred pixels wide. Measured on the live site,
+ * single card images were arriving at 487KB, 166KB and 117KB, and the whole set is
+ * 7.25MB. The 640px variants in `cards/` come to 1.11MB, an 85% saving on the page that
+ * is the directory's entire reason for existing.
+ *
+ * Generated from the originals with sharp; regenerate them when a photograph is replaced.
+ * `universityPhoto` above still returns the full-size image, because the detail page
+ * genuinely displays it at that size.
  */
-export const universityCardImage = (slug: string): string | undefined =>
-  universityPhotos[slug]?.src;
+export const universityCardImage = (slug: string): string | undefined => {
+  const src = universityPhotos[slug]?.src;
+  return src?.replace("/university-campus/", "/university-campus/cards/");
+};

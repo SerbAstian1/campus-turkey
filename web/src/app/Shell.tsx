@@ -272,7 +272,18 @@ export function Shell({ children }: { children: ReactNode }) {
         style={{
           background:
             `linear-gradient(rgba(10, 44, 30, 0.82), rgba(10, 44, 30, 0.82)), ` +
-            `url(${ASSETS}/footer-image.jpg) center / cover no-repeat, ` +
+            /*
+             * `.webp`, and the reason is worth the line: the source is a 4032x3024 phone
+             * photograph weighing 1.81MB, and it is a CSS background on the site shell, so
+             * every page on the site downloaded it. Measured on the live site it took 27
+             * seconds and was over half the page weight.
+             *
+             * Almost none of it is visible. The `linear-gradient` above lays 82% opaque
+             * green over the whole thing, which is why 1600px at quality 58 is
+             * indistinguishable from the original here and comes to 123KB. A 93% saving
+             * on the single heaviest asset the site serves.
+             */
+            `url(${ASSETS}/footer-image.webp) center / cover no-repeat, ` +
             `var(--gradient-brand-deep)`,
         }}
       />
