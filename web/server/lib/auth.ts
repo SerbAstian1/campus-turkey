@@ -30,6 +30,8 @@ import { env, isProduction } from "./config";
 import { logger } from "./logger";
 import { sendMail, verificationCodeEmail } from "./mail";
 import { rememberCode } from "./dev-codes";
+import { enforceRateLimit, recipientKey, RATE_LIMITS } from "./ratelimit";
+import { RateLimitedError } from "./errors";
 
 /**
  * How long a code is good for, and how many guesses it gets.
@@ -184,6 +186,35 @@ export const auth = betterAuth({
       disableSignUp: true,
 
       async sendVerificationOTP({ email, otp, type }) {
+        /*
+         * Per-recipient limit, applied before the send rather than at the route.
+         *
+         * This callback is the one place every code passes through, whichever Better
+         * Auth endpoint asked for it, so a limit here cannot be walked around by using a
+         * different path. The route's IP limit still applies and is still the first line;
+         * this one closes the axis it cannot see — see `RATE_LIMITS.otpRecipient`.
+         *
+         * `RateLimitedError` is caught and rethrown as a plain message. Better Auth owns
+         * the response from inside this callback and would render the typed error as a
+         * 500; what the person needs is to be told to wait, and what matters operationally
+         * is that no message was handed to the provider. The 429 envelope belongs to the
+         * route layer, which is where every other limit in this codebase reports one.
+         */
+        try {
+          await enforceRateLimit(RATE_LIMITS.otpRecipient, {
+            scope: "user",
+            identifier: recipientKey(email),
+          });
+        } catch (error) {
+          if (error instanceof RateLimitedError) {
+            // The address is never logged — the hash is enough to correlate repeats in
+            // an incident without writing down who was targeted.
+            logger.warn({ type }, "verification code refused by per-recipient limit");
+            throw new Error("Too many codes have been requested for this address. Please try again later.");
+          }
+          throw error;
+        }
+
         const result = await sendMail(verificationCodeEmail({
           to: email,
           code: otp,

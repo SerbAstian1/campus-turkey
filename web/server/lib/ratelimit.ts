@@ -11,6 +11,7 @@
  */
 
 import { Ratelimit } from "@upstash/ratelimit";
+import { createHmac } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { env, isProduction } from "./config";
 import { RateLimitedError } from "./errors";
@@ -108,6 +109,28 @@ export const RATE_LIMITS = {
     perIp: { limit: 600, windowSeconds: 60 },
     perUser: null,
   },
+
+  /**
+   * Verification codes, keyed by the address they would be sent to.
+   *
+   * `auth` above caps requests per IP, and that is the wrong axis for this one thing:
+   * the recipient is chosen by whoever is asking, so somebody rotating IPs can keep
+   * every individual address under the IP limit while one mailbox receives all of it.
+   * The cost lands on a real person's inbox and on a metered sending reputation, and
+   * neither is visible from an IP counter.
+   *
+   * Five an hour sits well above a real person retrying — a code lasts ten minutes and
+   * carries three attempts — and well below a volume that gets a sending domain
+   * suppressed.
+   *
+   * `perIp` is null on purpose: this policy exists to add the axis the IP limit cannot
+   * see, not to duplicate it. Both apply on the OTP path.
+   */
+  otpRecipient: {
+    name: "otp-recipient",
+    perIp: null,
+    perUser: { limit: 5, windowSeconds: 3600 },
+  },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 /**
@@ -144,6 +167,29 @@ export function ipPrefix(ip: string | null): string | null {
   const octets = ip.split(".");
   if (octets.length !== 4) return null;
   return `${octets[0]}.${octets[1]}.${octets[2]}.0/24`;
+}
+
+/**
+ * A stable, non-reversible limiter key for an email address.
+ *
+ * Limiting by recipient needs one counter per address, and the obvious key — the address
+ * itself — would leave Redis holding a list of everyone who has requested a sign-in code.
+ * That is a personal-data store nobody designed, nobody documented and nobody empties.
+ * An HMAC under the session secret partitions identically while the key on its own says
+ * nothing: equal addresses collide, unequal ones do not, and a dump of Redis is not a
+ * mailing list.
+ *
+ * Lower-cased and trimmed first, because `A@example.com ` and `a@example.com` reach the
+ * same mailbox and must not be handed a separate allowance each.
+ *
+ * Truncated to 32 hex characters. That is 128 bits — collisions are not a practical
+ * concern, and a shorter key keeps the Redis keyspace readable during an incident.
+ */
+export function recipientKey(email: string): string {
+  return createHmac("sha256", env.SESSION_SECRET)
+    .update(email.trim().toLowerCase())
+    .digest("hex")
+    .slice(0, 32);
 }
 
 const redis =
@@ -204,11 +250,18 @@ function withBudget<T>(work: Promise<T>): Promise<T> {
   ]);
 }
 
-export interface EnforceOptions {
-  request: Request;
-  scope: "ip" | "user";
-  identifier?: string;
-}
+/**
+ * A union rather than one shape with two optional fields, because the two scopes need
+ * genuinely different things and the flat version could not say so.
+ *
+ * Under `scope: "user"` the identifier was optional and the request was required — the
+ * exact opposite of what that branch uses. A caller that forgot the identifier compiled
+ * cleanly and then silently applied no limit at all, because `enforceRateLimit` returns
+ * early when it cannot resolve one. Splitting the type makes that omission a type error.
+ */
+export type EnforceOptions =
+  | { scope: "ip"; request: Request }
+  | { scope: "user"; identifier: string; request?: Request };
 
 /**
  * Apply a policy, or throw `RateLimitedError`.
