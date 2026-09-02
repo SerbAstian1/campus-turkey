@@ -425,7 +425,7 @@
       { icon: "instagram", label: "Instagram" }, { icon: "facebook", label: "Facebook" },
       { icon: "linkedin", label: "LinkedIn" }, { icon: "youtube", label: "YouTube" },
     ],
-    contact: { address: "Şişli, Istanbul, Türkiye", phone: "+90 555 000 0000", email: "hello@campusturkey.com", whatsapp: "WhatsApp us" },
+    contact: { address: "Şişli, Istanbul, Türkiye", phone: "+90 555 000 0000", email: "hello@campusturkey.org", whatsapp: "WhatsApp us" },
     portal: {
       account: { org: "Bright Futures Education", person: "Samuel Okoro", role: "Country representative", territory: "Nigeria", since: "Partner since March 2023", manager: "Fatima Bello", managerRole: "Your named contact" },
       kpis: [
