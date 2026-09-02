@@ -106,6 +106,18 @@ export default defineConfig({
       // test process.
       SESSION_SECRET: "test-secret-not-used-for-anything-real",
       LOG_LEVEL: "fatal",
+      /*
+       * Pinned so the suite does not inherit whatever the developer has configured
+       * locally. Without it a `.env` carrying a real `MAIL_PROVIDER` leaks in and closes
+       * the guard behind `codesMayBeShownOnScreen()`, and seven `dev-codes` tests fail —
+       * on a machine where mail happens to be set up, for a change that never touched
+       * mail. A test that passes or fails on ambient configuration is not testing the
+       * thing it names.
+       *
+       * `disabled` is the right pin because it is the condition those tests describe.
+       * Anything needing a configured provider sets it per-test.
+       */
+      MAIL_PROVIDER: "disabled",
     },
 
     // Guarded internally so it is a no-op under the node environment — see the file.
