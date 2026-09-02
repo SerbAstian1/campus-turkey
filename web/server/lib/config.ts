@@ -63,6 +63,18 @@ const schema = z.object({
   MAIL_FROM: z.string().email().optional(),
 
   /**
+   * Signing secret for delivery-event callbacks — `whsec_…` from the provider.
+   *
+   * Optional, and deliberately not enforced by `crossCheck` the way
+   * `PAYOUT_WEBHOOK_SECRET` is. The difference is what the endpoint can do: the payout
+   * webhook writes, and an unverified one can mark a withdrawal paid, so a provider
+   * without a secret is a refusal to boot. This one only records that a message bounced.
+   * Absent, `/api/webhooks/mail` answers 503 and the only loss is visibility — the app
+   * sends mail exactly as before.
+   */
+  MAIL_WEBHOOK_SECRET: z.string().optional(),
+
+  /**
    * Document storage — brief §18, §83.
    *
    * `local` writes to `.uploads/` and exists so the upload and review flows can be built

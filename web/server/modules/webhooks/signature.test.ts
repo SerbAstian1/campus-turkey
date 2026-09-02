@@ -8,7 +8,7 @@
 
 import { describe, it, expect } from "vitest";
 import { createHmac } from "node:crypto";
-import { verifySignature, MAX_SKEW_SECONDS } from "./signature";
+import { verifySignature, verifySvixSignature, MAX_SKEW_SECONDS } from "./signature";
 
 const SECRET = "test-webhook-secret";
 const BODY = '{"id":"evt_1","type":"payout.paid","data":{"reference":"WD-2026-000001"}}';
@@ -119,5 +119,129 @@ describe("refuses everything else", () => {
     expect(
       verifySignature({ rawBody: BODY, signature: "", timestamp: stamp, secret: SECRET, now }),
     ).toEqual({ ok: false, reason: "missing" });
+  });
+});
+
+/**
+ * Svix-format verification, which is what the mail provider sends.
+ *
+ * Tested separately from the payout scheme because almost nothing is shared: a different
+ * signed string, a base64 secret behind a prefix, a base64 digest, and a header holding a
+ * list rather than a value. Each of those is a place an implementation can look right and
+ * accept everything.
+ */
+describe("verifySvixSignature", () => {
+  // A real `whsec_` secret is base64. Signing with the prefix still attached is the
+  // classic failure, so the raw key and the labelled form are both kept in view here.
+  const RAW_KEY = Buffer.from("svix-signing-key-for-tests-0001");
+  const WHSEC = `whsec_${RAW_KEY.toString("base64")}`;
+  const ID = "msg_2abcDEF";
+  const SVIX_BODY = '{"type":"email.bounced","data":{"email_id":"e_1"}}';
+
+  const svixSign = (id: string, timestamp: string, body: string, key = RAW_KEY) =>
+    createHmac("sha256", key).update(`${id}.${timestamp}.${body}`).digest("base64");
+
+  const base = {
+    rawBody: SVIX_BODY,
+    id: ID,
+    timestamp: stamp,
+    secret: WHSEC,
+    now,
+  };
+
+  it("accepts a correct signature", () => {
+    expect(
+      verifySvixSignature({ ...base, signature: `v1,${svixSign(ID, stamp, SVIX_BODY)}` }),
+    ).toEqual({ ok: true });
+  });
+
+  it("accepts when the correct signature is one of several", () => {
+    // What a secret rotation actually looks like on the wire: the old key still signs, and
+    // both are sent. Checking only the first entry would break the endpoint mid-rotation.
+    const signature = `v1,${svixSign(ID, stamp, SVIX_BODY, Buffer.from("an-older-key"))} v1,${svixSign(ID, stamp, SVIX_BODY)}`;
+    expect(verifySvixSignature({ ...base, signature })).toEqual({ ok: true });
+  });
+
+  it("tolerates the secret being given without its whsec_ prefix", () => {
+    expect(
+      verifySvixSignature({
+        ...base,
+        secret: RAW_KEY.toString("base64"),
+        signature: `v1,${svixSign(ID, stamp, SVIX_BODY)}`,
+      }),
+    ).toEqual({ ok: true });
+  });
+
+  it("refuses a signature computed over the body alone", () => {
+    // The id and timestamp are inside the signed string precisely so a captured body
+    // cannot be replayed under a fresh envelope.
+    const bodyOnly = createHmac("sha256", RAW_KEY).update(SVIX_BODY).digest("base64");
+    expect(verifySvixSignature({ ...base, signature: `v1,${bodyOnly}` })).toEqual({
+      ok: false,
+      reason: "mismatch",
+    });
+  });
+
+  it("refuses a signature made with the prefixed secret", () => {
+    const wrong = createHmac("sha256", Buffer.from(WHSEC))
+      .update(`${ID}.${stamp}.${SVIX_BODY}`)
+      .digest("base64");
+    expect(verifySvixSignature({ ...base, signature: `v1,${wrong}` })).toEqual({
+      ok: false,
+      reason: "mismatch",
+    });
+  });
+
+  it("refuses a body that changed after signing", () => {
+    const signature = `v1,${svixSign(ID, stamp, SVIX_BODY)}`;
+    expect(
+      verifySvixSignature({ ...base, rawBody: SVIX_BODY.replace("bounced", "delivered"), signature }),
+    ).toEqual({ ok: false, reason: "mismatch" });
+  });
+
+  it("refuses a mismatched id", () => {
+    const signature = `v1,${svixSign(ID, stamp, SVIX_BODY)}`;
+    expect(verifySvixSignature({ ...base, id: "msg_someoneElse", signature })).toEqual({
+      ok: false,
+      reason: "mismatch",
+    });
+  });
+
+  it("refuses an unknown signature version", () => {
+    // v2 would be a scheme this code does not implement. Skipping it is correct;
+    // treating it as v1 and hoping would not be.
+    expect(
+      verifySvixSignature({ ...base, signature: `v2,${svixSign(ID, stamp, SVIX_BODY)}` }),
+    ).toEqual({ ok: false, reason: "mismatch" });
+  });
+
+  it("refuses a stale timestamp", () => {
+    const old = String(Number(stamp) - MAX_SKEW_SECONDS - 1);
+    expect(
+      verifySvixSignature({ ...base, timestamp: old, signature: `v1,${svixSign(ID, old, SVIX_BODY)}` }),
+    ).toEqual({ ok: false, reason: "stale" });
+  });
+
+  it("refuses a missing header", () => {
+    const signature = `v1,${svixSign(ID, stamp, SVIX_BODY)}`;
+    expect(verifySvixSignature({ ...base, id: null, signature })).toEqual({ ok: false, reason: "missing" });
+    expect(verifySvixSignature({ ...base, timestamp: null, signature })).toEqual({ ok: false, reason: "missing" });
+    expect(verifySvixSignature({ ...base, signature: null })).toEqual({ ok: false, reason: "missing" });
+  });
+
+  it("refuses a non-numeric timestamp", () => {
+    expect(
+      verifySvixSignature({ ...base, timestamp: "yesterday", signature: `v1,${svixSign(ID, stamp, SVIX_BODY)}` }),
+    ).toEqual({ ok: false, reason: "malformed" });
+  });
+
+  it("refuses a secret that decodes to nothing", () => {
+    expect(
+      verifySvixSignature({ ...base, secret: "whsec_", signature: `v1,${svixSign(ID, stamp, SVIX_BODY)}` }),
+    ).toEqual({ ok: false, reason: "malformed" });
+  });
+
+  it("refuses an empty signature header", () => {
+    expect(verifySvixSignature({ ...base, signature: "" })).toEqual({ ok: false, reason: "missing" });
   });
 });

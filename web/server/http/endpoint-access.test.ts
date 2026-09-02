@@ -97,6 +97,16 @@ const NOT_ROUTE_BUILDER = new Map([
    * refused. The signature does that job here, and `signature.test.ts` covers it.
    */
   ["webhooks/payouts/route.ts", "HMAC-signed provider callback, no session"],
+  /**
+   * Delivery events from the mail provider, signed in Svix format. Outside `route()` for
+   * the same reason as the payouts callback above — no `Origin` on a server-to-server
+   * request — and verified by `verifySvixSignature`, which `signature.test.ts` covers.
+   *
+   * Worth noting how much less this one can do: it only reads. An unverified payout
+   * webhook can mark money as paid; the worst an unverified event here achieves is a
+   * misleading log line.
+   */
+  ["webhooks/mail/route.ts", "Svix-signed provider callback, no session"],
 ]);
 
 describe("every endpoint states an authorization rule", () => {
