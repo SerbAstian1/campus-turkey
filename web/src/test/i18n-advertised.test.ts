@@ -56,17 +56,43 @@ function coverageOf(locale: string, source: Set<string>): number {
   const dir = join(MESSAGES, locale);
   if (!existsSync(dir)) return 0;
 
-  let translated = 0;
+  /*
+   * A set, not a counter.
+   *
+   * 24 strings appear in two namespaces each — "Services" is in both common.json and
+   * site.json — and the English side dedupes them because it builds a Set. Counting
+   * occurrences on this side compared 734 against a denominator of 709 and reported
+   * locales at 103.5%, which made the 90% floor behave like about 87%. A measurement
+   * that can exceed 100% is not measuring what its name says.
+   */
+  const translated = new Set<string>();
   for (const file of readdirSync(dir)) {
     if (!file.endsWith(".json") || file.startsWith(".")) continue;
     const contents = JSON.parse(readFileSync(join(dir, file), "utf8")) as Record<string, string>;
     for (const [key, value] of Object.entries(contents)) {
       if (source.has(key) && typeof value === "string" && value.trim() && value !== key) {
-        translated++;
+        translated.add(key);
       }
     }
   }
-  return translated / source.size;
+  return translated.size / source.size;
+}
+
+/**
+ * How much of a locale's catalogue came from a machine and has not been read by a person.
+ *
+ * `scripts/i18n-machine-translate.mjs` writes `<locale>/.machine.json` listing exactly the
+ * keys it produced, which makes "translated" and "reviewed" separable facts rather than one
+ * assumption. Returns 0 where no manifest exists — a locale filled by hand, or one nobody
+ * has swept, has nothing outstanding by this measure.
+ */
+function machineShareOf(locale: string, source: Set<string>): number {
+  const manifest = join(MESSAGES, locale, ".machine.json");
+  if (!existsSync(manifest)) return 0;
+
+  const parsed = JSON.parse(readFileSync(manifest, "utf8")) as { keys?: string[] };
+  const keys = (parsed.keys ?? []).filter((key) => source.has(key));
+  return new Set(keys).size / source.size;
 }
 
 const source = englishKeys();
@@ -103,23 +129,72 @@ describe("every advertised locale", () => {
   );
 });
 
+/**
+ * How much of a catalogue may still be unreviewed machine output before the locale counts
+ * as merely filled rather than finished.
+ *
+ * Ten percent, so a handful of machine strings left in an otherwise reviewed catalogue does
+ * not hold the whole locale back, while a wholesale sweep plainly does.
+ */
+const MACHINE_SHARE_CEILING = 0.1;
+
 describe("the locales held back", () => {
   it("are held back for a measurable reason, not an arbitrary one", () => {
-    // The other side of the gate: anything excluded should genuinely be below the floor.
-    // If a locale is complete and still not advertised, that is a list somebody forgot to
-    // update, and this names it rather than leaving the work invisible.
+    /*
+     * The other side of the gate: nothing finished should sit unadvertised because a list
+     * went stale. This names it rather than leaving the work invisible.
+     *
+     * Coverage alone used to answer that, because a filled catalogue could only have been
+     * filled by a person. `i18n-machine-translate.mjs` broke that equivalence — a locale
+     * can now reach 100% in an afternoon without anyone having read a word of it — so there
+     * are three states where there were two: thin, filled-but-unreviewed, and reviewed.
+     * Only the third belongs in `hreflang`, because the tag asserts the page *is* in that
+     * language and a machine draft is not yet a claim worth making to a search engine.
+     *
+     * So a locale is held back legitimately when it is either below the floor or still
+     * mostly machine output, and the manifest each sweep writes is what tells them apart.
+     * Get a locale reviewed, delete or shrink its `.machine.json`, and this test starts
+     * asking for it by name again — which is the nudge the original assertion existed to
+     * provide, now pointed at the step that actually remains.
+     */
     const ready: string[] = [];
 
     for (const locale of LOCALES) {
       if ((ADVERTISED_LOCALES as readonly string[]).includes(locale)) continue;
-      if (coverageOf(locale, source) >= ADVERTISED_COVERAGE_FLOOR) ready.push(locale);
+      if (coverageOf(locale, source) < ADVERTISED_COVERAGE_FLOOR) continue;
+      if (machineShareOf(locale, source) > MACHINE_SHARE_CEILING) continue;
+      ready.push(locale);
     }
 
     expect(
       ready,
-      `These locales now meet the ${ADVERTISED_COVERAGE_FLOOR * 100}% floor and should be added to ` +
-        `ADVERTISED_LOCALES: ${ready.join(", ")}`,
+      `These locales meet the ${ADVERTISED_COVERAGE_FLOOR * 100}% floor and are substantially ` +
+        `reviewed, so they should be added to ADVERTISED_LOCALES: ${ready.join(", ")}`,
     ).toEqual([]);
+  });
+
+  it("distinguishes a catalogue that is filled from one that is finished", () => {
+    /*
+     * Guards the exemption above from becoming a blanket excuse. If a locale is at or above
+     * the floor, it must be able to say *why* it is still held back — and "most of it came
+     * out of a machine an hour ago" is only a reason while the manifest says so.
+     *
+     * Without this, deleting the manifests would silently reopen the hole the exemption was
+     * cut for, and the suite would go on passing.
+     */
+    const filled = LOCALES.filter(
+      (locale) =>
+        !(ADVERTISED_LOCALES as readonly string[]).includes(locale) &&
+        coverageOf(locale, source) >= ADVERTISED_COVERAGE_FLOOR,
+    );
+
+    for (const locale of filled) {
+      expect(
+        machineShareOf(locale, source),
+        `${locale} is complete but not advertised, and carries no .machine.json to explain why. ` +
+          `Either it was reviewed — in which case advertise it — or the manifest was lost.`,
+      ).toBeGreaterThan(MACHINE_SHARE_CEILING);
+    }
   });
 
   it("still route and still render, because availability is not advertising", () => {
