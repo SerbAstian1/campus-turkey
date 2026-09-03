@@ -124,6 +124,35 @@ function placeholders(text) {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const limited = () => Object.assign(new Error("rate limited"), { rateLimited: true });
 
+/**
+ * Is this a dropped connection rather than a refusal?
+ *
+ * A full sweep is around ten thousand requests over an hour, so a connection reset
+ * somewhere in it is not an edge case — it is the expected weather. `fetch` surfaces one
+ * as a bare "fetch failed" with the real reason on `cause`, which is why this looks at
+ * both.
+ *
+ * The distinction from a 429 matters. A rate limit means *stop asking for a while*; a
+ * reset means *that one packet died, ask again*. Retrying both is right, but only the
+ * first deserves a long back-off.
+ *
+ * A run that dies here loses nothing permanently — every answer is cached as it arrives —
+ * but it does stop unattended, which on a sweep this long means it never finishes without
+ * somebody watching it.
+ */
+function isTransientNetwork(error) {
+  const codes = ["ECONNRESET", "ETIMEDOUT", "ENOTFOUND", "EAI_AGAIN", "ECONNREFUSED", "EPIPE"];
+  const seen = new Set();
+  for (let e = error; e && !seen.has(e); e = e.cause) {
+    seen.add(e);
+    if (codes.includes(e.code)) return true;
+    if (typeof e.message === "string" && /fetch failed|terminated|socket hang up/i.test(e.message)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** DeepL wants uppercase, and regionalises two of these. */
 function deeplTarget(code) {
   const special = { "zh-CN": "ZH", pt: "PT-BR" };
@@ -255,7 +284,21 @@ function remember(locale, english, translated) {
 const args = process.argv.slice(2);
 const limitAt = args.indexOf("--limit");
 const limit = limitAt === -1 ? Infinity : Number(args[limitAt + 1]);
-const named = args.filter((a, i) => !a.startsWith("--") && i !== limitAt + 1);
+/*
+ * The `limitAt === -1` guard is load-bearing.
+ *
+ * Without it, an absent `--limit` makes `limitAt + 1` equal 0, and the filter drops
+ * argument 0 — the first locale named on the command line. `… ar es fr` silently became
+ * `es fr`, and a single `… ar` became an empty list, which falls through to "every
+ * locale" below and runs all sixteen.
+ *
+ * It failed the quiet way: the run reported success, the other locales really were
+ * translated, and only the first one named was untouched. Two full sweeps left Arabic at
+ * 38% while every summary line said the sweep had completed.
+ */
+const named = args.filter(
+  (a, i) => !a.startsWith("--") && (limitAt === -1 || i !== limitAt + 1),
+);
 const locales = named.length ? named : Object.keys(TARGET);
 
 for (const locale of locales) {
@@ -317,21 +360,52 @@ for (const locale of locales) {
       budget -= 1;
 
       let result = null;
-      for (let attempt = 1; attempt <= 3; attempt++) {
+
+      /*
+       * Whether this string was decided or merely abandoned.
+       *
+       * The cache treats a stored `null` as settled — `cached !== undefined` short-circuits
+       * the retry on every future run — and for a genuine null that is right: a provider
+       * that returned nothing usable, or a translation whose placeholders did not survive,
+       * will decide the same way tomorrow, and re-asking wastes quota to reach the same
+       * answer.
+       *
+       * Giving up after six dropped connections is not that kind of answer. Caching it
+       * would convert a bad minute of network into a string that is permanently English
+       * and never retried, and the sweep would report success while quietly having stopped
+       * trying. So an abandoned string is left out of the cache entirely and picked up by
+       * the next run.
+       */
+      let abandoned = false;
+
+      for (let attempt = 1; attempt <= 6; attempt++) {
         try {
           result = await translateOne(source, code);
           break;
         } catch (error) {
-          if (!error.rateLimited) throw error;
-          // Backing off rather than hammering. A free endpoint is a courtesy, and being
-          // rude to it is how it stops answering entirely.
-          const wait = 2000 * attempt * attempt;
-          process.stdout.write("\n  rate limited, waiting " + wait / 1000 + "s...");
+          const transient = isTransientNetwork(error);
+          if (!error.rateLimited && !transient) throw error;
+
+          // A refusal and a dropped packet want different manners. Backing off hard on a
+          // rate limit, because a free endpoint is a courtesy and being rude to it is how
+          // it stops answering entirely; briefly on a reset, because nothing asked us to
+          // slow down and the next connection usually works.
+          const wait = error.rateLimited ? 2000 * attempt * attempt : 500 * attempt;
+          const why = error.rateLimited ? "rate limited" : "connection dropped";
+          process.stdout.write("\n  " + why + ", retrying in " + wait / 1000 + "s (" + attempt + "/6)...");
           await sleep(wait);
+
+          // Out of attempts. Leave the string as English rather than ending the run — a
+          // resumable sweep that stops on one bad socket still has to be restarted by
+          // hand, and the whole point is that it finishes unattended.
+          if (attempt === 6) {
+            result = null;
+            abandoned = true;
+          }
         }
       }
 
-      remember(locale, source, result);
+      if (!abandoned) remember(locale, source, result);
       if (result) {
         merged[source] = result;
         machineLog.push(source);
