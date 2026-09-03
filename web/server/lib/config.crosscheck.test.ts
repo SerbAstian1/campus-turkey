@@ -22,7 +22,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { crossCheck, type Env } from "./config";
+import { crossCheck, withProviderAliases, type Env } from "./config";
 
 /**
  * A production configuration with every required variable present.
@@ -216,5 +216,79 @@ describe("a key that is present but fake", () => {
       expect(complaint(productionEnv({ NEXT_PUBLIC_MAPTILER_KEY: real }), "placeholder"), real).toBe(false);
     }
     expect(crossCheck(productionEnv())).toEqual([]);
+  });
+});
+
+/**
+ * The Resend–Vercel integration sets `RESEND_API_KEY`; this app reads `MAIL_API_KEY`.
+ *
+ * The alias exists so that wiring up the integration actually configures the app rather
+ * than producing a deploy that fails complaining about a variable the person never saw.
+ * Both halves are tested: that it fires where it should, and — more importantly — that it
+ * stays out of the way everywhere else. An alias that fires too eagerly would let a
+ * Postmark deployment boot on a Resend key, which is a worse failure than the one it fixes.
+ */
+describe("the Resend key alias", () => {
+  it("supplies MAIL_API_KEY from the integration's variable", () => {
+    expect(
+      withProviderAliases({ MAIL_PROVIDER: "resend", RESEND_API_KEY: "re_from_integration" }),
+    ).toMatchObject({ MAIL_API_KEY: "re_from_integration" });
+  });
+
+  it("leaves an explicit MAIL_API_KEY alone", () => {
+    // An inherited value must never win over one somebody set on purpose — that would
+    // make the deployed key depend on which of two variables was written most recently.
+    expect(
+      withProviderAliases({
+        MAIL_PROVIDER: "resend",
+        MAIL_API_KEY: "re_explicit",
+        RESEND_API_KEY: "re_from_integration",
+      }),
+    ).toMatchObject({ MAIL_API_KEY: "re_explicit" });
+  });
+
+  it("does not fire for a different provider", () => {
+    // The integration's key can be present on a project that has since moved to Postmark.
+    // Aliasing it there would satisfy the cross-check with a credential for the wrong
+    // service, and the failure would surface as a rejected send rather than a bad config.
+    expect(
+      withProviderAliases({ MAIL_PROVIDER: "postmark", RESEND_API_KEY: "re_from_integration" }),
+    ).not.toHaveProperty("MAIL_API_KEY");
+  });
+
+  it("does not fire when mail is disabled", () => {
+    expect(
+      withProviderAliases({ MAIL_PROVIDER: "disabled", RESEND_API_KEY: "re_from_integration" }),
+    ).not.toHaveProperty("MAIL_API_KEY");
+  });
+
+  it("does not fire when no provider is named", () => {
+    // MAIL_PROVIDER defaults to "disabled" downstream, so an absent value is not resend.
+    expect(withProviderAliases({ RESEND_API_KEY: "re_from_integration" })).not.toHaveProperty(
+      "MAIL_API_KEY",
+    );
+  });
+
+  it("passes the environment through untouched when there is nothing to alias", () => {
+    const source = { MAIL_PROVIDER: "resend", MAIL_API_KEY: "re_explicit" };
+    expect(withProviderAliases(source)).toEqual(source);
+  });
+
+  it("produces a configuration crossCheck accepts", () => {
+    // The end the alias exists for: integration set, MAIL_FROM set by hand, boots.
+    const aliased = withProviderAliases({
+      MAIL_PROVIDER: "resend",
+      RESEND_API_KEY: "re_from_integration",
+    });
+
+    expect(
+      crossCheck(
+        productionEnv({
+          MAIL_PROVIDER: "resend",
+          MAIL_API_KEY: aliased["MAIL_API_KEY"],
+          MAIL_FROM: "no-reply@campusturkey.org",
+        }),
+      ),
+    ).toEqual([]);
   });
 });

@@ -372,8 +372,39 @@ export function withoutBlanks(
   return kept;
 }
 
+/**
+ * Accept the variable name the provider's own integration sets.
+ *
+ * Connecting Resend to Vercel through their integration provisions a key and injects it
+ * as `RESEND_API_KEY`. This app reads `MAIL_API_KEY`. Same key, different name — so the
+ * integration appears to succeed, sets a variable nothing reads, and the deploy then
+ * fails the cross-check below complaining that `MAIL_API_KEY` is missing. The person who
+ * just wired up the integration is the least likely to guess why.
+ *
+ * The alias is deliberately narrow. It applies only when the provider is already `resend`
+ * — so it cannot quietly satisfy a Postmark deployment — and only when `MAIL_API_KEY` is
+ * absent, so an explicit value always wins over an inherited one. `MAIL_PROVIDER` and
+ * `MAIL_FROM` are still set by hand, because the integration cannot know either: which
+ * provider this app should use is a decision, and the from-address has to be a domain
+ * somebody verified.
+ *
+ * Applied to the source rather than the parsed result, so the schema stays a plain
+ * description of the environment and this stays one readable rule about names.
+ *
+ * Runs after `withoutBlanks`, which matters: a `RESEND_API_KEY` present but empty is not
+ * a key, and aliasing it would replace a clear "missing" with a confusing "rejected by
+ * the provider".
+ */
+export function withProviderAliases(source: Record<string, string>): Record<string, string> {
+  const inherited = source["RESEND_API_KEY"];
+  if (source["MAIL_PROVIDER"] === "resend" && !source["MAIL_API_KEY"] && inherited) {
+    return { ...source, MAIL_API_KEY: inherited };
+  }
+  return source;
+}
+
 function load(): Env {
-  const parsed = schema.safeParse(withoutBlanks(process.env));
+  const parsed = schema.safeParse(withProviderAliases(withoutBlanks(process.env)));
 
   if (!parsed.success) {
     // Names only. Printing the values would put secrets in the boot log, which is
