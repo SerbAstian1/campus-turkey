@@ -9,11 +9,19 @@
  * reason for existing is organic search, that was the expensive half missing, and
  * nothing failed because everything a test usually looks at was right.
  *
+ * **That guarantee has since been given up on purpose, at the client's request.** The
+ * branded holding screen is back on public pages, so the defect described above is once
+ * more the shipped behaviour — see "shows the boot screen on public pages" below, which
+ * records the decision and how to undo it. What this file still enforces is the wiring
+ * that makes undoing it a one-line change: every page must still build a `server` tree
+ * and hand it to `Hydrated`, so the text is there to show the moment anyone wants it,
+ * and the failure path must still use it.
+ *
  * Checked by reading the source rather than by rendering. Rendering a route means
  * standing up the database, the config guard and the design system bundle, any of which
  * failing would present as a content failure. The property that matters is structural
  * and the source states it plainly: a page under `(site)` renders its screen inside
- * `Hydrated`, and `Hydrated` is given a `server` tree to show until the bundle arrives.
+ * `Hydrated`, and `Hydrated` is given a `server` tree.
  *
  * An allowlist rather than a count, for the reason `endpoint-access.test.ts` gives:
  * a count says the number changed, an allowlist says which page changed and makes the
@@ -95,15 +103,40 @@ describe("public pages render content on the server", () => {
 });
 
 describe("the gate itself", () => {
-  it("no longer withholds the page while the bundle loads", () => {
+  it("still publishes status from the provider rather than withholding there", () => {
     const providers = readFileSync(join(__dirname, "..", "..", "app", "providers.tsx"), "utf8");
-
-    // The old shape. Its return meant `children` never reached the server's HTML, which
-    // is the whole defect above. `DesignSystemBoundary` may still do this for the portal.
     const gateInProvider = /export function DesignSystemProvider[\s\S]*?\n\}/.exec(providers)?.[0] ?? "";
 
     expect(gateInProvider).not.toMatch(/return <BootScreen/);
     expect(gateInProvider).toMatch(/DesignSystemStatusContext\.Provider/);
+  });
+
+  it("shows the boot screen on public pages while the bundle loads", () => {
+    /*
+     * This assertion is the inverse of the one this file was written to make, and the
+     * reversal is deliberate rather than a regression that slipped through.
+     *
+     * The client saw both behaviours and asked for the branded holding screen back. That
+     * is theirs to decide, and the cost is real and unmitigated: `status` is `loading`
+     * during server rendering, so this branch is what the HTML carries, and the `server`
+     * tree — passed to `Hydrated` but not rendered — reaches no document. Public pages
+     * ship to a crawler as a logo on a green field with metadata attached to no content,
+     * which is exactly the defect described at the top of this file.
+     *
+     * Two things kept the test honest rather than deleted. The check above still pins
+     * the provider, so nobody reintroduces the withholding in the *other* place by
+     * accident. And this one pins the current choice, so if the boot screen disappears
+     * again it is because somebody decided that, not because a refactor moved a branch.
+     *
+     * Restoring the search-friendly behaviour means returning `server` instead of
+     * `<BootScreen />` in `Hydrated`, and inverting this expectation.
+     */
+    const hydrated = readFileSync(join(__dirname, "..", "app", "Hydrated.tsx"), "utf8");
+
+    expect(hydrated).toMatch(/return <BootScreen \/>/);
+    // The failure path is not part of that trade: a bundle that cannot load at all
+    // should still leave the reader with the page's text rather than an apology.
+    expect(hydrated).toMatch(/status === "failed"[\s\S]*?server/);
   });
 
   it("keeps the boot screen for the portal and the staff console", () => {

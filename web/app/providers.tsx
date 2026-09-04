@@ -26,42 +26,10 @@
 import { useEffect, useState } from "react";
 import { loadDesignSystem } from "@/ds/load";
 import { DesignSystemStatusContext, useDesignSystemStatus, type DesignSystemStatus } from "@/ds/status";
+import { BootScreen } from "@/app/BootScreen";
 import { useT } from "@/i18n/context";
 
 type Status = DesignSystemStatus;
-
-/**
- * The boot screen, transcribed from the Vite build's `index.html`.
- *
- * Inline styles rather than a class: this renders before the design system's tokens
- * are guaranteed to have been applied, so it cannot depend on them.
- */
-function BootScreen() {
-  return (
-    <div
-      aria-busy="true"
-      aria-live="polite"
-      style={{
-        minHeight: "100dvh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#0A2C1E",
-      }}
-    >
-      <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
-        Loading Campus Turkey
-      </span>
-      <img
-        src="/assets/logo-lockup-reversed.png"
-        alt=""
-        width={220}
-        height={97}
-        style={{ height: 104, width: "auto", opacity: 0.92 }}
-      />
-    </div>
-  );
-}
 
 /**
  * Shown when the bundle cannot be fetched at all.
