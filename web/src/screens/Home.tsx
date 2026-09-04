@@ -14,6 +14,7 @@ import { BrandMark, ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 
 /** Counts up when it scrolls into view. Reduced motion gets the final value at once. */
 function Counter({ value }: { value: string }) {
@@ -257,6 +258,7 @@ function AboutSection() {
 
 function ServicesSection() {
   const t = useT();
+  const tc = useContentT();
   const href = useHref();
   return (
     <section id="study" style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>
@@ -271,7 +273,7 @@ function ServicesSection() {
             keeps its emphasis — the badge, the accent treatment and the numbered index
             all come from `emphasis`, not from its width. */}
         <CardGrid min={280} gap="var(--space-6)">
-          {serviceCards.map((s, i) => (
+          {tc(serviceCards).map((s, i) => (
             <ScrollReveal key={s.title} delay={i * 80} style={{ display: "flex", minWidth: 0 }}>
               <ServiceCard
                 icon={s.icon} title={s.title} description={s.description} points={s.points}
@@ -287,10 +289,11 @@ function ServicesSection() {
 }
 
 function StatsBand() {
+  const tc = useContentT();
   return (
     <section style={{ background: "var(--gradient-brand-deep)", padding: "var(--section-y) 0" }}>
       <CardGrid min={200} gap="var(--space-10)" className="ct-container">
-        {stats.map((s, i) => (
+        {tc(stats).map((s, i) => (
           <ScrollReveal key={s.label} delay={i * 80}>
             <StatBlock label={s.label} description={s.description} value={<Counter value={s.value} />} />
           </ScrollReveal>
@@ -445,6 +448,7 @@ function FeaturedUniversities() {
 
 function JourneySection() {
   const t = useT();
+  const tc = useContentT();
   return (
     <section style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>
       <div className="ct-container">
@@ -453,7 +457,7 @@ function JourneySection() {
             <SectionHeading eyebrow={t("How it works")} title={t("Five steps from question to campus")}
               lead={t("No jargon, no hidden stages. You always know what happens next.")} />
           }
-          items={journey.map((s) => ({
+          items={tc(journey).map((s) => ({
             content: (
               <div>
                 <span className="ct-eyebrow" style={{ display: "block", marginBottom: 6 }}>{s.meta}</span>
@@ -470,12 +474,13 @@ function JourneySection() {
 
 function TestimonialsSection() {
   const t = useT();
+  const tc = useContentT();
   return (
     <section style={{ background: "var(--surface-subtle)", padding: "var(--section-y) 0" }}>
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
         <ScrollReveal><SectionHeading eyebrow={t("In their words")} title={t("Students, patients and partners")} align="center" /></ScrollReveal>
         <CardGrid min={280} gap="var(--space-6)">
-          {testimonials.map((t, i) => (
+          {tc(testimonials).map((t, i) => (
             <ScrollReveal key={t.name} delay={i * 80} style={{ display: "flex" }}>
               <TestimonialCard {...t} style={{ width: "100%" }} />
             </ScrollReveal>
@@ -511,6 +516,7 @@ function PartnerStrip() {
 
 function FaqSection() {
   const t = useT();
+  const tc = useContentT();
   return (
     <section className="ct-faq-grid" style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>
       <div className="ct-container ct-faq-inner" style={{ display: "grid", gridTemplateColumns: "minmax(280px,360px) 1fr", gap: "var(--space-16)", alignItems: "start" }}>
@@ -520,7 +526,7 @@ function FaqSection() {
               lead={t("Still unsure? Message us on WhatsApp and a person replies.")} />
           </ScrollReveal>
         </div>
-        <ScrollReveal delay={80}><Accordion items={generalFaq} /></ScrollReveal>
+        <ScrollReveal delay={80}><Accordion items={tc(generalFaq)} /></ScrollReveal>
       </div>
     </section>
   );

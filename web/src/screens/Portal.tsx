@@ -20,6 +20,7 @@ import { formatMinor, newIdempotencyKey, requestWithdrawal } from "@/features/po
 import { usePortalData, type PortalData } from "@/features/portal/data";
 import { useLocaleSwitch } from "@/i18n/switch";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 import { useTranslatedOptions } from "@/i18n/options";
 import { go, useHref } from "@/app/router";
 import { toast } from "@/app/toast";
@@ -290,16 +291,17 @@ const maskTail = (v: string) => {
 
 function AddPayoutMethodForm({ onAdd, onClose }: { onAdd: (m: PayoutMethod, d: boolean) => void; onClose: () => void }) {
   const t = useT();
+  const tc = useContentT();
   const [railId, setRailId] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [makeDefault, setMakeDefault] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const rail = content.wallet.options.find((r) => r.id === railId);
+  const rail = tc(content.wallet.options).find((r) => r.id === railId);
 
   if (!rail) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-        {content.wallet.options.map((r) => (
+        {tc(content.wallet.options).map((r) => (
           <button key={r.id} type="button" className="ct-rail" onClick={() => { setRailId(r.id); setError(null); }} style={{
             display: "flex", alignItems: "flex-start", gap: "var(--space-4)", textAlign: "start", cursor: "pointer",
             padding: "var(--space-5) var(--space-6)", borderRadius: "var(--radius-md)", background: "var(--white)",
@@ -482,6 +484,7 @@ export default function PortalDashboard() {
  */
 function PortalView({ data, onReload }: { data: PortalData; onReload: () => void }) {
   const t = useT();
+  const tc = useContentT();
   const href = useHref();
   const [view, setView] = useState<View>("overview");
   const [sheet, setSheet] = useState<"student" | "withdraw" | "method" | null>(null);
@@ -536,7 +539,7 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
     return null;
   };
 
-  const kpis = content.kpis.map((k) =>
+  const kpis = tc(content.kpis).map((k) =>
     k.label === "Students referred" ? { ...k, value: String(students.length + 32) }
       : k.label === "Available to withdraw" ? { ...k, value: money(availableMinor) } : k);
 
@@ -634,7 +637,7 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
                   <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{t("Updated this morning")}</span>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: `repeat(${content.pipeline.length},1fr)`, gap: "var(--space-4)", alignItems: "end", minHeight: 168 }}>
-                  {content.pipeline.map((p) => {
+                  {tc(content.pipeline).map((p) => {
                     const max = Math.max(...content.pipeline.map((x) => x.count));
                     return (
                       <div key={p.stage} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>

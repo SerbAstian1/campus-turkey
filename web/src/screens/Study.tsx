@@ -4,6 +4,7 @@
 
 import { Accordion, Badge, BrandDivider, Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, TimelineTrack, ASSETS } from "@/ds";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 import { generalFaq, journey, scholarships, studentLife } from "@/content";
 import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, FaqLayout, StudentLifeFrames } from "./shared";
@@ -26,6 +27,7 @@ function useWhy() {
 export default function Study() {
   const href = useHref();
   const t = useT();
+  const tc = useContentT();
   const why = useWhy();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -67,7 +69,7 @@ export default function Study() {
             </Button>
           </ScrollReveal>
           <CardGrid min={280} gap="var(--space-6)">
-            {scholarships.map((s, i) => (
+            {tc(scholarships).map((s, i) => (
               <ScrollReveal key={s.name} delay={i * 60} style={{ display: "flex" }}>
                 <Card padding="var(--space-8)" surface={i === 0 ? "tinted" : "plain"} style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-4)", alignItems: "flex-start" }}>
@@ -96,7 +98,7 @@ export default function Study() {
               {t("What to have ready")}
             </Button>
           </ScrollReveal>
-          <ScrollReveal delay={80}><TimelineTrack steps={journey} /></ScrollReveal>
+          <ScrollReveal delay={80}><TimelineTrack steps={tc(journey)} /></ScrollReveal>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
@@ -108,7 +110,7 @@ export default function Study() {
             </Button>
           </ScrollReveal>
           <CardGrid min={250} gap="var(--space-6)">
-            {studentLife.map((s, i) => (
+            {tc(studentLife).map((s, i) => (
               <ScrollReveal key={s.title} delay={i * 60} style={{ display: "flex" }}>
                 <Card padding="var(--space-8)" style={{ width: "100%", display: "flex", gap: "var(--space-4)", alignItems: "flex-start" }}>
                   <Icon name={s.icon} size={20} color="var(--green-600)" />
@@ -132,7 +134,7 @@ export default function Study() {
         <FaqLayout heading={
           <ScrollReveal><SectionHeading eyebrow={t("Questions")} title={t("Student FAQs")} lead={t("Anything else, message us on WhatsApp.")} /></ScrollReveal>
         }>
-          <ScrollReveal delay={80}><Accordion items={generalFaq} /></ScrollReveal>
+          <ScrollReveal delay={80}><Accordion items={tc(generalFaq)} /></ScrollReveal>
         </FaqLayout>
 
         <ScrollReveal>

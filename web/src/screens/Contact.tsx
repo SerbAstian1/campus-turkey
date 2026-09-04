@@ -17,6 +17,7 @@ import { go } from "@/app/router";
 import { useLeadSubmit, type LeadType } from "@/features/leads/submit";
 import { CaptchaField } from "@/features/leads/captcha";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 import { ConsentPrivacyNote, PageBody, PageHero } from "./shared";
 
 /**
@@ -63,6 +64,7 @@ const TOPICS: readonly string[] = [
 
 export default function Contact() {
   const t = useT();
+  const tc = useContentT();
   const [form, setForm] = useState({ name: "", email: "", phone: "", topic: "", when: "", message: "", consent: true });
   const kind = TOPIC_ROUTING[form.topic] ?? "CONTACT";
   const { state, submit } = useLeadSubmit(kind);
@@ -78,9 +80,9 @@ export default function Contact() {
       }));
 
   const details: [string, string][] = [
-    ["map-pin", contact.address],
-    ["phone", contact.phone],
-    ["mail", contact.email],
+    ["map-pin", tc(contact).address],
+    ["phone", tc(contact).phone],
+    ["mail", tc(contact).email],
   ];
 
   return (

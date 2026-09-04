@@ -16,6 +16,7 @@ import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from "
 import { Footer, Navbar, ScrollProgress, ASSETS } from "@/ds";
 import { footerColumns, contact, socials, nav } from "@/content";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 import { useLocaleSwitch } from "@/i18n/switch";
 import { WhatsAppAction } from "@/components/Common";
 import { ErrorScreen, OfflineGuard } from "@/screens/Errors";
@@ -106,6 +107,7 @@ const ACTIVE: Record<string, string> = {
 export function Shell({ children }: { children: ReactNode }) {
   const route = useRoute();
   const t = useT();
+  const tc = useContentT();
   const href = useHref();
   const [lang, setLanguage] = useLocaleSwitch();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -162,7 +164,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const mega = useMega();
 
-  const navItems = nav.map((n) => ({
+  const navItems = tc(nav).map((n) => ({
     label: n.route ? (navLabels[n.route] ?? n.label) : (navLabels[n.label] ?? n.label),
     href: n.route ? href(n.route) : undefined,
     children: n.mega ? mega[n.mega] : undefined,
@@ -240,12 +242,12 @@ export function Shell({ children }: { children: ReactNode }) {
       </main>
 
       <Footer
-        columns={footerColumns.map((c) => ({
+        columns={tc(footerColumns).map((c) => ({
           title: footerTitles[c.title] ?? c.title,
           links: c.links.map((l) => ({ label: l.label, href: href(l.route) })),
         }))}
-        contact={contact}
-        socials={socials}
+        contact={tc(contact)}
+        socials={tc(socials)}
         lang={lang}
         onLangChange={setLanguage}
         assetBase={ASSETS}

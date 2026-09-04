@@ -4,6 +4,7 @@
 
 import { Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, StatBlock, TestimonialCard, TimelineTrack, ASSETS } from "@/ds";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 import { accreditations, leadership, milestones, offices, stats, testimonials } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
@@ -30,6 +31,7 @@ function useValues() {
 export default function About() {
   const href = useHref();
   const t = useT();
+  const tc = useContentT();
   const values = useValues();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -46,7 +48,7 @@ export default function About() {
         <ScrollReveal><ImagePlaceholder slot="about-hero" label={t("Team or office photography, 21:9 hero band")} ratio="21 / 9" reserved /></ScrollReveal>
 
         <CardGrid min={200} gap="var(--space-10)">
-          {stats.map((s, i) => (
+          {tc(stats).map((s, i) => (
             <ScrollReveal key={s.label} delay={i * 70}><StatBlock {...s} theme="light" /></ScrollReveal>
           ))}
         </CardGrid>
@@ -79,7 +81,7 @@ export default function About() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal><SectionHeading eyebrow={t("Our story")} title={t("Twelve years, five desks")} /></ScrollReveal>
-          <ScrollReveal delay={80}><TimelineTrack steps={milestones} /></ScrollReveal>
+          <ScrollReveal delay={80}><TimelineTrack steps={tc(milestones)} /></ScrollReveal>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
@@ -88,7 +90,7 @@ export default function About() {
               lead={t("You get a named contact on day one, and they stay with your file.")} />
           </ScrollReveal>
           <CardGrid min={220} gap="var(--space-6)">
-            {leadership.map((p, i) => (
+            {tc(leadership).map((p, i) => (
               <ScrollReveal key={p.name} delay={i * 60} style={{ display: "flex" }}>
                 <Card padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                   <ImagePlaceholder slot={`person-${p.name}`} label={t("Portrait, 1:1")} ratio="1 / 1" icon="user" reserved />
@@ -107,7 +109,7 @@ export default function About() {
           <Card surface="inverse" padding="var(--space-10)" radius="var(--radius-xl)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
             <span className="ct-eyebrow" style={{ color: "var(--green-300)" }}>{t("Credentials")}</span>
             <CardGrid min={240} gap="var(--space-5)">
-              {accreditations.map((a) => (
+              {tc(accreditations).map((a) => (
                 <span key={a} style={{ display: "flex", gap: "var(--space-3)", color: "rgba(255,255,255,.9)", fontSize: "var(--fs-body-sm)" }}>
                   <Icon name="badge-check" size={18} color="var(--green-300)" />{a}
                 </span>
@@ -121,7 +123,7 @@ export default function About() {
           <CardGrid min={280} gap="var(--space-6)">
             {/* `quote`, not `t` — the parameter shadowed the translator, so a `t()` call
                 added anywhere inside this map would have silently read the testimonial. */}
-            {testimonials.map((quote, i) => (
+            {tc(testimonials).map((quote, i) => (
               <ScrollReveal key={quote.name} delay={i * 70} style={{ display: "flex" }}>
                 <TestimonialCard {...quote} style={{ width: "100%" }} />
               </ScrollReveal>
@@ -132,7 +134,7 @@ export default function About() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal><SectionHeading eyebrow={t("Offices")} title={t("Where you can find us")} /></ScrollReveal>
           <CardGrid min={240} gap="var(--space-6)">
-            {offices.map((o, i) => (
+            {tc(offices).map((o, i) => (
               <ScrollReveal key={o.city} delay={i * 70} style={{ display: "flex" }}>
                 <Card padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                   <ImagePlaceholder slot={`office-${o.city}`} label={t("{city} office, 16:9", { city: o.city })} ratio="16 / 9" icon="building" reserved />

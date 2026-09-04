@@ -16,13 +16,15 @@ import { PhotoCredit } from "@/components/PhotoCredit";
 import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, splitStyle } from "./shared";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 import { ErrorScreen } from "./Errors";
 import { CardGrid } from "@/components/CardGrid";
 
 export default function Institution({ slug }: { slug: string }) {
   const href = useHref();
   const t = useT();
-  const inst = getInstitution(slug);
+  const tc = useContentT();
+  const inst = tc(getInstitution(slug));
   if (!inst) return <ErrorScreen state="notFound" />;
 
   /* Hospitals and chambers have no photograph — Commons offers chambers in Greece and

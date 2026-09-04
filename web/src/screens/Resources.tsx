@@ -9,15 +9,17 @@ import { ImagePlaceholder } from "@/components/Common";
 import { articlePhoto } from "@/content/article-photos";
 import { PageBody, PageHero } from "./shared";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 import { useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 
 export default function Resources() {
   const t = useT();
+  const tc = useContentT();
   const href = useHref();
   const [tag, setTag] = useState<string | null>(null);
-  const tags = [...new Set(articles.map((r) => r.tag))];
-  const list = articles.filter((r) => !tag || r.tag === tag);
+  const tags = [...new Set(tc(articles).map((r) => r.tag))];
+  const list = tc(articles).filter((r) => !tag || r.tag === tag);
 
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -29,7 +31,7 @@ export default function Resources() {
           <span className="ct-eyebrow" style={{ marginInlineEnd: "var(--space-2)" }}>{t("Filter")}</span>
           {tags.map((t) => (
             <Tag key={t} selected={tag === t} onClick={() => setTag(tag === t ? null : t)}
-              count={articles.filter((r) => r.tag === t).length}>{t}</Tag>
+              count={tc(articles).filter((r) => r.tag === t).length}>{t}</Tag>
           ))}
         </div>
 

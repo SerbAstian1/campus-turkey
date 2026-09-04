@@ -24,9 +24,11 @@ import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { PageBody, PageHero } from "./shared";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 
 export default function Services() {
   const t = useT();
+  const tc = useContentT();
   const href = useHref();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -56,7 +58,7 @@ export default function Services() {
         </ScrollReveal>
 
         <CardGrid min={320} gap="var(--space-6)">
-          {services.map((service, index) => (
+          {tc(services).map((service, index) => (
             <ScrollReveal key={service.slug} delay={index * 60} style={{ display: "flex" }}>
               <Card
                 interactive

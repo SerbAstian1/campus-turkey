@@ -1,7 +1,12 @@
-"use client";
-
 /**
  * Translating the content modules at the point they are rendered.
+ *
+ * **No `"use client"` directive, deliberately.** `translateContent` is pure and is needed
+ * on both sides: client screens reach it through `useContentT`, and the server-rendered
+ * SEO tree in `components/seo/routes.tsx` calls it directly with the translator it awaits
+ * from `getTranslator`. Marking the module client-only would put that server component in
+ * the client bundle or fail the build outright. Importing `useMemo` here is harmless in a
+ * server module — a hook is a problem when it is called, not when it is imported.
  *
  * `src/content/*.ts` holds the FAQ answers, the card copy and the section headlines as
  * plain data, and a component renders whatever it is handed: `<Accordion items={s.faq} />`.

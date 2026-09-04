@@ -39,6 +39,7 @@ import {
 } from "@/content";
 import { privacyNotice } from "@/content/privacy";
 import { getTranslator } from "@/i18n/messages";
+import { translateContent } from "@/i18n/content";
 import { localePath, type Locale } from "@/i18n/locales";
 import type { FaqItem, Point } from "@/content";
 import {
@@ -97,7 +98,7 @@ export async function HomeSeo({ locale }: { locale: Locale }) {
       />
 
       <SeoSection heading={t("What we do")}>
-        {serviceCards.map((card) => (
+        {translateContent(serviceCards, t).map((card) => (
           <SeoText key={card.title}>
             <strong>{t(card.title)}</strong>. {t(card.description)}
           </SeoText>
@@ -109,7 +110,7 @@ export async function HomeSeo({ locale }: { locale: Locale }) {
       </SeoSection>
 
       <SeoSection heading={t("How an application runs")}>
-        {journey.map((step) => (
+        {translateContent(journey, t).map((step) => (
           <SeoText key={step.title}>
             <strong>{t(step.title)}</strong>. {t(step.description)}
           </SeoText>
@@ -276,7 +277,7 @@ export async function ServicesSeo({ locale }: { locale: Locale }) {
       />
 
       <SeoSection heading={t("What we offer")}>
-        {services.map((service) => (
+        {translateContent(services, t).map((service) => (
           <SeoText key={service.slug}>
             <a href={localePath(`/services/${service.slug}`, locale)} style={{ color: "var(--green-700)" }}>
               {t(service.title)}
@@ -383,7 +384,7 @@ export async function ResourcesSeo({ locale }: { locale: Locale }) {
       />
 
       <SeoSection heading={t("Articles")}>
-        {articles.map((article) => (
+        {translateContent(articles, t).map((article) => (
           <SeoText key={article.slug}>
             <a href={localePath(`/resources/${article.slug}`, locale)} style={{ color: "var(--green-700)" }}>
               {t(article.title)}
@@ -472,7 +473,7 @@ export async function ScholarshipsSeo({ locale }: { locale: Locale }) {
         lead={t("What each scholarship covers, who it is for, and how competitive it actually is. We do not imply a guarantee.")}
       />
 
-      {scholarships.map((scholarship) => (
+      {translateContent(scholarships, t).map((scholarship) => (
         <SeoSection key={scholarship.name} heading={t(scholarship.name)}>
           <SeoFacts
             items={[
@@ -513,7 +514,7 @@ export async function ApplicationProcessSeo({ locale }: { locale: Locale }) {
       />
 
       <SeoSection heading={t("The stages")}>
-        {journey.map((step) => (
+        {translateContent(journey, t).map((step) => (
           <SeoText key={step.title}>
             <strong>{t(step.title)}</strong>. {t(step.description)}
           </SeoText>
@@ -581,7 +582,7 @@ export async function RepresentativesSeo({ locale }: { locale: Locale }) {
       {pointsSection(t, t("What you get"), representative.benefits)}
 
       <SeoSection heading={t("How it works")}>
-        {representativeSteps.map((step) => (
+        {translateContent(representativeSteps, t).map((step) => (
           <SeoText key={step.title}>
             <strong>{t(step.title)}</strong>. {t(step.description)}
           </SeoText>
@@ -640,7 +641,7 @@ export async function AboutSeo({ locale }: { locale: Locale }) {
       </SeoSection>
 
       <SeoSection heading={t("How we got here")}>
-        {milestones.map((milestone) => (
+        {translateContent(milestones, t).map((milestone) => (
           <SeoText key={milestone.title}>
             <strong>
               {milestone.meta}. {t(milestone.title)}
@@ -739,7 +740,7 @@ export async function ApplySeo({ locale }: { locale: Locale }) {
       />
 
       <SeoSection heading={t("How an application runs")}>
-        {journey.map((step) => (
+        {translateContent(journey, t).map((step) => (
           <SeoText key={step.title}>
             <strong>{t(step.title)}</strong>. {t(step.description)}
           </SeoText>

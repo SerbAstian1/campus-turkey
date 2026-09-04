@@ -10,6 +10,7 @@ import { IconCard, PageBody, PageHero } from "./shared";
 import { PartnerForm } from "./PartnerForm";
 import { CardGrid } from "@/components/CardGrid";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 
 /**
  * Canonical English, hoisted out of the JSX.
@@ -25,6 +26,7 @@ const PARTNER_KINDS = [
 
 export default function Partners() {
   const t = useT();
+  const tc = useContentT();
   const href = useHref();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -39,7 +41,7 @@ export default function Partners() {
 
       <PageBody>
         <CardGrid min={260} gap="var(--space-6)">
-          {partnerBenefits.map((b, i) => (
+          {tc(partnerBenefits).map((b, i) => (
             <ScrollReveal key={b.title} delay={i * 70} style={{ display: "flex" }}><IconCard {...b} /></ScrollReveal>
           ))}
         </CardGrid>
@@ -50,7 +52,7 @@ export default function Partners() {
               lead={t("Each one has its own page, its own terms and its own named contact.")} />
           </ScrollReveal>
           <CardGrid min={240} gap="var(--space-6)">
-            {institutions.map((inst, i) => (
+            {tc(institutions).map((inst, i) => (
               <ScrollReveal key={inst.slug} delay={i * 70} style={{ display: "flex" }}>
                 <Card interactive href={href(`institutions/${inst.slug}`)} padding="var(--space-8)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                   <Icon name={inst.icon} size={22} color="var(--green-600)" />

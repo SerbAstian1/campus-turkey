@@ -19,6 +19,7 @@
 import { Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, ASSETS } from "@/ds";
 import { studentLife } from "@/content";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { PageBody, PageHero, StudentLifeFrames } from "../shared";
@@ -54,6 +55,7 @@ const TOTALS = { dorm: "$213 – $303", flat: "$353 – $503" };
 export default function StudentLife() {
   const href = useHref();
   const t = useT();
+  const tc = useContentT();
   const budget = useBudget();
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -155,7 +157,7 @@ export default function StudentLife() {
           </ScrollReveal>
 
           <CardGrid min={250} gap="var(--space-6)">
-            {studentLife.map((item, index) => (
+            {tc(studentLife).map((item, index) => (
               <ScrollReveal key={item.title} delay={index * 60} style={{ display: "flex" }}>
                 <Card padding="var(--space-8)" style={{ width: "100%", display: "flex", gap: "var(--space-4)", alignItems: "flex-start" }}>
                   <Icon name={item.icon} size={20} color="var(--green-600)" />

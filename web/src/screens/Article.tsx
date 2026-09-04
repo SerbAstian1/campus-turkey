@@ -9,6 +9,7 @@
 
 import { BrandDivider, Badge, Button, Card, Icon, ScrollReveal } from "@/ds";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 import { articles, getArticle } from "@/content";
 import { ImagePlaceholder } from "@/components/Common";
 import { articlePhoto } from "@/content/article-photos";
@@ -18,11 +19,12 @@ import { ErrorScreen } from "./Errors";
 
 export default function Article({ slug }: { slug: string | null }) {
   const t = useT();
+  const tc = useContentT();
   const href = useHref();
-  const post = slug ? getArticle(slug) : undefined;
+  const post = slug ? tc(getArticle(slug)) : undefined;
   if (!post) return <ErrorScreen state="notFound" />;
 
-  const more = articles.filter((r) => r.slug !== post.slug).slice(0, 3);
+  const more = tc(articles).filter((r) => r.slug !== post.slug).slice(0, 3);
 
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
