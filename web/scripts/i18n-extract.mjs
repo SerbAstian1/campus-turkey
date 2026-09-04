@@ -90,6 +90,35 @@ function isProse(s) {
   return /\s/.test(t) || /^\p{Lu}/u.test(t);
 }
 
+/**
+ * Content modules whose strings are deliberately NOT translated.
+ *
+ * `universities.ts` is 189 strings of institution names and city names — proper nouns a
+ * translator would hand back unchanged, and that a machine would sometimes "translate"
+ * into something wrong. `types.ts` is type declarations. The `*-photos.ts` files are
+ * filenames and credits.
+ */
+const CONTENT_SKIP = /(?:universities|types|[a-z]+-photos)\.ts$/;
+
+/**
+ * Object keys whose values address something rather than say something.
+ *
+ * These are the reason content cannot simply be walked and translated wholesale. `slug`
+ * builds a URL, `icon` names a Lucide glyph, `id` is compared against stored records,
+ * `to` is a route and `kind` is matched in a switch. Every one of them is a string, and
+ * several read like prose — `"Medical Tourism"` is a real `id` in this codebase. Harvest
+ * one and the sweep will faithfully translate it, and the page 404s in Arabic.
+ *
+ * Stripped before the scan rather than filtered after, because by the time a string is
+ * in the bag there is nothing left on it to say where it came from.
+ */
+const ADDRESSING_KEY =
+  /\b(id|slug|href|to|src|icon|image|photo|url|key|kind|tone|variant|ref|code)\s*:\s*(["'])(?:(?!\2)[^\\]|\\.)*\2/g;
+
+/** Comments hold prose that is documentation, not copy. */
+const stripComments = (src) =>
+  src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+
 const extracted = new Map(); // key -> namespace
 const unwrapped = [];        // { file, value }
 
@@ -103,7 +132,29 @@ for (const root of ROOTS) {
       if (!extracted.has(key)) extracted.set(key, ns);
     }
 
-    // Only .tsx carries rendered markup; .ts content files are reported separately.
+    /*
+     * Content modules are data, not markup.
+     *
+     * `services.ts` and its neighbours export the FAQ answers, the card copy and the
+     * headlines, and a component renders them: `<Accordion items={s.faq} />`. So nothing
+     * in them is wrapped in `t()` — there is no component there to call it — and the JSX
+     * scan below never sees them either, because they contain no JSX. Between those two
+     * facts, 1,125 strings sat outside the catalogue while every locale reported 100%.
+     *
+     * Harvested by literal, with the addressing keys stripped first. The pairing that
+     * makes this safe is `useContentT` in `src/i18n/content.ts`, which skips exactly the
+     * same keys when it translates at render — if the two ever disagree, a slug gets
+     * translated on one side and looked up untranslated on the other.
+     */
+    if (ns === "content" && !CONTENT_SKIP.test(file)) {
+      const code = stripComments(src).replace(ADDRESSING_KEY, "");
+      for (const m of code.matchAll(/(["'])((?:(?!\1)[^\\]|\\.)*)\1/g)) {
+        const value = m[2].replace(/\\"/g, '"').replace(/\\'/g, "'").trim();
+        if (isProse(value) && !extracted.has(value)) extracted.set(value, ns);
+      }
+    }
+
+    // Only .tsx carries rendered markup; .ts content files are handled above.
     if (!file.endsWith(".tsx")) continue;
 
     const wrapped = new Set([...src.matchAll(T_CALL)].map((m) => m[2]));

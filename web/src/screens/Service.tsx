@@ -13,6 +13,7 @@ import { ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, PriceTable, FaqLayout, splitStyle } from "./shared";
 import { useT } from "@/i18n/context";
+import { useContentT } from "@/i18n/content";
 import { servicePhoto } from "@/content/service-photos";
 import { PhotoCredit } from "@/components/PhotoCredit";
 import { ErrorScreen } from "./Errors";
@@ -20,12 +21,14 @@ import { CardGrid } from "@/components/CardGrid";
 
 export default function Service({ slug }: { slug: string }) {
   const t = useT();
+  const tc = useContentT();
   const href = useHref();
-  const s = getService(slug);
+  const s = tc(getService(slug));
   const photo = servicePhoto(slug);
   if (!s) return <ErrorScreen state="notFound" />;
 
-  const others = services.filter((o) => o.slug !== s.slug);
+  // `slug` survives `tc` untouched — it is an addressing key — so this still compares.
+  const others = tc(services).filter((o) => o.slug !== s.slug);
 
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
