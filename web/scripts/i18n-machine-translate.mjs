@@ -428,14 +428,38 @@ for (const locale of locales) {
   }
 
   if (machineLog.length) {
-    // Not a namespace, so the loader never imports it — `messages.ts` asks for a fixed
-    // list of names. This exists for whoever reviews the output later.
+    /*
+     * Merged with what is already there, not replaced.
+     *
+     * This file is the review list — the record of which strings came from a machine and
+     * have not been read by a person — and it is also what `i18n-advertised.test.ts` reads
+     * to tell a filled catalogue from a finished one. A run only ever knows the keys *it*
+     * wrote, so writing that set wholesale discards every earlier run's.
+     *
+     * It showed up the moment a cleanup pass ran: Arabic had ~1,400 machine-written keys
+     * across several runs, the cleanup wrote the 138 the network had cost it, and the
+     * manifest came back claiming 138. The catalogue was suddenly, and falsely, 91%
+     * "reviewed" — which is exactly the wrong direction for a file whose purpose is to
+     * stop unreviewed text being advertised as a translation.
+     *
+     * Keys no longer in the English source are dropped on the way through, so the list
+     * shrinks when copy is retired rather than accumulating strings nothing renders.
+     */
+    const manifestPath = join(dir, ".machine.json");
+    const previous = existsSync(manifestPath)
+      ? (JSON.parse(readFileSync(manifestPath, "utf8")).keys ?? [])
+      : [];
+
+    const known = new Set(namespaces.flatMap((ns) =>
+      Object.keys(JSON.parse(readFileSync(join(messagesDir, "en", ns + ".json"), "utf8"))),
+    ));
+
     const manifest = {
       note: "Machine-translated by scripts/i18n-machine-translate.mjs. Not reviewed by a native speaker.",
       generated: new Date().toISOString().slice(0, 10),
-      keys: machineLog.sort(),
+      keys: [...new Set([...previous, ...machineLog])].filter((k) => known.has(k)).sort(),
     };
-    writeFileSync(join(dir, ".machine.json"), JSON.stringify(manifest, null, 2) + "\n");
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
   }
 
   console.log(
