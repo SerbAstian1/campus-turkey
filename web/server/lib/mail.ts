@@ -166,6 +166,89 @@ export function welcomeEmail(options: {
 }
 
 /**
+ * A new enquiry, announced to the desk that answers them.
+ *
+ * Goes to `LEADS_NOTIFY_TO` — one fixed internal address — which is what makes it safe to
+ * include what the visitor wrote. The acknowledgement below is the opposite case and is
+ * built on the opposite rule.
+ *
+ * Everything here is already in the database; this exists so somebody knows to look. The
+ * body carries enough to triage without opening the console — who, which desk, and the
+ * first of what they said — and the console is where the rest lives.
+ */
+export function leadNotificationEmail(options: {
+  to: string;
+  kind: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  country: string | null;
+  message: string | null;
+}): MailMessage {
+  const who = options.name ?? options.email;
+
+  return {
+    to: options.to,
+    subject: `New ${options.kind.toLowerCase()} enquiry — ${who}`,
+    text: [
+      `${who} sent a ${options.kind.toLowerCase()} enquiry.`,
+      "",
+      `Email    ${options.email}`,
+      `Phone    ${options.phone ?? "not given"}`,
+      `Country  ${options.country ?? "not given"}`,
+      "",
+      ...(options.message
+        ? [
+            "What they wrote:",
+            "",
+            // Bounded: an enquiry form is a text area, and the whole of one does not
+            // belong in a notification whose job is to say "go and look".
+            options.message.length > 1200
+              ? `${options.message.slice(0, 1200)}…\n\n[truncated — the full message is in the portal]`
+              : options.message,
+            "",
+          ]
+        : []),
+      "Open the staff console to reply and to record the outcome.",
+      "",
+      "— Campus Turkey",
+    ].join("\n"),
+  };
+}
+
+/**
+ * The acknowledgement to the person who wrote in.
+ *
+ * **Nothing they typed comes back to them, and that is a security property rather than a
+ * copy decision.** This endpoint is public, unauthenticated, and sends to whatever address
+ * was in the form — so an email that echoed the visitor's own text would let anyone use
+ * this desk to deliver their words to a stranger's inbox, over our verified domain. The
+ * rate limit and the captcha make that expensive; a fixed body makes it pointless.
+ *
+ * The site promises a reply on every form. This is what keeps the promise visible while a
+ * human gets to it.
+ */
+export function leadAcknowledgementEmail(options: { to: string; name: string | null }): MailMessage {
+  return {
+    to: options.to,
+    subject: "We have your enquiry — Campus Turkey",
+    text: [
+      options.name ? `Hello ${options.name},` : "Hello,",
+      "",
+      "Thank you for writing to Campus Turkey. Your enquiry has reached the right desk",
+      "and a named member of our team will reply to you directly.",
+      "",
+      "If your enquiry is urgent, you can reach us on WhatsApp — the number is on our",
+      "contact page.",
+      "",
+      "You do not need to send this again; a second message will not reach us faster.",
+      "",
+      "— Campus Turkey",
+    ].join("\n"),
+  };
+}
+
+/**
  * The verification code.
  *
  * Subject line carries the code because most people read it from the notification

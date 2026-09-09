@@ -19,6 +19,7 @@ import { z } from "zod";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { env } from "@/server/lib/config";
 import { ForbiddenError, UnprocessableError } from "@/server/lib/errors";
+import { sendMail, leadNotificationEmail, leadAcknowledgementEmail } from "@/server/lib/mail";
 import type { RequestLogger } from "@/server/lib/logger";
 
 /**
@@ -365,9 +366,66 @@ export async function submitLead(
     await write();
   }
 
+  /**
+   * Tell somebody. Until this existed, nothing did.
+   *
+   * The lead, the inquiry and the attribution were written and the request returned. An
+   * enquiry was then only ever seen if a staff member happened to open the console and
+   * look — while every form on the site promises a named person will reply. That is not
+   * an outage, it is a promise quietly not kept, and nothing reported it.
+   *
+   * **After the transaction, deliberately.** A mail provider that is slow would otherwise
+   * hold a database transaction open for its whole timeout, and one that is down would
+   * roll back an enquiry that is already correctly recorded. The row is the durable fact;
+   * the email is a notification about it.
+   *
+   * **Awaited, also deliberately.** This runs on a serverless platform, where the function
+   * may be frozen the moment the response is returned — a floating promise here is a send
+   * that sometimes happens. The cost is the provider's round trip added to the response,
+   * which `sendMail` already bounds.
+   *
+   * **Never throws.** `sendMail` reports failure rather than raising, and both results are
+   * inspected instead of awaited blindly, so an unreachable provider is logged and the
+   * visitor still gets the confirmation the form promised. Telling somebody their enquiry
+   * failed, when it is safely in the database, would be a worse lie than the silence this
+   * replaces.
+   */
+  const notifications = await Promise.allSettled([
+    env.LEADS_NOTIFY_TO
+      ? sendMail(
+          leadNotificationEmail({
+            to: env.LEADS_NOTIFY_TO,
+            kind: input.kind,
+            name: person.name,
+            email,
+            phone: person.phone,
+            country: person.country,
+            message: messageOf(payload),
+          }),
+        )
+      : Promise.resolve({ ok: true as const, delivered: false }),
+    sendMail(leadAcknowledgementEmail({ to: email, name: person.name })),
+  ]);
+
+  const [staff, acknowledgement] = notifications;
+  if (staff.status === "rejected" || (staff.status === "fulfilled" && !staff.value.ok)) {
+    // Loud, because this is the one that costs money: a lead nobody was told about.
+    log.error("lead notification failed to send", { kind: input.kind });
+  }
+  if (
+    acknowledgement.status === "rejected" ||
+    (acknowledgement.status === "fulfilled" && !acknowledgement.value.ok)
+  ) {
+    log.warn("lead acknowledgement failed to send", { kind: input.kind });
+  }
+
   // Neither the payload nor the email is in this line. `logger.redact` would strip
   // them in production regardless; not passing them is the first line of defence.
-  log.info("lead received", { kind: input.kind, retentionDays: RETENTION_DAYS[input.kind] });
+  log.info("lead received", {
+    kind: input.kind,
+    retentionDays: RETENTION_DAYS[input.kind],
+    announced: env.LEADS_NOTIFY_TO ? staff.status === "fulfilled" && staff.value.ok : false,
+  });
 
   return { ok: true };
 }

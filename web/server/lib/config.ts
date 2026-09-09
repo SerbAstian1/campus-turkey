@@ -63,6 +63,17 @@ const schema = z.object({
   MAIL_FROM: z.string().email().optional(),
 
   /**
+   * Where a new enquiry is announced. The desk that answers people, not a no-reply.
+   *
+   * Optional, and its absence is a decision rather than a gap: without it the lead is
+   * still written, still retained and still visible in the staff console, and nothing
+   * about the submission fails. What is lost is the only push notification this system
+   * has — which is why `crossCheck` insists on it in production, where an enquiry nobody
+   * is told about is indistinguishable from one that was never sent.
+   */
+  LEADS_NOTIFY_TO: z.string().email().optional(),
+
+  /**
    * Signing secret for delivery-event callbacks — `whsec_…` from the provider.
    *
    * Optional, and deliberately not enforced by `crossCheck` the way
@@ -216,6 +227,18 @@ export function crossCheck(env: Env): string[] {
   if (env.MAIL_PROVIDER !== "disabled" && (!env.MAIL_API_KEY || !env.MAIL_FROM)) {
     problems.push("MAIL_PROVIDER is set but MAIL_API_KEY or MAIL_FROM is missing");
   }
+  /*
+   * There is deliberately no rule pairing LEADS_NOTIFY_TO with MAIL_PROVIDER.
+   *
+   * It looks like one belongs — an address set while mail is disabled announces nothing —
+   * but the combination cannot occur where it would matter: production requires both
+   * variables separately, below. All such a rule can actually reach is a developer whose
+   * `.env` carries the address while mail is off locally, which is the ordinary state and
+   * not a misconfiguration. `sendMail` already logs what it would have sent there.
+   *
+   * Refusing that would be the cry-wolf failure this file's header warns about, and the
+   * response to a boot check that cries wolf is to stop trusting the boot check.
+   */
   if (env.CAPTCHA_PROVIDER !== "disabled" && !env.CAPTCHA_SECRET) {
     problems.push("CAPTCHA_PROVIDER is set but CAPTCHA_SECRET is missing");
   }
@@ -262,6 +285,15 @@ export function crossCheck(env: Env): string[] {
     if (env.STORAGE_PROVIDER === "unconfigured") {
       problems.push(
         "STORAGE_PROVIDER must be configured in production — document upload is part of every application",
+      );
+    }
+    if (!env.LEADS_NOTIFY_TO) {
+      // Every public form on this site promises a reply, and the only thing that makes
+      // one happen is a person seeing the enquiry. Without this the lead lands in a table
+      // nobody is watching, and the visitor's experience is of being ignored — a silent
+      // commercial failure rather than an outage, and nothing anywhere reports it.
+      problems.push(
+        "LEADS_NOTIFY_TO is required in production — without it nobody is told a lead arrived",
       );
     }
     if (env.MAIL_PROVIDER === "disabled") {

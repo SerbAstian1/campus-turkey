@@ -45,6 +45,7 @@ function productionEnv(overrides: Partial<Env> = {}): Env {
     MAIL_PROVIDER: "resend",
     MAIL_API_KEY: "key",
     MAIL_FROM: "no-reply@campusturkey.org",
+    LEADS_NOTIFY_TO: "apply@campusturkey.org",
     STORAGE_PROVIDER: "s3",
     S3_BUCKET: "bucket",
     S3_REGION: "eu-west-2",
@@ -290,5 +291,50 @@ describe("the Resend key alias", () => {
         }),
       ),
     ).toEqual([]);
+  });
+});
+
+/**
+ * An enquiry nobody is told about.
+ *
+ * Every public form on this site promises a named person will reply, and until
+ * `LEADS_NOTIFY_TO` existed the only thing standing behind that promise was somebody
+ * remembering to open the staff console. The rules below are the two halves of making the
+ * address load-bearing: production refuses to start without it, and setting it while mail
+ * is disabled is refused rather than honoured silently.
+ */
+describe("the lead notification address", () => {
+  it("is required in production", () => {
+    const env = productionEnv();
+    delete (env as Partial<Env>).LEADS_NOTIFY_TO;
+    expect(complaint(env, "LEADS_NOTIFY_TO is required in production")).toBe(true);
+  });
+
+  it("is accepted in production when set", () => {
+    expect(crossCheck(productionEnv({ LEADS_NOTIFY_TO: "apply@campusturkey.org" }))).toEqual([]);
+  });
+
+  it("does not complain when set while mail is disabled locally", () => {
+    /*
+     * The cry-wolf case, and it caught a rule I had added. Pairing the address with the
+     * provider looks right and cannot fire where it would matter — production requires
+     * both separately — so all it reached was a developer carrying the address in `.env`
+     * with mail off, which is the ordinary state. The rule is gone; this pins its absence.
+     */
+    expect(
+      crossCheck({
+        ...productionEnv({ LEADS_NOTIFY_TO: "apply@campusturkey.org" }),
+        NODE_ENV: "development",
+        MAIL_PROVIDER: "disabled",
+        MAIL_API_KEY: undefined,
+        MAIL_FROM: undefined,
+      } as Env),
+    ).toEqual([]);
+  });
+
+  it("is optional outside production, where the lead is still written", () => {
+    const env = productionEnv({ NODE_ENV: "development" });
+    delete (env as Partial<Env>).LEADS_NOTIFY_TO;
+    expect(crossCheck(env)).toEqual([]);
   });
 });
