@@ -38,6 +38,6 @@ export const accreditations: string[] = [
 export const contact: ContactDetails = {
   address: "Şişli, Istanbul, Türkiye",
   phone: "+90 555 000 0000",
-  email: "hello@campusturkey.com",
+  email: "hello@campusturkey.org",
   whatsapp: "WhatsApp us",
 };

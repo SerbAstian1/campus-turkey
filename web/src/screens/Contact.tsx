@@ -63,7 +63,7 @@ const TOPICS: readonly string[] = [
 
 export default function Contact() {
   const t = useT();
-  const [form, setForm] = useState({ name: "", email: "", phone: "", topic: "", when: "", message: "", consent: true });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", topic: "", date: "", when: "", message: "", consent: true });
   const kind = TOPIC_ROUTING[form.topic] ?? "CONTACT";
   const { state, submit } = useLeadSubmit(kind);
   const sent = state.status === "sent";
@@ -120,9 +120,14 @@ export default function Contact() {
                       email: form.email,
                       phone: form.phone,
                       subject: form.topic,
-                      // The call-time preference is part of the enquiry, not a separate
-                      // field the server models — it belongs in the message a human reads.
-                      message: [form.message, form.when && `Best time to call: ${form.when}`]
+                      // The call date and time preference are part of the enquiry, not a
+                      // separate field the server models — they belong in the message a
+                      // human reads.
+                      message: [
+                        form.message,
+                        form.date && `Preferred date: ${form.date}`,
+                        form.when && `Best time to call: ${form.when}`,
+                      ]
                         .filter(Boolean)
                         .join("\n\n"),
                       ...(kind === "MEDICAL" ? { treatment: form.message } : {}),
@@ -153,8 +158,15 @@ export default function Contact() {
                     setForm((f) => ({ ...f, topic: english }));
                   }}
                   options={TOPICS.map((topic) => t(topic))} />
-                <Select id="c-when" label={t("Best time to call")} value={form.when} onChange={set("when")}
-                  options={[t("Morning, Türkiye time"), t("Afternoon, Türkiye time"), t("Evening, Türkiye time")]} style={{ gridColumn: "span 2" }} />
+                <Input id="c-date" label={t("Preferred date")} type="date" icon="calendar-check" required
+                  min={new Date().toISOString().slice(0, 10)} value={form.date} onChange={set("date")} />
+                <Select id="c-when" label={t("Best time to call")} required value={form.when} onChange={set("when")}
+                  options={[
+                    t("8am – 10am, Türkiye time"),
+                    t("10am – 12pm, Türkiye time"),
+                    t("1pm – 3pm, Türkiye time"),
+                    t("3pm – 6:30pm, Türkiye time"),
+                  ]} />
                 <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
                   <label htmlFor="c-msg" style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-medium)", color: "var(--green-800)" }}>{t("Anything we should know")}</label>
                   <textarea id="c-msg" rows={4} value={form.message} onChange={set("message")} placeholder={t("Your grades, your treatment, your sector. Whatever is relevant.")}

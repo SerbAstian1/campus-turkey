@@ -7,7 +7,7 @@
  * final step and handling the failure case, which this screen currently cannot have.
  */
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Badge, BrandDivider, Button, Card, Checkbox, Icon, Input, Select, StepIndicator, ScrollReveal } from "@/ds";
 import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
@@ -52,8 +52,22 @@ const LEVEL_FOR: Record<string, "foundation" | "bachelor" | "master" | "phd" | u
  * These are the values that reach the server and the staff inbox. Only the labels are
  * translated; see `useTranslatedOptions`.
  */
-const COUNTRIES = ["Nigeria", "Morocco", "Kenya", "Egypt", "Pakistan", "Indonesia", "Other"] as const;
-const CITIES = ["Any city", "Istanbul", "Ankara", "Izmir", "Antalya"] as const;
+const COUNTRIES = [
+  "Nigeria", "Ghana", "Benin", "Togo", "Senegal", "Ivory Coast", "Cameroon",
+  "Morocco", "Algeria", "Tunisia", "Egypt",
+  "Kenya", "Tanzania", "Uganda", "Ethiopia", "Sudan",
+  "Pakistan", "Indonesia", "Other",
+] as const;
+/**
+ * Cities beyond the four with a university partnership are listed anyway — the brief's
+ * reasoning being that someone who does not see their own city just leaves rather than
+ * picking one that isn't theirs, and a partnership can be told apart from its absence in
+ * the follow-up reply rather than at the field itself.
+ */
+const CITIES = [
+  "Any city", "Istanbul", "Ankara", "Izmir", "Antalya",
+  "Bursa", "Konya", "Gaziantep", "Kayseri", "Eskişehir", "Trabzon", "Mersin", "Adana",
+] as const;
 const INTAKES = ["Autumn 2026", "Spring 2027", "Not sure yet"] as const;
 
 /**
@@ -86,6 +100,15 @@ export default function Apply() {
   });
 
   const { state, submit } = useLeadSubmit("STUDY");
+
+  /**
+   * Client-side only, matching the screen's "no backend yet" for documents — see the
+   * module comment. Tracked so the button does something and the chosen file's name is
+   * visible, not so it uploads anywhere; there is nowhere yet for it to go before an
+   * application record exists.
+   */
+  const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [files, setFiles] = useState<Record<string, File | undefined>>({});
 
   const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -191,9 +214,20 @@ export default function Apply() {
                     <Icon name="upload" size={20} color="var(--green-500)" />
                     <span style={{ flex: 1 }}>
                       <span style={{ display: "block", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-medium)", color: "var(--green-800)" }}>{d}</span>
-                      <span style={{ display: "block", fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{t("PDF or photo. You can send these later on WhatsApp.")}</span>
+                      <span style={{ display: "block", fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
+                        {files[d]?.name ?? t("PDF or photo. You can send these later on WhatsApp.")}
+                      </span>
                     </span>
-                    <Button variant="secondary" size="sm">{t("Choose file")}</Button>
+                    <input
+                      ref={(el) => { fileInputs.current[d] = el; }}
+                      type="file"
+                      accept=".pdf,image/*"
+                      style={{ display: "none" }}
+                      onChange={(e) => setFiles((f) => ({ ...f, [d]: e.target.files?.[0] }))}
+                    />
+                    <Button variant="secondary" size="sm" type="button" onClick={() => fileInputs.current[d]?.click()}>
+                      {files[d] ? t("Change file") : t("Choose file")}
+                    </Button>
                   </div>
                 ))}
                 <Checkbox id="a-consent" label={t("Contact me on WhatsApp about my application")}
