@@ -36,6 +36,7 @@ import { RepresentativeForm } from "@/screens/RepresentativeForm";
 import { go, useHref } from "@/app/router";
 import { signInWithPassword } from "@/features/auth/client";
 import { useLeadSubmit } from "@/features/leads/submit";
+import { CaptchaField } from "@/features/leads/captcha";
 import { useT } from "@/i18n/context";
 import { useTranslatedOptions } from "@/i18n/options";
 import { ConsentPrivacyNote, FieldErrors } from "./shared";
@@ -330,6 +331,8 @@ export default function PartnerLogin() {
                       checked={reg.terms}
                       onChange={(e) => setReg("terms")(e as never)} />
 
+                    <CaptchaField />
+
                     {registered.status === "failed" ? (
                       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                         <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
@@ -386,6 +389,8 @@ export default function PartnerLogin() {
                       checked={study.consent}
                       onChange={(e) => setStudy("consent")(e as never)} />
                     <ConsentPrivacyNote />
+
+                    <CaptchaField />
 
                     {enquired.status === "failed" ? (
                       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
