@@ -38,7 +38,7 @@ import { signInWithPassword } from "@/features/auth/client";
 import { useLeadSubmit } from "@/features/leads/submit";
 import { useT } from "@/i18n/context";
 import { useTranslatedOptions } from "@/i18n/options";
-import { ConsentPrivacyNote } from "./shared";
+import { ConsentPrivacyNote, FieldErrors } from "./shared";
 
 type Role = "STUDENT" | "PARTNER" | "REPRESENTATIVE" | "STAFF";
 
@@ -46,9 +46,9 @@ type Role = "STUDENT" | "PARTNER" | "REPRESENTATIVE" | "STAFF";
  * Canonical English, because this value is submitted with the lead and read by staff.
  * Hoisted for `useTranslatedOptions`, which memoises on array identity.
  */
-const PARTNER_KINDS = ["Education agency", "Consultant", "University", "Country representative"] as const;
+export const PARTNER_KINDS = ["Education agency", "Consultant", "University", "Country representative"] as const;
 
-const COUNTRIES = ["Nigeria", "Morocco", "Kenya", "Egypt", "Pakistan", "Indonesia", "Other"] as const;
+export const COUNTRIES = ["Nigeria", "Morocco", "Kenya", "Egypt", "Pakistan", "Indonesia", "Other"] as const;
 
 /**
  * Study levels, with the value the API accepts attached to the label that offers it.
@@ -64,7 +64,7 @@ const STUDY_LEVELS = [
   { value: "phd", label: "PhD" },
 ] as const;
 
-const LEVEL_LABELS = STUDY_LEVELS.map((l) => l.label) as unknown as readonly string[];
+export const LEVEL_LABELS = STUDY_LEVELS.map((l) => l.label) as unknown as readonly string[];
 
 /** A hook, not a constant — see the note in About.tsx. */
 function usePortalBenefits(): string[] {
@@ -331,9 +331,12 @@ export default function PartnerLogin() {
                       onChange={(e) => setReg("terms")(e as never)} />
 
                     {registered.status === "failed" ? (
-                      <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
-                        <Icon name="alert-circle" size={16} />{registered.message}
-                      </span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                        <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
+                          <Icon name="alert-circle" size={16} />{registered.message}
+                        </span>
+                        <FieldErrors fields={registered.fields} />
+                      </div>
                     ) : null}
 
                     <Button variant="primary" size="lg" fullWidth type="submit"
@@ -385,9 +388,12 @@ export default function PartnerLogin() {
                     <ConsentPrivacyNote />
 
                     {enquired.status === "failed" ? (
-                      <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
-                        <Icon name="alert-circle" size={16} />{enquired.message}
-                      </span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                        <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
+                          <Icon name="alert-circle" size={16} />{enquired.message}
+                        </span>
+                        <FieldErrors fields={enquired.fields} />
+                      </div>
                     ) : null}
 
                     <Button variant="primary" size="lg" fullWidth type="submit"

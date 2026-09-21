@@ -26,7 +26,7 @@ import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
 import { useRepresentativeApplication } from "@/features/representatives/submit";
 import { useT } from "@/i18n/context";
-import { ConsentPrivacyNote } from "./shared";
+import { ConsentPrivacyNote, FieldErrors } from "./shared";
 
 export function RepresentativeForm() {
   const t = useT();
@@ -144,9 +144,12 @@ export function RepresentativeForm() {
             <ConsentPrivacyNote />
 
             {state.status === "failed" ? (
-              <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
-                <Icon name="alert-circle" size={16} />{state.message}
-              </span>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
+                  <Icon name="alert-circle" size={16} />{state.message}
+                </span>
+                <FieldErrors fields={state.fields} />
+              </div>
             ) : null}
 
             <Button variant="primary" size="lg" type="submit" disabled={state.status === "sending"}>

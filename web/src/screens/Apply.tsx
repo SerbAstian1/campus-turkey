@@ -15,7 +15,7 @@ import { useLeadSubmit } from "@/features/leads/submit";
 import { useT } from "@/i18n/context";
 import { useTranslatedOptions } from "@/i18n/options";
 import { CaptchaField } from "@/features/leads/captcha";
-import { ConsentPrivacyNote } from "./shared";
+import { ConsentPrivacyNote, FieldErrors } from "./shared";
 
 /**
  * The step names, as a hook.
@@ -52,7 +52,7 @@ const LEVEL_FOR: Record<string, "foundation" | "bachelor" | "master" | "phd" | u
  * These are the values that reach the server and the staff inbox. Only the labels are
  * translated; see `useTranslatedOptions`.
  */
-const COUNTRIES = [
+export const COUNTRIES = [
   "Nigeria", "Ghana", "Benin", "Togo", "Senegal", "Ivory Coast", "Cameroon",
   "Morocco", "Algeria", "Tunisia", "Egypt",
   "Kenya", "Tanzania", "Uganda", "Ethiopia", "Sudan",
@@ -64,11 +64,11 @@ const COUNTRIES = [
  * picking one that isn't theirs, and a partnership can be told apart from its absence in
  * the follow-up reply rather than at the field itself.
  */
-const CITIES = [
+export const CITIES = [
   "Any city", "Istanbul", "Ankara", "Izmir", "Antalya",
   "Bursa", "Konya", "Gaziantep", "Kayseri", "Eskişehir", "Trabzon", "Mersin", "Adana",
 ] as const;
-const INTAKES = ["Autumn 2026", "Spring 2027", "Not sure yet"] as const;
+export const INTAKES = ["Autumn 2026", "Spring 2027", "Not sure yet"] as const;
 
 /**
  * Study levels, and the reason this list is written out rather than derived.
@@ -79,7 +79,7 @@ const INTAKES = ["Autumn 2026", "Spring 2027", "Not sure yet"] as const;
  * form should offer, so it is stated — and the mismatch that produced is asserted
  * against in the component below.
  */
-const LEVELS = [
+export const LEVELS = [
   "Foundation or language year",
   "Bachelor's degree",
   "Master's degree",
@@ -255,9 +255,12 @@ export default function Apply() {
                 row is at the bottom of a long form, and an error rendered inline with it
                 scrolls out of view exactly when it is needed. */}
             {state.status === "failed" ? (
-              <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginTop: "var(--space-6)", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
-                <Icon name="alert-circle" size={16} />{state.message}
-              </span>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginTop: "var(--space-6)" }}>
+                <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
+                  <Icon name="alert-circle" size={16} />{state.message}
+                </span>
+                <FieldErrors fields={state.fields} />
+              </div>
             ) : null}
 
             {/* Final step only. Solved on step 0 the token would very likely have

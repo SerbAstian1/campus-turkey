@@ -12,6 +12,10 @@
 import type { ReactNode } from "react";
 import { MegaMenuPanel } from "@/ds";
 import { useHref } from "./router";
+import { useT } from "@/i18n/context";
+import { translateContent } from "@/i18n/content";
+
+const MEGA_KEYS = ["title", "label", "description"] as const;
 
 const PANEL_STYLE = {
   maxWidth: "calc(100vw - 48px)",
@@ -36,12 +40,14 @@ const PANEL_STYLE = {
  */
 export function useMega(): Record<string, ReactNode> {
   const href = useHref();
+  const t = useT();
+  const tc = <T,>(v: T) => translateContent(v, t, MEGA_KEYS);
 
   return {
   services: (
     <MegaMenuPanel
       style={PANEL_STYLE}
-      groups={[
+      groups={tc([
         {
           title: "Education",
           links: [
@@ -63,9 +69,9 @@ export function useMega(): Record<string, ReactNode> {
             { label: "Employment", description: "Legal and seasonal work", icon: "hard-hat", href: href("services/employment") },
           ],
         },
-      ]}
+      ])}
       feature={null}
-      columns={[
+      columns={tc([
         {
           title: "Resources",
           links: [
@@ -75,14 +81,14 @@ export function useMega(): Record<string, ReactNode> {
             { label: "All resources", href: href("resources") },
           ],
         },
-      ]}
+      ])}
     />
   ),
 
   partners: (
     <MegaMenuPanel
       style={PANEL_STYLE}
-      groups={[
+      groups={tc([
         {
           title: "Work with us",
           links: [
@@ -92,8 +98,8 @@ export function useMega(): Record<string, ReactNode> {
             { label: "Login", description: "Students, partners, representatives and staff", icon: "log-in", href: href("portal") },
           ],
         },
-      ]}
-      columns={[
+      ])}
+      columns={tc([
         {
           title: "For institutions",
           links: [
@@ -103,7 +109,7 @@ export function useMega(): Record<string, ReactNode> {
             { label: "Chambers of commerce", href: href("institutions/chambers") },
           ],
         },
-      ]}
+      ])}
     />
   ),
   };

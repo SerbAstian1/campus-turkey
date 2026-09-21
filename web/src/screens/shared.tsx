@@ -202,3 +202,38 @@ export function ConsentPrivacyNote() {
     </p>
   );
 }
+
+/**
+ * Which field failed, and why — the half of a validation error every lead form was
+ * dropping.
+ *
+ * `useLeadSubmit`'s failure state already carries `fields`, straight from the server's
+ * `ValidationError` — `{ "payload.phone": ["String must contain at least 6 character(s)"] }`
+ * — but no form rendered it, only the generic "Some details need correcting." A visitor
+ * who typed a five-digit phone number, or left a field the server requires blank, had no
+ * way to find out which one without guessing.
+ *
+ * The key is the Zod issue path (`payload.phone`), not a label a reader would recognise,
+ * so the leading `payload.` is stripped and what remains is shown as-is. These are the
+ * server's own words rather than translated copy: they are diagnostic, not primary UI
+ * text, and inventing a translated paraphrase risks saying something the validation rule
+ * does not actually enforce.
+ */
+export function FieldErrors({ fields }: { fields?: Record<string, string[]> }) {
+  if (!fields || Object.keys(fields).length === 0) return null;
+
+  return (
+    <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+      {Object.entries(fields).flatMap(([field, messages]) =>
+        messages.map((message, i) => {
+          const name = field.replace(/^payload\./, "").replace(/^_$/, "");
+          return (
+            <li key={`${field}-${i}`} style={{ fontSize: "var(--fs-caption)", color: "var(--status-danger)" }}>
+              {name ? `${name}: ` : ""}{message}
+            </li>
+          );
+        }),
+      )}
+    </ul>
+  );
+}

@@ -13,6 +13,7 @@ import { ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, PriceTable, FaqLayout, splitStyle } from "./shared";
 import { useT } from "@/i18n/context";
+import { translateContent, SERVICE_KEYS } from "@/i18n/content";
 import { servicePhoto } from "@/content/service-photos";
 import { PhotoCredit } from "@/components/PhotoCredit";
 import { ErrorScreen } from "./Errors";
@@ -21,11 +22,12 @@ import { CardGrid } from "@/components/CardGrid";
 export default function Service({ slug }: { slug: string }) {
   const t = useT();
   const href = useHref();
-  const s = getService(slug);
+  const raw = getService(slug);
   const photo = servicePhoto(slug);
-  if (!s) return <ErrorScreen state="notFound" />;
+  if (!raw) return <ErrorScreen state="notFound" />;
 
-  const others = services.filter((o) => o.slug !== s.slug);
+  const s = translateContent(raw, t, SERVICE_KEYS);
+  const others = translateContent(services.filter((o) => o.slug !== raw.slug), t, SERVICE_KEYS);
 
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -93,7 +95,7 @@ export default function Service({ slug }: { slug: string }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
           <ScrollReveal><SectionHeading eyebrow={t("Covered")} title={t("What we arrange")} /></ScrollReveal>
           <ScrollReveal delay={60} style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)" }}>
-            {s.tags.map((t) => <Tag key={t}>{t}</Tag>)}
+            {s.tags.map((tag) => <Tag key={tag}>{tag}</Tag>)}
           </ScrollReveal>
         </div>
 
@@ -101,9 +103,9 @@ export default function Service({ slug }: { slug: string }) {
           <Card surface="inverse" padding="var(--space-10)" radius="var(--radius-xl)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
             <span className="ct-eyebrow" style={{ color: "var(--green-300)" }}>{t("Why people trust this desk")}</span>
             <CardGrid min={220} gap="var(--space-5)">
-              {s.trust.map((t) => (
-                <span key={t} style={{ display: "flex", gap: "var(--space-3)", color: "rgba(255,255,255,.9)", fontSize: "var(--fs-body-sm)" }}>
-                  <Icon name="shield-check" size={18} color="var(--green-300)" />{t}
+              {s.trust.map((line) => (
+                <span key={line} style={{ display: "flex", gap: "var(--space-3)", color: "rgba(255,255,255,.9)", fontSize: "var(--fs-body-sm)" }}>
+                  <Icon name="shield-check" size={18} color="var(--green-300)" />{line}
                 </span>
               ))}
             </CardGrid>
@@ -147,8 +149,8 @@ export default function Service({ slug }: { slug: string }) {
 
         <ScrollReveal>
           <CTABanner eyebrow={t("Talk to us")} title={t("Get a written plan for {service}", { service: s.title.toLowerCase() })}
-            body="Tell us what you need. You get a clear scope and a price before you travel."
-            primaryLabel="Book a Consultation" primaryHref={href("contact")} secondaryLabel="Apply Now" secondaryHref={href("apply")} assetBase={ASSETS} />
+            body={t("Tell us what you need. You get a clear scope and a price before you travel.")}
+            primaryLabel={t("Book a Consultation")} primaryHref={href("contact")} secondaryLabel={t("Apply Now")} secondaryHref={href("apply")} assetBase={ASSETS} />
         </ScrollReveal>
       </PageBody>
     </div>

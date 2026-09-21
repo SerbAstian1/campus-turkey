@@ -11,13 +11,14 @@ import { PageBody, PageHero } from "./shared";
 import { useT } from "@/i18n/context";
 import { useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
+import { translateContent } from "@/i18n/content";
 
 export default function Resources() {
   const t = useT();
   const href = useHref();
   const [tag, setTag] = useState<string | null>(null);
   const tags = [...new Set(articles.map((r) => r.tag))];
-  const list = articles.filter((r) => !tag || r.tag === tag);
+  const list = translateContent(articles.filter((r) => !tag || r.tag === tag), t, ["tag", "title", "body"]);
 
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -27,9 +28,9 @@ export default function Resources() {
       <PageBody>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)", alignItems: "center" }}>
           <span className="ct-eyebrow" style={{ marginInlineEnd: "var(--space-2)" }}>{t("Filter")}</span>
-          {tags.map((t) => (
-            <Tag key={t} selected={tag === t} onClick={() => setTag(tag === t ? null : t)}
-              count={articles.filter((r) => r.tag === t).length}>{t}</Tag>
+          {tags.map((value) => (
+            <Tag key={value} selected={tag === value} onClick={() => setTag(tag === value ? null : value)}
+              count={articles.filter((r) => r.tag === value).length}>{t(value)}</Tag>
           ))}
         </div>
 
@@ -43,7 +44,7 @@ export default function Resources() {
                   {...(articlePhoto(r.slug) ? { src: articlePhoto(r.slug)!.src, alt: "" } : {})} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-3)" }}>
                   <Badge tone="neutral">{r.tag}</Badge>
-                  <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{r.read} read</span>
+                  <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{t("{duration} read", { duration: r.read })}</span>
                 </div>
                 <h3 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{r.title}</h3>
                 <p style={{ color: "var(--text-body)", lineHeight: "var(--lh-body)", margin: 0, flex: 1 }}>{r.body}</p>
@@ -57,8 +58,8 @@ export default function Resources() {
 
         <ScrollReveal>
           <CTABanner eyebrow={t("Faster than reading")} title={t("Ask us your question directly")}
-            body="A person replies on WhatsApp, usually the same day."
-            primaryLabel="Book a Consultation" primaryHref={href("contact")} secondaryLabel="Apply Now" secondaryHref={href("apply")} assetBase={ASSETS} />
+            body={t("A person replies on WhatsApp, usually the same day.")}
+            primaryLabel={t("Book a Consultation")} primaryHref={href("contact")} secondaryLabel={t("Apply Now")} secondaryHref={href("apply")} assetBase={ASSETS} />
         </ScrollReveal>
       </PageBody>
     </div>

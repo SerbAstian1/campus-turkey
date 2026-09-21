@@ -20,6 +20,7 @@ import { generalFaq, journey } from "@/content";
 import { useT } from "@/i18n/context";
 import { go, useHref } from "@/app/router";
 import { FaqLayout, PageBody, PageHero } from "../shared";
+import { translateContent } from "@/i18n/content";
 
 /**
  * What to have ready, and when.
@@ -92,6 +93,8 @@ export default function ApplicationProcess() {
   const href = useHref();
   const t = useT();
   const ready = useReady();
+  const steps = translateContent(journey, t, ["meta", "title", "description"]);
+  const faqItems = translateContent(PROCESS_FAQ, t, ["question", "answer"]);
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
@@ -116,7 +119,7 @@ export default function ApplicationProcess() {
             <SectionHeading eyebrow={t("The route")} title={t("What happens, in order")} />
           </ScrollReveal>
           <ScrollReveal delay={80}>
-            <TimelineTrack steps={journey} />
+            <TimelineTrack steps={steps} />
           </ScrollReveal>
         </div>
 
@@ -131,7 +134,7 @@ export default function ApplicationProcess() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
             {ready.map((group, index) => {
-              const step = journey[index];
+              const step = steps[index];
               return (
                 <ScrollReveal key={group.step} delay={index * 60}>
                   <Card padding="var(--space-8)" style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-8)" }}>
@@ -188,7 +191,7 @@ export default function ApplicationProcess() {
             }
           >
             <ScrollReveal delay={80}>
-              <Accordion items={PROCESS_FAQ} />
+              <Accordion items={faqItems} />
             </ScrollReveal>
           </FaqLayout>
         ) : null}

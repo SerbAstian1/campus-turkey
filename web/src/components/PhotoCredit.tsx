@@ -17,6 +17,8 @@
  * omitted the guard the first one grew. Public-domain and CC0 images impose no condition
  * and are credited anyway, because one uniform line is simpler than two rules.
  */
+import { useT } from "@/i18n/context";
+
 export interface Credited {
   readonly author?: string;
   readonly licence?: string;
@@ -27,6 +29,7 @@ export interface Credited {
 const linkStyle = { color: "inherit", textDecoration: "underline" } as const;
 
 export function PhotoCredit({ photo }: { photo: Credited | undefined }) {
+  const t = useT();
   if (!photo?.author || !photo.licence) return null;
 
   return (
@@ -34,7 +37,7 @@ export function PhotoCredit({ photo }: { photo: Credited | undefined }) {
       margin: "var(--space-2) 0 0", fontFamily: "var(--font-ui)",
       fontSize: "var(--fs-micro)", color: "var(--neutral-500)",
     }}>
-      {"Photo: "}
+      {t("Photo: ")}
       {photo.source
         ? (
           <a href={photo.source} target="_blank" rel="noopener noreferrer nofollow" style={linkStyle}>
@@ -50,7 +53,7 @@ export function PhotoCredit({ photo }: { photo: Credited | undefined }) {
           </a>
         )
         : photo.licence}
-      {" · via Wikimedia Commons"}
+      {t(" · via Wikimedia Commons")}
     </p>
   );
 }

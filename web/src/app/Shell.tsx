@@ -242,14 +242,14 @@ export function Shell({ children }: { children: ReactNode }) {
       <Footer
         columns={footerColumns.map((c) => ({
           title: footerTitles[c.title] ?? c.title,
-          links: c.links.map((l) => ({ label: l.label, href: href(l.route) })),
+          links: c.links.map((l) => ({ label: t(l.label), href: href(l.route) })),
         }))}
         contact={contact}
         socials={socials}
         lang={lang}
         onLangChange={setLanguage}
         assetBase={ASSETS}
-        legal="© 2026 Campus Turkey. Your guide to study in Turkey."
+        legal={t("© 2026 Campus Turkey. Your guide to study in Turkey.")}
         /*
          * The footer photograph, darkened.
          *

@@ -22,6 +22,7 @@ import { useT } from "@/i18n/context";
 import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { PageBody, PageHero, StudentLifeFrames } from "../shared";
+import { translateContent } from "@/i18n/content";
 
 /**
  * A monthly budget, in the two shapes students actually live in.
@@ -55,6 +56,7 @@ export default function StudentLife() {
   const href = useHref();
   const t = useT();
   const budget = useBudget();
+  const lifeCards = translateContent(studentLife, t, ["title", "body"]);
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
@@ -155,7 +157,7 @@ export default function StudentLife() {
           </ScrollReveal>
 
           <CardGrid min={250} gap="var(--space-6)">
-            {studentLife.map((item, index) => (
+            {lifeCards.map((item, index) => (
               <ScrollReveal key={item.title} delay={index * 60} style={{ display: "flex" }}>
                 <Card padding="var(--space-8)" style={{ width: "100%", display: "flex", gap: "var(--space-4)", alignItems: "flex-start" }}>
                   <Icon name={item.icon} size={20} color="var(--green-600)" />

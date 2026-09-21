@@ -22,6 +22,7 @@ import { Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, ASSETS } f
 import { go, useHref } from "@/app/router";
 import { PageBody, PageHero } from "./shared";
 import { useT } from "@/i18n/context";
+import { translateContent } from "@/i18n/content";
 
 interface Track {
   route: string;
@@ -36,7 +37,7 @@ interface Track {
   cta: string;
 }
 
-const TRACKS: Track[] = [
+export const TRACKS: Track[] = [
   {
     route: "partners",
     icon: "handshake",
@@ -90,6 +91,7 @@ const TRACKS: Track[] = [
 export default function Partnerships() {
   const href = useHref();
   const t = useT();
+  const tracks = translateContent(TRACKS, t, ["eyebrow", "title", "body", "terms", "notFor", "cta"]);
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
@@ -113,7 +115,7 @@ export default function Partnerships() {
         </ScrollReveal>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          {TRACKS.map((track, index) => (
+          {tracks.map((track, index) => (
             <ScrollReveal key={track.route} delay={index * 80}>
               <Card padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", alignItems: "flex-start" }}>
@@ -177,10 +179,10 @@ export default function Partnerships() {
           <CTABanner
             eyebrow={t("Already working with us")}
             title={t("Sign in to the partner portal")}
-            body="Your students, their stage, your commission and your payment status."
-            primaryLabel="Partner Login"
+            body={t("Your students, their stage, your commission and your payment status.")}
+            primaryLabel={t("Partner Login")}
             primaryHref={href("portal")}
-            secondaryLabel="Book a Consultation"
+            secondaryLabel={t("Book a Consultation")}
             secondaryHref={href("contact")}
             assetBase={ASSETS}
           />

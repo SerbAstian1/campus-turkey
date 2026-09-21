@@ -10,11 +10,13 @@ import { RepresentativeForm } from "./RepresentativeForm";
 import { CardGrid } from "@/components/CardGrid";
 import { useHref } from "@/app/router";
 import { useT } from "@/i18n/context";
+import { translateContent } from "@/i18n/content";
 
 export default function Representative() {
   const href = useHref();
   const t = useT();
-  const r = representative;
+  const r = translateContent(representative, t, ["title", "body", "requirements", "question", "answer", "earnings"]);
+  const steps = translateContent(representativeSteps, t, ["meta", "title", "description"]);
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero badge={t("Territories open in 9 countries")} eyebrow={t("Country representatives")} title={t("Become a Representative")}
@@ -30,7 +32,7 @@ export default function Representative() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal><SectionHeading eyebrow={t("How to join")} title={t("Four steps to a territory")} /></ScrollReveal>
-          <ScrollReveal delay={80}><TimelineTrack steps={representativeSteps} /></ScrollReveal>
+          <ScrollReveal delay={80}><TimelineTrack steps={steps} /></ScrollReveal>
         </div>
 
         <div className="ct-split" style={splitStyle}>

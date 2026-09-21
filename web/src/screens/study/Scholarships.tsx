@@ -26,6 +26,7 @@ import { useT } from "@/i18n/context";
 import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { FaqLayout, PageBody, PageHero } from "../shared";
+import { translateContent } from "@/i18n/content";
 
 /** The money questions from the shared FAQ. The visa and arrival ones belong elsewhere. */
 const MONEY_FAQ = generalFaq.filter((item) =>
@@ -35,6 +36,8 @@ const MONEY_FAQ = generalFaq.filter((item) =>
 export default function Scholarships() {
   const href = useHref();
   const t = useT();
+  const cards = translateContent(scholarships, t, ["name", "who", "covers", "when", "competitive"]);
+  const faqItems = translateContent(MONEY_FAQ, t, ["question", "answer"]);
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
@@ -83,7 +86,7 @@ export default function Scholarships() {
                     </span>
                   ))}
 
-                  {scholarships.map((scholarship) =>
+                  {cards.map((scholarship) =>
                     [scholarship.name, scholarship.covers, scholarship.when, scholarship.competitive].map(
                       (cell, column) => (
                         <span
@@ -115,7 +118,7 @@ export default function Scholarships() {
           </ScrollReveal>
 
           <CardGrid min={280} gap="var(--space-6)">
-            {scholarships.map((scholarship, index) => (
+            {cards.map((scholarship, index) => (
               <ScrollReveal key={scholarship.name} delay={index * 60} style={{ display: "flex" }}>
                 <Card
                   padding="var(--space-8)"
@@ -175,7 +178,7 @@ export default function Scholarships() {
             }
           >
             <ScrollReveal delay={80}>
-              <Accordion items={MONEY_FAQ} />
+              <Accordion items={faqItems} />
             </ScrollReveal>
           </FaqLayout>
         ) : null}

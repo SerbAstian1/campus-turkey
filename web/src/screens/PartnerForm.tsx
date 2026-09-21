@@ -16,12 +16,13 @@ import { useLeadSubmit } from "@/features/leads/submit";
 import { CaptchaField } from "@/features/leads/captcha";
 import { useT } from "@/i18n/context";
 import { useTranslatedOptions } from "@/i18n/options";
+import { FieldErrors } from "./shared";
 
 /**
  * Canonical English, hoisted so `useTranslatedOptions` can memoise on array identity.
  * The stored value reaches the staff inbox and must not be translated.
  */
-const VOLUMES = ["Under 10", "10 to 50", "50 to 200", "Over 200"] as const;
+export const VOLUMES = ["Under 10", "10 to 50", "50 to 200", "Over 200"] as const;
 
 export function PartnerForm({
   kinds, submitLabel, intro, leadKind = "PARTNER",
@@ -106,9 +107,12 @@ export function PartnerForm({
             <Checkbox id="p-terms" label={t("I agree to the partner terms and commission schedule")}
               description={t("You can read both before signing. Nothing is binding until you do.")} checked={form.terms} onChange={set("terms")} />
             {state.status === "failed" ? (
-              <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
-                <Icon name="alert-circle" size={16} />{state.message}
-              </span>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
+                  <Icon name="alert-circle" size={16} />{state.message}
+                </span>
+                <FieldErrors fields={state.fields} />
+              </div>
             ) : null}
 
             {/* Covers both the Partner and Representative tracks — this form serves

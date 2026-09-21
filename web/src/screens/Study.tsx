@@ -8,6 +8,7 @@ import { generalFaq, journey, scholarships, studentLife } from "@/content";
 import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, FaqLayout, StudentLifeFrames } from "./shared";
 import { CardGrid } from "@/components/CardGrid";
+import { translateContent } from "@/i18n/content";
 
 /** A hook, not a module constant — see the note in About.tsx. */
 function useWhy() {
@@ -27,6 +28,10 @@ export default function Study() {
   const href = useHref();
   const t = useT();
   const why = useWhy();
+  const steps = translateContent(journey, t, ["meta", "title", "description"]);
+  const scholarshipCards = translateContent(scholarships, t, ["name", "who", "covers", "when", "competitive"]);
+  const lifeCards = translateContent(studentLife, t, ["title", "body"]);
+  const faq = translateContent(generalFaq, t, ["question", "answer"]);
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero
@@ -67,7 +72,7 @@ export default function Study() {
             </Button>
           </ScrollReveal>
           <CardGrid min={280} gap="var(--space-6)">
-            {scholarships.map((s, i) => (
+            {scholarshipCards.map((s, i) => (
               <ScrollReveal key={s.name} delay={i * 60} style={{ display: "flex" }}>
                 <Card padding="var(--space-8)" surface={i === 0 ? "tinted" : "plain"} style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-4)", alignItems: "flex-start" }}>
@@ -96,7 +101,7 @@ export default function Study() {
               {t("What to have ready")}
             </Button>
           </ScrollReveal>
-          <ScrollReveal delay={80}><TimelineTrack steps={journey} /></ScrollReveal>
+          <ScrollReveal delay={80}><TimelineTrack steps={steps} /></ScrollReveal>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
@@ -108,7 +113,7 @@ export default function Study() {
             </Button>
           </ScrollReveal>
           <CardGrid min={250} gap="var(--space-6)">
-            {studentLife.map((s, i) => (
+            {lifeCards.map((s, i) => (
               <ScrollReveal key={s.title} delay={i * 60} style={{ display: "flex" }}>
                 <Card padding="var(--space-8)" style={{ width: "100%", display: "flex", gap: "var(--space-4)", alignItems: "flex-start" }}>
                   <Icon name={s.icon} size={20} color="var(--green-600)" />
@@ -132,7 +137,7 @@ export default function Study() {
         <FaqLayout heading={
           <ScrollReveal><SectionHeading eyebrow={t("Questions")} title={t("Student FAQs")} lead={t("Anything else, message us on WhatsApp.")} /></ScrollReveal>
         }>
-          <ScrollReveal delay={80}><Accordion items={generalFaq} /></ScrollReveal>
+          <ScrollReveal delay={80}><Accordion items={faq} /></ScrollReveal>
         </FaqLayout>
 
         <ScrollReveal>

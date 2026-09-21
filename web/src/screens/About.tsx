@@ -9,6 +9,7 @@ import { ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, splitStyle } from "./shared";
 import { CardGrid } from "@/components/CardGrid";
+import { translateContent } from "@/i18n/content";
 
 /**
  * A hook rather than the module constant this was, for the reason that keeps recurring
@@ -31,6 +32,12 @@ export default function About() {
   const href = useHref();
   const t = useT();
   const values = useValues();
+  const statCards = translateContent(stats, t, ["label", "description"]);
+  const timeline = translateContent(milestones, t, ["meta", "title", "description"]);
+  const team = translateContent(leadership, t, ["role", "note"]);
+  const credentials = accreditations.map((a) => t(a));
+  const quotes = translateContent(testimonials, t, ["quote", "role", "country"]);
+  const officeCards = translateContent(offices, t, ["role"]);
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero eyebrow={t("About us")} title={t("Your gateway to Türkiye")}
@@ -46,7 +53,7 @@ export default function About() {
         <ScrollReveal><ImagePlaceholder slot="about-hero" label={t("Team or office photography, 21:9 hero band")} ratio="21 / 9" /></ScrollReveal>
 
         <CardGrid min={200} gap="var(--space-10)">
-          {stats.map((s, i) => (
+          {statCards.map((s, i) => (
             <ScrollReveal key={s.label} delay={i * 70}><StatBlock {...s} theme="light" /></ScrollReveal>
           ))}
         </CardGrid>
@@ -79,7 +86,7 @@ export default function About() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal><SectionHeading eyebrow={t("Our story")} title={t("Twelve years, five desks")} /></ScrollReveal>
-          <ScrollReveal delay={80}><TimelineTrack steps={milestones} /></ScrollReveal>
+          <ScrollReveal delay={80}><TimelineTrack steps={timeline} /></ScrollReveal>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
@@ -88,7 +95,7 @@ export default function About() {
               lead={t("You get a named contact on day one, and they stay with your file.")} />
           </ScrollReveal>
           <CardGrid min={220} gap="var(--space-6)">
-            {leadership.map((p, i) => (
+            {team.map((p, i) => (
               <ScrollReveal key={p.name} delay={i * 60} style={{ display: "flex" }}>
                 <Card padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                   <ImagePlaceholder slot={`person-${p.name}`} label={t("Portrait, 1:1")} ratio="1 / 1" icon="user" />
@@ -107,7 +114,7 @@ export default function About() {
           <Card surface="inverse" padding="var(--space-10)" radius="var(--radius-xl)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
             <span className="ct-eyebrow" style={{ color: "var(--green-300)" }}>{t("Credentials")}</span>
             <CardGrid min={240} gap="var(--space-5)">
-              {accreditations.map((a) => (
+              {credentials.map((a) => (
                 <span key={a} style={{ display: "flex", gap: "var(--space-3)", color: "rgba(255,255,255,.9)", fontSize: "var(--fs-body-sm)" }}>
                   <Icon name="badge-check" size={18} color="var(--green-300)" />{a}
                 </span>
@@ -121,7 +128,7 @@ export default function About() {
           <CardGrid min={280} gap="var(--space-6)">
             {/* `quote`, not `t` — the parameter shadowed the translator, so a `t()` call
                 added anywhere inside this map would have silently read the testimonial. */}
-            {testimonials.map((quote, i) => (
+            {quotes.map((quote, i) => (
               <ScrollReveal key={quote.name} delay={i * 70} style={{ display: "flex" }}>
                 <TestimonialCard {...quote} style={{ width: "100%" }} />
               </ScrollReveal>
@@ -132,7 +139,7 @@ export default function About() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal><SectionHeading eyebrow={t("Offices")} title={t("Where you can find us")} /></ScrollReveal>
           <CardGrid min={240} gap="var(--space-6)">
-            {offices.map((o, i) => (
+            {officeCards.map((o, i) => (
               <ScrollReveal key={o.city} delay={i * 70} style={{ display: "flex" }}>
                 <Card padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                   <ImagePlaceholder slot={`office-${o.city}`} label={t("{city} office, 16:9", { city: o.city })} ratio="16 / 9" icon="building" />

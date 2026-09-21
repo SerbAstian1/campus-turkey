@@ -16,14 +16,16 @@ import { PhotoCredit } from "@/components/PhotoCredit";
 import { go, useHref } from "@/app/router";
 import { IconCard, PageBody, PageHero, splitStyle } from "./shared";
 import { useT } from "@/i18n/context";
+import { translateContent, INSTITUTION_KEYS } from "@/i18n/content";
 import { ErrorScreen } from "./Errors";
 import { CardGrid } from "@/components/CardGrid";
 
 export default function Institution({ slug }: { slug: string }) {
   const href = useHref();
   const t = useT();
-  const inst = getInstitution(slug);
-  if (!inst) return <ErrorScreen state="notFound" />;
+  const raw = getInstitution(slug);
+  if (!raw) return <ErrorScreen state="notFound" />;
+  const inst = translateContent(raw, t, INSTITUTION_KEYS);
 
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -68,8 +70,8 @@ export default function Institution({ slug }: { slug: string }) {
 
         <ScrollReveal>
           <CTABanner eyebrow={t("Work with us")} title={inst.cta}
-            body="A 30 minute call is enough to see whether this fits. We come prepared with numbers."
-            primaryLabel="Book a Consultation" primaryHref={href("contact")} secondaryLabel="Become a Partner" secondaryHref={href("partners")} assetBase={ASSETS} />
+            body={t("A 30 minute call is enough to see whether this fits. We come prepared with numbers.")}
+            primaryLabel={t("Book a Consultation")} primaryHref={href("contact")} secondaryLabel={t("Become a Partner")} secondaryHref={href("partners")} assetBase={ASSETS} />
         </ScrollReveal>
       </PageBody>
     </div>

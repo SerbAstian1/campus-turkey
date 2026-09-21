@@ -15,14 +15,18 @@ import { articlePhoto } from "@/content/article-photos";
 import { PhotoCredit } from "@/components/PhotoCredit";
 import { go, useHref } from "@/app/router";
 import { ErrorScreen } from "./Errors";
+import { translateContent } from "@/i18n/content";
+
+const ARTICLE_KEYS = ["tag", "title", "body", "heading", "paragraphs", "author"] as const;
 
 export default function Article({ slug }: { slug: string | null }) {
   const t = useT();
   const href = useHref();
-  const post = slug ? getArticle(slug) : undefined;
-  if (!post) return <ErrorScreen state="notFound" />;
+  const raw = slug ? getArticle(slug) : undefined;
+  if (!raw) return <ErrorScreen state="notFound" />;
 
-  const more = articles.filter((r) => r.slug !== post.slug).slice(0, 3);
+  const post = translateContent(raw, t, ARTICLE_KEYS);
+  const more = translateContent(articles.filter((r) => r.slug !== raw.slug).slice(0, 3), t, ARTICLE_KEYS);
 
   return (
     <div style={{ background: "var(--surface-subtle)" }}>

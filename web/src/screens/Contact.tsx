@@ -17,7 +17,7 @@ import { go } from "@/app/router";
 import { useLeadSubmit, type LeadType } from "@/features/leads/submit";
 import { CaptchaField } from "@/features/leads/captcha";
 import { useT } from "@/i18n/context";
-import { ConsentPrivacyNote, PageBody, PageHero } from "./shared";
+import { ConsentPrivacyNote, FieldErrors, PageBody, PageHero } from "./shared";
 
 /**
  * The topic someone picks decides which desk receives the enquiry.
@@ -51,7 +51,7 @@ const TOPIC_ROUTING: Record<string, LeadType> = {
  * properly would be refused by the server. Somebody who wants to *apply* is sent to the
  * registration form; somebody who wants to *ask* gets a reply.
  */
-const TOPICS: readonly string[] = [
+export const TOPICS: readonly string[] = [
   "Study in Türkiye",
   "Medical treatment",
   "Business facilitation",
@@ -177,9 +177,12 @@ export default function Contact() {
                   {/* The failure path. Without this the form can only ever appear to
                       succeed, which is the specific thing worse than having no form. */}
                   {state.status === "failed" ? (
-                    <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
-                      <Icon name="alert-circle" size={16} />{state.message}
-                    </span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                      <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", fontSize: "var(--fs-body-sm)", color: "var(--status-danger)" }}>
+                        <Icon name="alert-circle" size={16} />{state.message}
+                      </span>
+                      <FieldErrors fields={state.fields} />
+                    </div>
                   ) : null}
 
                   {/* Renders nothing without a site key, so development is unchanged. */}
