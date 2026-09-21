@@ -230,7 +230,7 @@ function Progress({ lead, onDone }: { lead: QueueLead; onDone: () => void }) {
   const move = async (status: "CONTACTED" | "CLOSED" | "NEW") => {
     setPending(status);
     setError(null);
-    const result = await act(`/api/staff/leads/${lead.id}`, { status });
+    const result = await act(`/api/staff/leads/${lead.id}`, { status }, "PATCH");
     setPending(null);
     if (result.ok) onDone();
     else setError(result.message);

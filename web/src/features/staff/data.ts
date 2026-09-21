@@ -140,14 +140,26 @@ async function get<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-/** POST that returns the server's message on refusal, because staff need the reason. */
+/**
+ * POST (or PATCH) that returns the server's message on refusal, because staff need the
+ * reason.
+ *
+ * `method` defaults to POST because every action endpoint but one is action-shaped
+ * (`approve`, confirm a commission, approve a withdrawal) rather than a plain field
+ * update. `/api/staff/leads/:id` is the one exception — it PATCHes a status or an
+ * assignee — and calling it with the default silently 405s: Next's App Router answers
+ * an unhandled method with an empty body, which has no `error.message` for this
+ * function to surface, so the failure read as the generic fallback below with no way to
+ * tell it apart from an actual server refusal.
+ */
 export async function act(
   path: string,
   body: unknown,
+  method: "POST" | "PATCH" = "POST",
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   try {
     const response = await fetch(path, {
-      method: "POST",
+      method,
       credentials: "include",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
