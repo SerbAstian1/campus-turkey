@@ -72,9 +72,9 @@ export default function Service({ slug }: { slug: string }) {
 
           <ScrollReveal delay={80} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
             <SectionHeading eyebrow={t("Indicative prices")} title={t("What people usually pay")} />
-            <PriceTable columns={["Service", "Typical price", "Time needed"]} rows={s.pricing.map((p) => [p.item, p.price, p.note])} />
+            <PriceTable columns={[t("Service"), t("Typical price"), t("Time needed")]} rows={s.pricing.map((p) => [p.item, p.price, p.note])} />
             <p style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)", margin: 0 }}>
-              Indicative ranges from files we handled in the last twelve months. Your written quote is always specific to you.
+              {t("Indicative ranges from files we handled in the last twelve months. Your written quote is always specific to you.")}
             </p>
             {/*
               Keyed on the slug, not the title the slot uses: a slug is the stable
@@ -126,7 +126,7 @@ export default function Service({ slug }: { slug: string }) {
                   <h3 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>{o.title}</h3>
                   <p style={{ fontSize: "var(--fs-body-sm)", color: "var(--text-body)", margin: 0 }}>{o.lead}</p>
                   <span style={{ marginTop: "auto", paddingTop: "var(--space-3)", display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-semibold)", color: "var(--green-600)" }}>
-                    Open page <Icon name="arrow-right" size={15} />
+                    {t("Open page")} <Icon name="arrow-right" size={15} />
                   </span>
                 </Card>
               </ScrollReveal>

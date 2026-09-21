@@ -48,9 +48,9 @@ export default function Representative() {
 
           <ScrollReveal delay={80} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
             <SectionHeading eyebrow={t("Earnings")} title={t("What you are paid")} />
-            <PriceTable columns={["Referral type", "Commission", "When it is paid"]} rows={r.earnings.map((e) => [...e])} />
+            <PriceTable columns={[t("Referral type"), t("Commission"), t("When it is paid")]} rows={r.earnings.map((e) => [...e])} />
             <p style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)", margin: 0 }}>
-              Exact rates are written into your agreement and reviewed every year. Nothing depends on a verbal promise.
+              {t("Exact rates are written into your agreement and reviewed every year. Nothing depends on a verbal promise.")}
             </p>
           </ScrollReveal>
         </div>

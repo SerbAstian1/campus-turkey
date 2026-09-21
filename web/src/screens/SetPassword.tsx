@@ -199,7 +199,7 @@ export default function SetPassword() {
           )}
 
           <Button variant="ghost" icon="arrow-left" onClick={() => go("portal")}>
-            Back to sign in
+            {t("Back to sign in")}
           </Button>
         </div>
       </div>

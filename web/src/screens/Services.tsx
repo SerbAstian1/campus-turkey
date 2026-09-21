@@ -37,10 +37,10 @@ export default function Services() {
         actions={
           <>
             <Button size="lg" icon="message-circle" onClick={() => go("contact")}>
-              Book a Consultation
+              {t("Book a Consultation")}
             </Button>
             <Button variant="outlineOnDark" size="lg" onClick={() => go("study")}>
-              Looking to study?
+              {t("Looking to study?")}
             </Button>
           </>
         }
@@ -105,7 +105,7 @@ export default function Services() {
                           fontSize: "var(--fs-caption)",
                         }}
                       >
-                        +{service.tags.length - 3} more
+                        {t("+{count} more", { count: service.tags.length - 3 })}
                       </span>
                     ) : null}
                   </div>
@@ -135,12 +135,11 @@ export default function Services() {
               <span className="ct-eyebrow">{t("And the main one")}</span>
               <h3 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{t("University admissions")}</h3>
               <p style={{ color: "var(--text-body)", lineHeight: "var(--lh-body)", margin: 0, maxWidth: "56ch" }}>
-                Placing students in Turkish universities is the largest thing we do, and it has
-                its own hub: tuition, scholarships, intakes and what a year actually costs.
+                {t("Placing students in Turkish universities is the largest thing we do, and it has its own hub: tuition, scholarships, intakes and what a year actually costs.")}
               </p>
             </div>
             <Button size="lg" icon="graduation-cap" onClick={() => go("study")}>
-              Study in Türkiye
+              {t("Study in Türkiye")}
             </Button>
           </Card>
         </ScrollReveal>
@@ -149,10 +148,10 @@ export default function Services() {
           <CTABanner
             eyebrow={t("Not sure which")}
             title={t("Tell us what you need")}
-            body="Describe it in a sentence. We will say which service it is, or that it is not one we run."
-            primaryLabel="Book a Consultation"
+            body={t("Describe it in a sentence. We will say which service it is, or that it is not one we run.")}
+            primaryLabel={t("Book a Consultation")}
             primaryHref={href("contact")}
-            secondaryLabel="Apply Now"
+            secondaryLabel={t("Apply Now")}
             secondaryHref={href("apply")}
             assetBase={ASSETS}
           />

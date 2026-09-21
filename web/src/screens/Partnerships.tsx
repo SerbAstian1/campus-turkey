@@ -98,7 +98,7 @@ export default function Partnerships() {
         lead={t("Agencies refer students. Representatives hold territories. Universities receive them. The terms differ, so each has its own page rather than one that is vague about all three.")}
         actions={
           <Button size="lg" icon="message-circle" onClick={() => go("contact")}>
-            Talk to the partnerships team
+            {t("Talk to the partnerships team")}
           </Button>
         }
       />

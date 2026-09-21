@@ -201,7 +201,7 @@ export default function Apply() {
                 <div style={{ gridColumn: "span 2", display: "flex", gap: "var(--space-3)", padding: "var(--space-4)", borderRadius: "var(--radius-sm)", background: "var(--green-050)", border: "1px solid var(--green-100)" }}>
                   <Icon name="info" size={18} color="var(--green-600)" />
                   <span style={{ fontSize: "var(--fs-body-sm)", color: "var(--green-800)" }}>
-                    Public universities are highly subsidised. Private universities offer scholarships. We will show you both.
+                    {t("Public universities are highly subsidised. Private universities offer scholarships. We will show you both.")}
                   </span>
                 </div>
               </div>
@@ -243,7 +243,7 @@ export default function Apply() {
                 <h3 style={{ fontSize: "var(--fs-h2)" }}>{form.name ? t("Thank you, {name}.", { name: form.name.split(" ")[0] ?? "" }) : t("Thank you.")}</h3>
                 <BrandDivider style={{ maxWidth: 220 }} />
                 <p style={{ maxWidth: 460, color: "var(--text-body)" }}>
-                  We are matching you with universities now. You will get a shortlist with real tuition and deadlines within one working day.
+                  {t("We are matching you with universities now. You will get a shortlist with real tuition and deadlines within one working day.")}
                 </p>
                 <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap", justifyContent: "center" }}>
                   <Button variant="secondary" onClick={() => go("home")}>{t("Back to home")}</Button>
@@ -273,7 +273,7 @@ export default function Apply() {
               <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)", marginTop: "var(--space-10)", paddingTop: "var(--space-6)", borderTop: "1px solid var(--border-subtle)" }}>
                 <Button variant="ghost" icon="arrow-left" type="button" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>{t("Back")}</Button>
                 <Button variant="primary" size="lg" type="submit" disabled={state.status === "sending"}>
-                  {state.status === "sending" ? "Sending…" : step === 2 ? "Submit application" : "Continue"}
+                  {state.status === "sending" ? t("Sending…") : step === 2 ? t("Submit application") : t("Continue")}
                 </Button>
               </div>
             ) : null}

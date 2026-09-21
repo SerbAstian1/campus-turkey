@@ -48,7 +48,7 @@ export default function Resources() {
                 <h3 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{r.title}</h3>
                 <p style={{ color: "var(--text-body)", lineHeight: "var(--lh-body)", margin: 0, flex: 1 }}>{r.body}</p>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-semibold)", color: "var(--green-600)" }}>
-                  Read the guide <Icon name="arrow-right" size={15} />
+                  {t("Read the guide")} <Icon name="arrow-right" size={15} />
                 </span>
               </Card>
             </ScrollReveal>

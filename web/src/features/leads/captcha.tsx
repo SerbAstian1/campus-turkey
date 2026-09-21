@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/i18n/context";
 
 interface HCaptcha {
   render: (container: HTMLElement, options: { sitekey: string; theme?: string }) => string;
@@ -108,6 +109,7 @@ export function resetCaptcha(): void {
  * no empty box appears where a challenge would be.
  */
 export function CaptchaField() {
+  const t = useT();
   const host = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
 
@@ -157,8 +159,7 @@ export function CaptchaField() {
             color: "var(--status-danger)",
           }}
         >
-          The verification challenge could not load. Please disable any content blocker
-          for this page, or contact us on WhatsApp instead.
+          {t("The verification challenge could not load. Please disable any content blocker for this page, or contact us on WhatsApp instead.")}
         </span>
       ) : null}
     </div>

@@ -37,6 +37,11 @@ type Status = DesignSystemStatus;
  * are guaranteed to have been applied, so it cannot depend on them.
  */
 function BootScreen() {
+  // Safe here for the same reason it is safe in `BootFailure` below: `useT` reads
+  // `LocaleProvider`, set by the layout, not the design-system bundle this screen is
+  // covering for.
+  const t = useT();
+
   return (
     <div
       aria-busy="true"
@@ -50,7 +55,7 @@ function BootScreen() {
       }}
     >
       <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
-        Loading Campus Turkey
+        {t("Loading Campus Turkey")}
       </span>
       <img
         src="/assets/logo-lockup-reversed.png"

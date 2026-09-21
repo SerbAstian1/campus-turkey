@@ -247,7 +247,7 @@ function AboutSection() {
             <span className="ct-tagline" style={{ fontSize: "var(--fs-caption)", color: "var(--green-600)", maxWidth: 150 }}>{t("Your guide to study in Turkey")}</span>
           </div>
           <p style={{ flex: 1, minWidth: 260, fontSize: "var(--fs-lead)", lineHeight: "var(--lh-body)", color: "var(--text-body)", maxWidth: 720 }}>
-            Higher education is our core. We also support medical tourism, business visits and trade fairs, seasonal employment, educational tours, agency and university partnerships, and international representatives. Everything is designed to be clear, trustworthy and easy.
+            {t("Higher education is our core. We also support medical tourism, business visits and trade fairs, seasonal employment, educational tours, agency and university partnerships, and international representatives. Everything is designed to be clear, trustworthy and easy.")}
           </p>
         </ScrollReveal>
       </div>

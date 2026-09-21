@@ -201,15 +201,15 @@ export default function Universities() {
             <Button variant="secondary" size="md" icon="chevron-left"
               disabled={directory.page <= 1 || directory.loading}
               onClick={() => update({ page: directory.page - 1 })}>
-              Previous
+              {t("Previous")}
             </Button>
             <span aria-live="polite" style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", color: "var(--text-body)", fontVariantNumeric: "tabular-nums" }}>
-              Page {directory.page} of {directory.pageCount}
+              {t("Page {page} of {count}", { page: directory.page, count: directory.pageCount })}
             </span>
             <Button variant="secondary" size="md" icon="chevron-right"
               disabled={directory.page >= directory.pageCount || directory.loading}
               onClick={() => update({ page: directory.page + 1 })}>
-              Next
+              {t("Next")}
             </Button>
           </nav>
         ) : null}
