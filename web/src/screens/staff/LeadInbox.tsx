@@ -206,6 +206,9 @@ function LeadRow({
       {latest?.type === "PARTNER" && canApprove ? (
         <ApprovePartner lead={lead} onDone={onDone} />
       ) : null}
+      {latest?.type === "STUDY" && canApprove ? (
+        <ApproveStudent lead={lead} onDone={onDone} />
+      ) : null}
     </Card>
   );
 }
@@ -383,6 +386,119 @@ function ApprovePartner({ lead, onDone }: { lead: QueueLead; onDone: () => void 
           <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
             <Button variant="primary" size="md" type="button"
               disabled={pending || form.managerName.trim() === ""}
+              onClick={() => void approve()}>
+              {pending ? "Creating…" : "Create the account"}
+            </Button>
+            <Button variant="secondary" size="md" type="button" disabled={pending}
+              onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Turning a direct study enquiry into a student account.
+ *
+ * The partner form's twin — see `ApprovePartner` above and
+ * `server/modules/onboarding/student-onboarding.service.ts` for why a direct applicant
+ * needs staff to name a university at all: nothing the public form collects is a
+ * specific university, only a program and a rough intake, because matching them to one
+ * is the work this desk does after reading the enquiry, not before.
+ *
+ * Program and country are pre-filled from what the enquiry already carries, editable
+ * rather than fixed — the enquiry's own text is a starting point, not a guarantee it is
+ * still accurate by the time somebody gets to it.
+ */
+function ApproveStudent({ lead, onDone }: { lead: QueueLead; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    universityName: "",
+    program: String(lead.latest?.payload["program"] ?? ""),
+    country: lead.country ?? "",
+  });
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+
+  const converted = lead.status === "CONVERTED";
+
+  const set = (key: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const approve = async () => {
+    setPending(true);
+    setError(null);
+
+    const result = await act(`/api/staff/leads/${lead.id}/approve-student`, {
+      universityName: form.universityName.trim(),
+      ...(form.program.trim() ? { program: form.program.trim() } : {}),
+      ...(form.country.trim() ? { country: form.country.trim() } : {}),
+    });
+
+    setPending(false);
+    if (result.ok) {
+      setDone("Account created. They have been emailed a link to set their password.");
+      onDone();
+      return;
+    }
+    setError(result.message);
+  };
+
+  if (converted) {
+    return (
+      <p style={{ margin: "var(--space-4) 0 0", color: "var(--text-muted)", fontSize: "var(--fs-body-sm)" }}>
+        Approved. This applicant has a student account.
+      </p>
+    );
+  }
+
+  if (done) {
+    return (
+      <p style={{ margin: "var(--space-4) 0 0", color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
+        {done}
+      </p>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: "var(--space-5)", paddingTop: "var(--space-5)", borderTop: "1px solid var(--border-subtle)" }}>
+      {!open ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Button variant="primary" size="md" type="button" onClick={() => setOpen(true)}>
+            Approve and create account
+          </Button>
+          <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", maxWidth: "40ch" }}>
+            Creates their login and emails them a link to set a password. Attributed to
+            Campus Turkey directly — no partner or representative referred them.
+          </span>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <Input id={`uni-${lead.id}`} label="University"
+            hint="Not collected by the enquiry form — the match made here, not before."
+            placeholder="Istanbul University"
+            value={form.universityName} onChange={set("universityName")} />
+          <Input id={`prog-${lead.id}`} label="Program (optional)"
+            value={form.program} onChange={set("program")} />
+          <Input id={`ctry-${lead.id}`} label="Country"
+            hint="Used for both nationality and country of residence."
+            value={form.country} onChange={set("country")} />
+
+          {error ? (
+            <span role="alert" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>
+              <Icon name="alert-circle" size={16} />
+              {error}
+            </span>
+          ) : null}
+
+          <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
+            <Button variant="primary" size="md" type="button"
+              disabled={pending || form.universityName.trim() === "" || form.country.trim() === ""}
               onClick={() => void approve()}>
               {pending ? "Creating…" : "Create the account"}
             </Button>

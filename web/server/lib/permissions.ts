@@ -110,6 +110,7 @@ export const PERMISSIONS = [
   "MANAGE_SETTINGS",
   "APPROVE_PARTNER_APPLICATION",
   "APPROVE_REPRESENTATIVE_APPLICATION",
+  "APPROVE_STUDENT_APPLICATION",
 
   // ── Super admin, §32 ────────────────────────────────────────────────────────
   // Deliberately few. "Full privileges" is expressed by SUPER_ADMIN holding every
@@ -200,6 +201,7 @@ const ADMIN: Permission[] = [
   "MANAGE_SETTINGS",
   "APPROVE_PARTNER_APPLICATION",
   "APPROVE_REPRESENTATIVE_APPLICATION",
+  "APPROVE_STUDENT_APPLICATION",
   "READ_ALL_WALLETS",
   "CONFIRM_COMMISSIONS",
   "MANAGE_PAYOUTS",

@@ -166,6 +166,42 @@ export function welcomeEmail(options: {
 }
 
 /**
+ * The student welcome email — `welcomeEmail`'s twin for a person rather than an
+ * organisation. Kept as its own function rather than an optional `org` on the one above:
+ * the two recipients are told a different fact ("your account is ready to track *your*
+ * application" versus "your organisation's account is ready"), and a shared template
+ * with a field left blank for one of them is how the wrong sentence ends up in an email
+ * nobody reviews before it sends.
+ */
+export function studentWelcomeEmail(options: {
+  to: string;
+  person: string;
+  setPasswordUrl: string;
+}): MailMessage {
+  return {
+    to: options.to,
+    subject: "Your Campus Turkey student account is ready",
+    text: [
+      `Hello ${options.person},`,
+      "",
+      "Your student account has been set up so you can track your application.",
+      "",
+      "Set your password to finish setting up:",
+      options.setPasswordUrl,
+      "",
+      "You will be asked for a short code, which we email you at that point.",
+      "",
+      "If you were not expecting this, you can ignore it — the link does nothing",
+      "until it is used, and it expires.",
+      "",
+      "— Campus Turkey",
+      "",
+      "[PLACEHOLDER COPY — to be replaced by the client]",
+    ].join("\n"),
+  };
+}
+
+/**
  * The verification code.
  *
  * Subject line carries the code because most people read it from the notification
