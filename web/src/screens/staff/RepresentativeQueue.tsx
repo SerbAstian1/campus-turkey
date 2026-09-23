@@ -44,7 +44,7 @@ const DECIDABLE: RepresentativeApplicationStatus[] = ["PENDING", "UNDER_REVIEW"]
 /** What each outcome actually does, in the reviewer's terms. "Approve" alone does not say
  *  that an account is created and an email goes out. */
 const CONSEQUENCE = {
-  APPROVE: "Creates their login and emails an invitation. They set their own password.",
+  APPROVE: "Activates the password they chose during registration and emails the approval.",
   REJECT: "Closes the application. The note is what explains the decision later.",
 } as const;
 

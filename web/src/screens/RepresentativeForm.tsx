@@ -28,6 +28,8 @@ import { useRepresentativeApplication } from "@/features/representatives/submit"
 import { useT } from "@/i18n/context";
 import { ConsentPrivacyNote, FieldErrors } from "./shared";
 
+const MIN_PASSWORD = 12;
+
 export function RepresentativeForm() {
   const t = useT();
   const [form, setForm] = useState({
@@ -38,8 +40,11 @@ export function RepresentativeForm() {
     email: "",
     phone: "",
     message: "",
+    password: "",
+    confirm: "",
     consent: true,
   });
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const { state, submit, reset } = useRepresentativeApplication();
   const sent = state.status === "sent";
@@ -69,7 +74,7 @@ export function RepresentativeForm() {
               the hard way: an applicant who reads "received" as "registered" tries to
               sign in, fails, and concludes the site is broken. */}
           <p style={{ maxWidth: 460, color: "var(--text-body)" }}>
-            {t("Someone reviews every application by hand. Expect a call within one working day. Your login is created after that call, so there is nothing to sign in with yet.")}
+            {t("Someone reviews every application by hand. Expect a call within one working day. The password you chose only becomes active after approval.")}
           </p>
           <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap", justifyContent: "center" }}>
             <Button variant="secondary" onClick={reset}>{t("Send another application")}</Button>
@@ -80,6 +85,15 @@ export function RepresentativeForm() {
         <form
           onSubmit={(e: FormEvent) => {
             e.preventDefault();
+            if (form.password.length < MIN_PASSWORD) {
+              setPasswordError(t("Use at least {count} characters.", { count: MIN_PASSWORD }));
+              return;
+            }
+            if (form.password !== form.confirm) {
+              setPasswordError(t("The two passwords do not match."));
+              return;
+            }
+            setPasswordError(null);
             void submit(
               {
                 fullName: form.fullName,
@@ -89,6 +103,7 @@ export function RepresentativeForm() {
                 email: form.email,
                 phone: form.phone,
                 message: form.message,
+                password: form.password,
               },
               form.consent,
             );
@@ -113,6 +128,14 @@ export function RepresentativeForm() {
           <Input id="r-phone" label={t("WhatsApp number")} icon="phone"
             hint={t("Include your country code.")} autoComplete="tel"
             value={form.phone} onChange={set("phone")} />
+
+          <Input id="r-password" label={t("Create password")} type="password" icon="lock"
+            hint={t("At least {count} characters. It becomes active after Campus Turkey approves your registration.", { count: MIN_PASSWORD })}
+            required autoComplete="new-password"
+            value={form.password} onChange={set("password")} />
+          <Input id="r-confirm-password" label={t("Confirm password")} type="password" icon="lock"
+            required autoComplete="new-password"
+            value={form.confirm} onChange={set("confirm")} />
 
           {/* Optional, and labelled as such. A representative may be an individual with
               no company, and a required field here would push them to invent one. */}
@@ -150,6 +173,11 @@ export function RepresentativeForm() {
                 </span>
                 <FieldErrors fields={state.fields} />
               </div>
+            ) : null}
+            {passwordError ? (
+              <span role="alert" style={{ color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>
+                {passwordError}
+              </span>
             ) : null}
 
             <Button variant="primary" size="lg" type="submit" disabled={state.status === "sending"}>

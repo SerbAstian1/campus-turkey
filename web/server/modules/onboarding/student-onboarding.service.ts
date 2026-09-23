@@ -37,6 +37,7 @@ import { ConflictError, NotFoundError, UnprocessableError } from "@/server/lib/e
 import type { RequestLogger } from "@/server/lib/logger";
 import { sendMail, studentWelcomeEmail } from "@/server/lib/mail";
 import { env } from "@/server/lib/config";
+import { isPendingRegistration } from "@/server/modules/onboarding/pending-account";
 
 /** Never signed into. See the module header for why this exists at all. */
 export const HOUSE_PARTNER_EMAIL = "direct-applicants@campusturkey.org";
@@ -101,9 +102,12 @@ export async function approveStudentApplication(
 
     const existingUser = await tx.user.findUnique({
       where: { email: lead.email },
-      select: { id: true },
+      select: {
+        id: true, email: true, status: true, role: true,
+        accounts: { select: { providerId: true, password: true } },
+      },
     });
-    if (existingUser) {
+    if (existingUser && !isPendingRegistration(existingUser, "STUDENT")) {
       throw new ConflictError(
         "email_in_use",
         "Somebody already has an account with that email address.",
@@ -125,20 +129,26 @@ export async function approveStudentApplication(
 
     const [firstName, ...rest] = name.trim().split(/\s+/);
 
-    const user = await tx.user.create({
-      data: {
-        id: randomUUID(),
-        email: lead.email,
-        name,
+    const user = existingUser
+      ? await tx.user.update({
+          where: { id: existingUser.id },
+          data: { status: "ACTIVE", emailVerified: true, name },
+          select: { id: true, email: true },
+        })
+      : await tx.user.create({
+          data: {
+            id: randomUUID(),
+            email: lead.email,
+            name,
         // Passwordless, exactly as a new partner account is — the applicant proves the
         // address and chooses the password in the same flow, and cannot sign in until
         // both are done.
         emailVerified: false,
         role: "STUDENT",
-        status: "ACTIVE",
-      },
-      select: { id: true, email: true },
-    });
+            status: "ACTIVE",
+          },
+          select: { id: true, email: true },
+        });
 
     const profile = await tx.studentProfile.create({
       data: {
@@ -173,7 +183,7 @@ export async function approveStudentApplication(
       data: { status: "CONVERTED", convertedUserId: user.id },
     });
 
-    return { user, student, name };
+    return { user, student, name, passwordAlreadySet: Boolean(existingUser) };
   });
 
   log.audit("student.approved", {
@@ -190,6 +200,8 @@ export async function approveStudentApplication(
     to: created.user.email,
     person: created.name,
     setPasswordUrl: setPasswordUrl(),
+    passwordAlreadySet: created.passwordAlreadySet,
+    signInUrl: `${env.SITE_ORIGIN}/portal`,
   }));
 
   if (!mail.ok) {

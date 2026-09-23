@@ -19,8 +19,8 @@
  * and a reviewer picks one. Two endpoints would let a caller approve something the
  * interface only offered to reject.
  *
- * No password is set or sent. The representative chooses their own at
- * `/portal/set-password`, the same flow partners use.
+ * No password is set or sent by staff. A registration-time credential is activated;
+ * older queued applications fall back to `/portal/set-password`.
  */
 
 import { z } from "zod";

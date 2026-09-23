@@ -8,6 +8,7 @@
  */
 
 import { z } from "zod";
+import { REGISTRATION_PASSWORD_MIN_LENGTH } from "@/server/modules/onboarding/pending-account";
 
 export const submitRepresentativeApplicationBody = z.object({
   fullName: z.string().trim().min(2, "Enter your full name.").max(120),
@@ -19,6 +20,10 @@ export const submitRepresentativeApplicationBody = z.object({
   phone: z.string().trim().min(6).max(32).optional(),
   address: z.string().trim().max(300).optional(),
   message: z.string().trim().max(2000).optional(),
+  password: z.string().min(
+    REGISTRATION_PASSWORD_MIN_LENGTH,
+    `Use at least ${REGISTRATION_PASSWORD_MIN_LENGTH} characters.`,
+  ).max(128),
   /**
    * Explicit, and `literal(true)` rather than `boolean`, so an omitted checkbox is a
    * validation failure rather than a quiet `false` that still stores their details.

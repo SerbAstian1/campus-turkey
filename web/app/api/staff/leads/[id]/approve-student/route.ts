@@ -16,8 +16,8 @@
  *        scripts/create-house-partner.mjs)
  *   429  rate limited
  *
- * No password is set or sent. The applicant receives a link, chooses their own, and
- * confirms a code — the same as a newly approved partner.
+ * No password is set or sent by staff. A registration-time credential is activated;
+ * older queued enquiries receive the password-setup link.
  */
 
 import { z } from "zod";

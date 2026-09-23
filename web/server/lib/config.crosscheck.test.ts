@@ -116,8 +116,8 @@ describe("production rules that keep the site usable", () => {
   });
 
   it("refuses a disabled mail provider, which would lock every non-staff user out", () => {
-    // Partners, representatives and students are all created passwordless and set their
-    // own password through an emailed link. No mail means no sign-in, for ever.
+    // Approval and legacy password-setup notifications are delivered by email. Running
+    // production without mail would leave applicants unable to know their account state.
     expect(complaint(productionEnv({ MAIL_PROVIDER: "disabled" }), "MAIL_PROVIDER")).toBe(true);
   });
 

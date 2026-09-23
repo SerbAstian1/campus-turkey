@@ -92,8 +92,10 @@ vi.mock("@/server/lib/config", async (importOriginal) => {
  * the decision under test, and any of it failing would present as a rate-limit failure.
  */
 const served = vi.hoisted(() => vi.fn());
+const findUser = vi.hoisted(() => vi.fn());
 
 vi.mock("@/server/lib/auth", () => ({ auth: { handler: vi.fn() } }));
+vi.mock("@/server/lib/db", () => ({ db: { user: { findUnique: findUser } } }));
 
 vi.mock("better-auth/next-js", () => ({
   toNextJsHandler: () => ({
@@ -106,10 +108,11 @@ const { GET, POST } = await import("../../app/api/auth/[...all]/route");
 
 /* ---- Helpers --------------------------------------------------------------------- */
 
-const from = (ip: string, path: string) =>
+const from = (ip: string, path: string, email?: string) =>
   new Request(`https://campusturkey.org/api/auth/${path}`, {
     method: "POST",
-    headers: { "x-forwarded-for": ip },
+    headers: { "x-forwarded-for": ip, ...(email ? { "content-type": "application/json" } : {}) },
+    ...(email ? { body: JSON.stringify({ email, password: "a-secure-password" }) } : {}),
   });
 
 beforeEach(() => {
@@ -117,11 +120,41 @@ beforeEach(() => {
   served.mockReset().mockImplementation(
     async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
   );
+  findUser.mockReset().mockResolvedValue(null);
 });
 afterEach(() => vi.clearAllMocks());
 
 /** The policy under test: `RATE_LIMITS.auth` is 10 per 300s per IP. */
 const LIMIT = 10;
+
+describe("account approval", () => {
+  it("does not let a pending password create a session", async () => {
+    findUser.mockResolvedValue({ status: "PENDING" });
+
+    const response = await POST(from("203.0.113.5", "sign-in/email", "waiting@example.com"));
+
+    expect(response.status).toBe(401);
+    expect(served).not.toHaveBeenCalled();
+  });
+
+  it("delegates an active account to Better Auth", async () => {
+    findUser.mockResolvedValue({ status: "ACTIVE" });
+
+    const response = await POST(from("203.0.113.6", "sign-in/email", "approved@example.com"));
+
+    expect(response.status).toBe(200);
+    expect(served).toHaveBeenCalledOnce();
+  });
+
+  it("also blocks pending email-code sign-in", async () => {
+    findUser.mockResolvedValue({ status: "PENDING" });
+
+    const response = await POST(from("203.0.113.7", "sign-in/email-otp", "waiting@example.com"));
+
+    expect(response.status).toBe(401);
+    expect(served).not.toHaveBeenCalled();
+  });
+});
 
 /* ---- Below the limit ------------------------------------------------------------- */
 

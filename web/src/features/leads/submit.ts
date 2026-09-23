@@ -110,7 +110,7 @@ export function useLeadSubmit(kind: LeadType, serviceInterest?: string) {
   const [state, setState] = useState<SubmitState>({ status: "idle" });
 
   const submit = useCallback(
-    async (payload: Record<string, unknown>, consent: boolean): Promise<boolean> => {
+    async (payload: Record<string, unknown>, consent: boolean, registrationPassword?: string): Promise<boolean> => {
       if (!consent) {
         // The server refuses this too — `consent: z.literal(true)` — but saying so here
         // avoids a round trip to tell someone they missed a checkbox.
@@ -135,6 +135,7 @@ export function useLeadSubmit(kind: LeadType, serviceInterest?: string) {
             captchaToken: await captchaToken(),
             ...(serviceInterest ? { serviceInterest } : {}),
             ...(source ? { attribution: source } : {}),
+            ...(registrationPassword ? { registrationPassword } : {}),
           }),
         });
 

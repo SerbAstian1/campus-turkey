@@ -23,6 +23,7 @@ import { FieldErrors } from "./shared";
  * The stored value reaches the staff inbox and must not be translated.
  */
 export const VOLUMES = ["Under 10", "10 to 50", "50 to 200", "Over 200"] as const;
+const MIN_PASSWORD = 12;
 
 export function PartnerForm({
   kinds, submitLabel, intro, leadKind = "PARTNER",
@@ -42,8 +43,10 @@ export function PartnerForm({
   const kindOptions = useTranslatedOptions(kinds);
   const volumes = useTranslatedOptions(VOLUMES);
   const [form, setForm] = useState({
-    org: "", kind: "", country: "", name: "", email: "", phone: "", volume: "", terms: true,
+    org: "", kind: "", country: "", name: "", email: "", phone: "", volume: "",
+    password: "", confirm: "", terms: true,
   });
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const { state, submit, reset } = useLeadSubmit(leadKind);
   const sent = state.status === "sent";
@@ -65,7 +68,7 @@ export function PartnerForm({
           <Badge tone="brand" icon="check">{t("Registration received")}</Badge>
           <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{form.org ? t("Welcome, {org}.", { org: form.org }) : t("Welcome.")}</h3>
           <BrandDivider style={{ maxWidth: 220 }} />
-          <p style={{ maxWidth: 460, color: "var(--text-body)" }}>{t("Your agreement and portal login are on the way. Expect a call from your named contact within one working day.")}</p>
+          <p style={{ maxWidth: 460, color: "var(--text-body)" }}>{t("Your registration is waiting for review. Expect a call within one working day; the password you chose becomes active only after approval.")}</p>
           <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap", justifyContent: "center" }}>
             <Button variant="primary" icon="log-in" onClick={() => go("portal")}>{t("Go to the portal")}</Button>
             <Button variant="secondary" onClick={reset}>{t("Register another office")}</Button>
@@ -75,6 +78,15 @@ export function PartnerForm({
         <form
           onSubmit={(e: FormEvent) => {
             e.preventDefault();
+            if (form.password.length < MIN_PASSWORD) {
+              setPasswordError(t("Use at least {count} characters.", { count: MIN_PASSWORD }));
+              return;
+            }
+            if (form.password !== form.confirm) {
+              setPasswordError(t("The two passwords do not match."));
+              return;
+            }
+            setPasswordError(null);
             void submit(
               {
                 org: form.org,
@@ -88,6 +100,7 @@ export function PartnerForm({
                 message: form.kind ? `Organisation type: ${form.kind}` : "",
               },
               form.terms,
+              form.password,
             );
           }}
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-5)" }}>
@@ -99,6 +112,13 @@ export function PartnerForm({
           <Input id="p-country" label={t("Country you cover")} icon="globe" placeholder={t("Nigeria")} required value={form.country} onChange={set("country")} />
           <Input id="p-name" label={t("Contact person")} icon="user" placeholder={t("Full name")} required value={form.name} onChange={set("name")} />
           <Input id="p-email" label={t("Work email")} type="email" icon="mail" placeholder="you@agency.com" required value={form.email} onChange={set("email")} />
+          <Input id="p-password" label={t("Create password")} type="password" icon="lock"
+            hint={t("At least {count} characters. It becomes active after Campus Turkey approves your registration.", { count: MIN_PASSWORD })}
+            required autoComplete="new-password"
+            value={form.password} onChange={set("password")} />
+          <Input id="p-confirm-password" label={t("Confirm password")} type="password" icon="lock"
+            required autoComplete="new-password"
+            value={form.confirm} onChange={set("confirm")} />
           <Input id="p-phone" label={t("WhatsApp number")} icon="phone" hint={t("Include your country code.")} value={form.phone} onChange={set("phone")} />
           <Select id="p-volume" label={t("Students per year")} options={volumes.options}
             value={volumes.display(form.volume)}
@@ -113,6 +133,11 @@ export function PartnerForm({
                 </span>
                 <FieldErrors fields={state.fields} />
               </div>
+            ) : null}
+            {passwordError ? (
+              <span role="alert" style={{ color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>
+                {passwordError}
+              </span>
             ) : null}
 
             {/* Covers both the Partner and Representative tracks — this form serves

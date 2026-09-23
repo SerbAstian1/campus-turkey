@@ -56,6 +56,23 @@ describe("consent", () => {
   });
 });
 
+describe("registration passwords", () => {
+  it("accepts a strong password on student and partner registration", () => {
+    expect(submitLeadBody.safeParse({ ...submission("STUDY"), registrationPassword: "a-secure-password" }).success).toBe(true);
+    expect(submitLeadBody.safeParse({ ...submission("PARTNER", { org: "Okeke Education" }), registrationPassword: "a-secure-password" }).success).toBe(true);
+  });
+
+  it("refuses a short registration password", () => {
+    expect(submitLeadBody.safeParse({ ...submission("STUDY"), registrationPassword: "too-short" }).success).toBe(false);
+  });
+
+  it("does not accept a registration password on an ordinary contact enquiry", () => {
+    const parsed = submitLeadBody.safeParse({ ...submission("CONTACT"), registrationPassword: "a-secure-password" });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data).not.toHaveProperty("registrationPassword");
+  });
+});
+
 describe("health data cannot acquire a longer retention window", () => {
   /*
    * The sharpest privacy property in this file, and the reason it is worth testing at

@@ -144,6 +144,8 @@ describe("registering, per role", () => {
     openRegister();
 
     expect(screen.getByLabelText(/Organisation name/)).toBeTruthy();
+    expect(screen.getByLabelText(/^Create password$/)).toBeTruthy();
+    expect(screen.getByLabelText(/^Confirm password$/)).toBeTruthy();
     expect(screen.queryByLabelText(/What do you want to study/)).toBeNull();
   });
 
@@ -153,6 +155,7 @@ describe("registering, per role", () => {
     openRegister();
 
     expect(screen.getByLabelText(/What do you want to study/)).toBeTruthy();
+    expect(screen.getByLabelText(/^Create password$/)).toBeTruthy();
     expect(screen.queryByLabelText(/Organisation name/)).toBeNull();
   });
 
@@ -163,16 +166,19 @@ describe("registering, per role", () => {
 
     fireEvent.change(screen.getByLabelText(/Your full name/), { target: { value: "Amina Yusuf" } });
     fireEvent.change(screen.getByLabelText(/Email address/), { target: { value: "amina@example.com" } });
+    fireEvent.change(screen.getByLabelText(/^Create password$/), { target: { value: "a-secure-password" } });
+    fireEvent.change(screen.getByLabelText(/^Confirm password$/), { target: { value: "a-secure-password" } });
     fireEvent.change(screen.getByLabelText(/Level you are applying for/), { target: { value: "Master's degree" } });
     fireEvent.submit(document.querySelector("form")!);
 
     await waitFor(() => expect(submits.STUDY).toHaveBeenCalledOnce());
-    const [payload] = submits.STUDY!.mock.calls[0]!;
+    const [payload, , password] = submits.STUDY!.mock.calls[0]!;
     // The schema takes an enum, not the label. Sending "Master's degree" would be
     // rejected, and sending undefined would silently lose the answer.
     expect(payload).toMatchObject({ name: "Amina Yusuf", email: "amina@example.com", level: "master" });
     // Blank optionals are omitted rather than sent as empty strings.
     expect(payload).not.toHaveProperty("phone");
+    expect(password).toBe("a-secure-password");
   });
 
   it("does not submit a partner lead when the student form is the one on screen", async () => {
@@ -182,6 +188,8 @@ describe("registering, per role", () => {
 
     fireEvent.change(screen.getByLabelText(/Your full name/), { target: { value: "Amina" } });
     fireEvent.change(screen.getByLabelText(/Email address/), { target: { value: "amina@example.com" } });
+    fireEvent.change(screen.getByLabelText(/^Create password$/), { target: { value: "a-secure-password" } });
+    fireEvent.change(screen.getByLabelText(/^Confirm password$/), { target: { value: "a-secure-password" } });
     fireEvent.submit(document.querySelector("form")!);
 
     await waitFor(() => expect(submits.STUDY).toHaveBeenCalledOnce());

@@ -67,9 +67,9 @@ Mail, Sentry, Upstash, cron. Change the variable, redeploy, read the configurati
 If something is wrong, change it back — nothing has been written anywhere that matters.
 
 Verify mail properly rather than by absence of errors: create a test partner from a
-`PARTNER` lead and confirm the welcome email arrives. Every non-staff account is created
-passwordless and depends on that email existing, so a silently broken mail provider means
-nobody can sign in and nothing reports it.
+`PARTNER` lead and confirm the approval email arrives. New registrations remain PENDING
+until approval, and older queued applications still depend on the emailed password-setup
+link, so a silently broken mail provider leaves applicants stranded without reporting it.
 
 ### Then the amber ones, with a rebuild
 

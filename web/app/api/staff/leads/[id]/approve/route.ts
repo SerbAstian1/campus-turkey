@@ -18,8 +18,8 @@
  * a new party into the system is a different question from who may pay an existing one,
  * and it is the narrower of the two.
  *
- * No password is set or sent. The account is created without a credential; the partner
- * chooses their own password and confirms a code at `/portal/set-password`.
+ * No password is set or sent by staff. A registration-time credential is activated;
+ * older queued applications receive the `/portal/set-password` link.
  */
 
 import { z } from "zod";

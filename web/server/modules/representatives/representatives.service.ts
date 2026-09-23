@@ -8,9 +8,8 @@
  * change to either has to be reasoned about for both.
  *
  * They will diverge. A partner has a currency, a payout minimum and a wallet; a
- * representative has a territory and none of those. What is genuinely common — creating a
- * passwordless account, sending an invitation — already lives in `mail.ts` and is used by
- * both.
+ * representative has a territory and none of those. What is genuinely common — creating
+ * a pending credential and sending approval mail — lives in the onboarding/mail modules.
  */
 
 import { randomUUID } from "node:crypto";
@@ -21,6 +20,11 @@ import { sendMail, welcomeEmail } from "@/server/lib/mail";
 import { setPasswordUrl } from "@/server/modules/onboarding/onboarding.service";
 import { recordAudit } from "@/server/modules/audit/audit.service";
 import type { SubmitRepresentativeApplicationBody } from "./representatives.schema";
+import {
+  createPendingAccount,
+  isPendingRegistration,
+  registrationPasswordHash,
+} from "@/server/modules/onboarding/pending-account";
 
 /**
  * Record an application from the public form.
@@ -33,19 +37,28 @@ export async function submitRepresentativeApplication(
   input: SubmitRepresentativeApplicationBody,
   log: RequestLogger,
 ): Promise<void> {
+  const passwordHash = await registrationPasswordHash(input.password);
   try {
-    await db.representativeApplication.create({
-      data: {
-        id: randomUUID(),
-        fullName: input.fullName,
-        country: input.country,
+    await db.$transaction(async (tx: Db) => {
+      await tx.representativeApplication.create({
+        data: {
+          id: randomUUID(),
+          fullName: input.fullName,
+          country: input.country,
+          email: input.email,
+          ...(input.organizationName ? { organizationName: input.organizationName } : {}),
+          ...(input.territory ? { territory: input.territory } : {}),
+          ...(input.phone ? { phone: input.phone } : {}),
+          ...(input.address ? { address: input.address } : {}),
+          ...(input.message ? { message: input.message } : {}),
+        },
+      });
+      await createPendingAccount(tx, {
         email: input.email,
-        ...(input.organizationName ? { organizationName: input.organizationName } : {}),
-        ...(input.territory ? { territory: input.territory } : {}),
-        ...(input.phone ? { phone: input.phone } : {}),
-        ...(input.address ? { address: input.address } : {}),
-        ...(input.message ? { message: input.message } : {}),
-      },
+        name: input.fullName,
+        role: "REPRESENTATIVE",
+        passwordHash,
+      });
     });
 
     log.audit("representative_application.submitted", { country: input.country });
@@ -101,10 +114,9 @@ export interface ApproveRepresentativeOutput {
 /**
  * Approve an application and create the representative.
  *
- * The account is created with no password and no credential row, exactly as a partner's
- * is: nobody at Campus Turkey ever knows a representative's password, and there is no
- * credential to leak. They set their own at `/portal/set-password`, which already exists
- * and needs no change to serve a second role.
+ * A self-registered representative already has a hashed credential on a PENDING user;
+ * approval activates it. Older queued applications retain the password-setup invitation
+ * path, so an upgrade does not strand them.
  */
 export async function approveRepresentativeApplication(
   input: { applicationId: string; territory?: string },
@@ -136,28 +148,28 @@ export async function approveRepresentativeApplication(
 
     const existing = await tx.user.findUnique({
       where: { email: application.email },
-      select: { id: true },
+      select: { id: true, email: true, status: true, role: true, accounts: { select: { providerId: true, password: true } } },
     });
-    if (existing) {
+    if (existing && !isPendingRegistration(existing, "REPRESENTATIVE")) {
       throw new ConflictError(
         "email_in_use",
         "Somebody already has an account with that email address.",
       );
     }
 
-    const user = await tx.user.create({
-      data: {
-        id: randomUUID(),
-        email: application.email,
-        name: application.fullName,
-        emailVerified: false,
-        // Declared before the profile row: a trigger refuses a representative profile
-        // whose user is not a REPRESENTATIVE.
-        role: "REPRESENTATIVE",
-        status: "ACTIVE",
-      },
-      select: { id: true, email: true },
-    });
+    const user = existing
+      ? await tx.user.update({
+          where: { id: existing.id },
+          data: { status: "ACTIVE", emailVerified: true, name: application.fullName },
+          select: { id: true, email: true },
+        })
+      : await tx.user.create({
+          data: {
+            id: randomUUID(), email: application.email, name: application.fullName,
+            emailVerified: false, role: "REPRESENTATIVE", status: "ACTIVE",
+          },
+          select: { id: true, email: true },
+        });
 
     const representative = await tx.representativeProfile.create({
       data: {
@@ -207,7 +219,7 @@ export async function approveRepresentativeApplication(
       tx,
     );
 
-    return { user, representative };
+    return { user, representative, passwordAlreadySet: Boolean(existing) };
   });
 
   log.audit("representative.approved", {
@@ -224,6 +236,8 @@ export async function approveRepresentativeApplication(
     person: created.representative.fullName,
     org: created.representative.territory ?? "Campus Turkey",
     setPasswordUrl: setPasswordUrl(),
+    passwordAlreadySet: created.passwordAlreadySet,
+    signInUrl: `${new URL(setPasswordUrl()).origin}/portal`,
   }));
 
   if (!mail.ok) {

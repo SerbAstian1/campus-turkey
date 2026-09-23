@@ -141,7 +141,15 @@ export function welcomeEmail(options: {
   person: string;
   org: string;
   setPasswordUrl: string;
+  passwordAlreadySet?: boolean;
+  signInUrl?: string;
 }): MailMessage {
+  const nextStep = options.passwordAlreadySet
+    ? ["The password you chose during registration is now active. Sign in here:", options.signInUrl ?? options.setPasswordUrl]
+    : ["Set your password to finish setting up:", options.setPasswordUrl, "", "You will be asked for a short code, which we email you at that point."];
+  const safetyNote = options.passwordAlreadySet
+    ? ["If you were not expecting this, contact Campus Turkey support."]
+    : ["If you were not expecting this, you can ignore it — the link does nothing", "until it is used, and it expires."];
   return {
     to: options.to,
     subject: "Your Campus Turkey partner account is ready",
@@ -150,13 +158,9 @@ export function welcomeEmail(options: {
       "",
       `Your partner account for ${options.org} has been approved.`,
       "",
-      "Set your password to finish setting up:",
-      options.setPasswordUrl,
+      ...nextStep,
       "",
-      "You will be asked for a short code, which we email you at that point.",
-      "",
-      "If you were not expecting this, you can ignore it — the link does nothing",
-      "until it is used, and it expires.",
+      ...safetyNote,
       "",
       "— Campus Turkey",
       "",
@@ -177,7 +181,15 @@ export function studentWelcomeEmail(options: {
   to: string;
   person: string;
   setPasswordUrl: string;
+  passwordAlreadySet?: boolean;
+  signInUrl?: string;
 }): MailMessage {
+  const nextStep = options.passwordAlreadySet
+    ? ["The password you chose during registration is now active. Sign in here:", options.signInUrl ?? options.setPasswordUrl]
+    : ["Set your password to finish setting up:", options.setPasswordUrl, "", "You will be asked for a short code, which we email you at that point."];
+  const safetyNote = options.passwordAlreadySet
+    ? ["If you were not expecting this, contact Campus Turkey support."]
+    : ["If you were not expecting this, you can ignore it — the link does nothing", "until it is used, and it expires."];
   return {
     to: options.to,
     subject: "Your Campus Turkey student account is ready",
@@ -186,13 +198,9 @@ export function studentWelcomeEmail(options: {
       "",
       "Your student account has been set up so you can track your application.",
       "",
-      "Set your password to finish setting up:",
-      options.setPasswordUrl,
+      ...nextStep,
       "",
-      "You will be asked for a short code, which we email you at that point.",
-      "",
-      "If you were not expecting this, you can ignore it — the link does nothing",
-      "until it is used, and it expires.",
+      ...safetyNote,
       "",
       "— Campus Turkey",
       "",

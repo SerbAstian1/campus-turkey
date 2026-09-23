@@ -98,10 +98,10 @@ a broken feature rather than an unfinished setup:
 | Representative | staff decide an application | **a staff account**, and mail |
 | Student | claims a referred record with a code | a partner having referred them, and mail |
 
-Mail is on every row after the first for the same reason: accounts are created with no
-password at all, and the holder sets one through an emailed link. That design is why no
-member of staff ever knows a partner's password. It also means that with
-`MAIL_PROVIDER=disabled`, nobody but staff can ever sign in.
+Public registrants choose their own password, which is stored only as a Better Auth hash
+on a PENDING account. Approval activates it and sends the approval message. Older queued
+applications still use the emailed password-setup link, so production mail remains a
+required part of onboarding. Staff never know a registrant's password.
 
 ## Design system assets
 

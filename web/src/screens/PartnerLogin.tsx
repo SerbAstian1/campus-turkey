@@ -19,12 +19,9 @@
  * the copy — which tells you where you are about to land — and nothing else. Picking the
  * "wrong" one signs you in and sends you to your own portal regardless.
  *
- * **Registration does not create accounts, for anybody.** `disableSignUp` is on in
- * `server/lib/auth.ts`. Every one of these forms submits an enquiry or an application
- * that a person reads; the login is created afterwards, by Campus Turkey. Each
- * confirmation says so in as many words, because the failure this page has already had
- * once was an applicant reading "received" as "registered", trying to sign in, and
- * concluding the site was broken.
+ * Registration creates a PENDING credential for students, partners and representatives.
+ * It cannot sign in until a person approves the accompanying enquiry/application. Open
+ * Better Auth sign-up remains disabled, so this form cannot mint an active account.
  *
  * Staff therefore get no registration form at all. An empty form that quietly does
  * nothing would be worse than the honest sentence that replaces it.
@@ -42,6 +39,7 @@ import { useTranslatedOptions } from "@/i18n/options";
 import { ConsentPrivacyNote, FieldErrors } from "./shared";
 
 type Role = "STUDENT" | "PARTNER" | "REPRESENTATIVE" | "STAFF";
+const MIN_PASSWORD = 12;
 
 /**
  * Canonical English, because this value is submitted with the lead and read by staff.
@@ -125,6 +123,7 @@ export default function PartnerLogin() {
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
 
   /**
    * The partner application.
@@ -135,13 +134,13 @@ export default function PartnerLogin() {
    * an applicant read that as success, and nothing was ever stored.
    */
   const [reg, setRegState] = useState({
-    org: "", name: "", email: "", volume: "", terms: true,
+    org: "", name: "", email: "", volume: "", password: "", confirm: "", terms: true,
   });
   const { state: registered, submit: submitRegistration } = useLeadSubmit("PARTNER");
 
   /** The student enquiry. A STUDY lead, the same kind `/apply` sends. */
   const [study, setStudyState] = useState({
-    name: "", email: "", phone: "", country: "", program: "", level: "", consent: true,
+    name: "", email: "", phone: "", country: "", program: "", level: "", password: "", confirm: "", consent: true,
   });
   const { state: enquired, submit: submitEnquiry } = useLeadSubmit("STUDY");
 
@@ -165,14 +164,21 @@ export default function PartnerLogin() {
 
   const register = async (e: FormEvent) => {
     e.preventDefault();
+    const problem = registrationPasswordProblem(reg.password, reg.confirm, t);
+    if (problem) { setRegistrationError(problem); return; }
+    setRegistrationError(null);
     await submitRegistration(
       { org: reg.org, name: reg.name, email: reg.email, volume: reg.volume },
       reg.terms,
+      reg.password,
     );
   };
 
   const enquire = async (e: FormEvent) => {
     e.preventDefault();
+    const problem = registrationPasswordProblem(study.password, study.confirm, t);
+    if (problem) { setRegistrationError(problem); return; }
+    setRegistrationError(null);
     await submitEnquiry(
       {
         name: study.name,
@@ -185,6 +191,7 @@ export default function PartnerLogin() {
         ...(study.level ? { level: study.level } : {}),
       },
       study.consent,
+      study.password,
     );
   };
 
@@ -309,7 +316,7 @@ export default function PartnerLogin() {
                         navigated — so an applicant reasonably believed they had an account,
                         and then could not sign in. */}
                     <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
-                      {t("This sends an application. Campus Turkey reviews it and creates your login. Accounts are not opened automatically.")}
+                      {t("Choose your password now. Campus Turkey reviews the application, and the password only becomes active after approval.")}
                     </p>
 
                     <Input id="r-org" label={t("Organisation name")} icon="building"
@@ -326,6 +333,13 @@ export default function PartnerLogin() {
                     <Input id="r-email" label={t("Work email")} type="email" icon="mail"
                       placeholder="you@agency.com" required autoComplete="email"
                       value={reg.email} onChange={setReg("email")} />
+                    <Input id="r-password" label={t("Create password")} type="password" icon="lock"
+                      hint={t("At least {count} characters. It becomes active after Campus Turkey approves your registration.", { count: MIN_PASSWORD })}
+                      required autoComplete="new-password"
+                      value={reg.password} onChange={setReg("password")} />
+                    <Input id="r-confirm-password" label={t("Confirm password")} type="password" icon="lock"
+                      required autoComplete="new-password"
+                      value={reg.confirm} onChange={setReg("confirm")} />
 
                     <Checkbox id="r-terms" label={t("I agree to the partner terms")}
                       checked={reg.terms}
@@ -341,6 +355,7 @@ export default function PartnerLogin() {
                         <FieldErrors fields={registered.fields} />
                       </div>
                     ) : null}
+                    {registrationError ? <span role="alert" style={{ color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>{registrationError}</span> : null}
 
                     <Button variant="primary" size="lg" fullWidth type="submit"
                       disabled={registered.status === "sending"}>
@@ -354,14 +369,14 @@ export default function PartnerLogin() {
                 enquired.status === "sent" ? (
                   <Received
                     title={t("Enquiry received")}
-                    body={t("A Campus Turkey counsellor will contact you about studying in Türkiye. Your portal login is created once your application is under way.")}
+                    body={t("A Campus Turkey counsellor will contact you about studying in Türkiye. The password you chose becomes active once your registration is approved.")}
                     onBack={() => setTab("login")}
                   />
                 ) : (
                   <form onSubmit={enquire} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
                     <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{t("Study in Türkiye")}</h3>
                     <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
-                      {t("Tell us what you want to study and a counsellor will get in touch. This is an enquiry, not an account.")}
+                      {t("Tell us what you want to study and choose a password. Your login stays inactive until a counsellor approves the registration.")}
                     </p>
 
                     <Input id="s-name" label={t("Your full name")} icon="user"
@@ -370,6 +385,13 @@ export default function PartnerLogin() {
                     <Input id="s-email" label={t("Email address")} type="email" icon="mail"
                       placeholder="you@example.com" required autoComplete="email"
                       value={study.email} onChange={setStudy("email")} />
+                    <Input id="s-password" label={t("Create password")} type="password" icon="lock"
+                      hint={t("At least {count} characters. It becomes active after Campus Turkey approves your registration.", { count: MIN_PASSWORD })}
+                      required autoComplete="new-password"
+                      value={study.password} onChange={setStudy("password")} />
+                    <Input id="s-confirm-password" label={t("Confirm password")} type="password" icon="lock"
+                      required autoComplete="new-password"
+                      value={study.confirm} onChange={setStudy("confirm")} />
                     <Input id="s-phone" label={t("WhatsApp number (optional)")} icon="phone"
                       placeholder="+234 800 000 0000" autoComplete="tel"
                       value={study.phone} onChange={setStudy("phone")} />
@@ -400,6 +422,7 @@ export default function PartnerLogin() {
                         <FieldErrors fields={enquired.fields} />
                       </div>
                     ) : null}
+                    {registrationError ? <span role="alert" style={{ color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>{registrationError}</span> : null}
 
                     <Button variant="primary" size="lg" fullWidth type="submit"
                       disabled={enquired.status === "sending"}>
@@ -423,6 +446,16 @@ const labelForLevel = (value: string) =>
   STUDY_LEVELS.find((l) => l.value === value)?.label ?? "";
 const levelForLabel = (label: string) =>
   STUDY_LEVELS.find((l) => l.label === label)?.value ?? "";
+
+function registrationPasswordProblem(
+  password: string,
+  confirm: string,
+  t: (message: string, values?: Record<string, string | number>) => string,
+): string | null {
+  if (password.length < MIN_PASSWORD) return t("Use at least {count} characters.", { count: MIN_PASSWORD });
+  if (password !== confirm) return t("The two passwords do not match.");
+  return null;
+}
 
 /**
  * The role chooser.
@@ -513,8 +546,8 @@ function StaffNotice({ onBack }: { onBack: () => void }) {
 /**
  * The confirmation, shared by the partner and student forms.
  *
- * Both end by saying no account exists yet, in the same words, because that is the
- * sentence whose absence broke this page before.
+ * Both state the pending state plainly so a successful submission is not mistaken for
+ * approval and an immediate sign-in attempt.
  */
 function Received({ title, body, onBack }: { title: string; body: string; onBack: () => void }) {
   const t = useT();
@@ -524,7 +557,7 @@ function Received({ title, body, onBack }: { title: string; body: string; onBack
       <h3 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{title}</h3>
       <p style={{ margin: 0, color: "var(--text-body)" }}>{body}</p>
       <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "var(--fs-body-sm)" }}>
-        {t("This form has not created an account or a password. There is nothing to sign in with yet.")}
+        {t("Your registration is waiting for approval. The password you chose cannot be used to sign in yet.")}
       </p>
       <Button variant="secondary" size="lg" fullWidth onClick={onBack}>{t("Back to sign in")}</Button>
     </div>

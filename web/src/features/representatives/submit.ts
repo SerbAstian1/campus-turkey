@@ -34,6 +34,7 @@ export interface RepresentativeApplication {
   phone?: string;
   address?: string;
   message?: string;
+  password: string;
 }
 
 /** Empty optional fields are dropped: `""` fails `.email()` and `.url()` and produces a

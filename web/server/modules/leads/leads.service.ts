@@ -20,6 +20,11 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import { env } from "@/server/lib/config";
 import { ForbiddenError, UnprocessableError } from "@/server/lib/errors";
 import type { RequestLogger } from "@/server/lib/logger";
+import {
+  createPendingAccount,
+  registrationPasswordHash,
+  REGISTRATION_PASSWORD_MIN_LENGTH,
+} from "@/server/modules/onboarding/pending-account";
 
 /**
  * Retention, per type, in days.
@@ -145,19 +150,24 @@ const base = {
   serviceInterest: z.string().trim().max(80).optional(),
 };
 
+const registrationPassword = z.string().min(
+  REGISTRATION_PASSWORD_MIN_LENGTH,
+  `Use at least ${REGISTRATION_PASSWORD_MIN_LENGTH} characters.`,
+).max(128);
+
 /**
  * Written out rather than generated from `leadTypes`, so that adding a value to
  * `RETENTION_DAYS` without adding it here is a type error rather than a runtime gap. A
  * `.map()` over the types would compile and quietly accept whatever it was given.
  */
 export const submitLeadBody = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("STUDY"), payload: leadPayloadSchemas.STUDY, ...base }),
+  z.object({ kind: z.literal("STUDY"), payload: leadPayloadSchemas.STUDY, registrationPassword: registrationPassword.optional(), ...base }),
   z.object({ kind: z.literal("CONTACT"), payload: leadPayloadSchemas.CONTACT, ...base }),
   z.object({ kind: z.literal("MEDICAL"), payload: leadPayloadSchemas.MEDICAL, ...base }),
   z.object({ kind: z.literal("BUSINESS"), payload: leadPayloadSchemas.BUSINESS, ...base }),
   z.object({ kind: z.literal("EMPLOYMENT"), payload: leadPayloadSchemas.EMPLOYMENT, ...base }),
   z.object({ kind: z.literal("TOURS"), payload: leadPayloadSchemas.TOURS, ...base }),
-  z.object({ kind: z.literal("PARTNER"), payload: leadPayloadSchemas.PARTNER, ...base }),
+  z.object({ kind: z.literal("PARTNER"), payload: leadPayloadSchemas.PARTNER, registrationPassword: registrationPassword.optional(), ...base }),
   z.object({ kind: z.literal("REPRESENTATIVE"), payload: leadPayloadSchemas.REPRESENTATIVE, ...base }),
 ]);
 
@@ -269,6 +279,12 @@ export async function submitLead(
     serviceInterest: input.serviceInterest ?? null,
   };
 
+  // Hash before the transaction so scrypt does not keep a database connection open.
+  // The plaintext is never written to Lead, Inquiry, logs or audit metadata.
+  const passwordHash = "registrationPassword" in input && input.registrationPassword
+    ? await registrationPasswordHash(input.registrationPassword)
+    : null;
+
   /**
    * One transaction, because a lead with no inquiry is a person on file with no reason
    * for being there — a data-protection problem as well as a useless row.
@@ -312,6 +328,15 @@ export async function submitLead(
         },
         select: { id: true },
       });
+
+      if (passwordHash && (input.kind === "STUDY" || input.kind === "PARTNER")) {
+        await createPendingAccount(tx, {
+          email,
+          name: person.name ?? email,
+          role: input.kind === "STUDY" ? "STUDENT" : "PARTNER",
+          passwordHash,
+        });
+      }
 
       await tx.inquiry.create({
         data: {

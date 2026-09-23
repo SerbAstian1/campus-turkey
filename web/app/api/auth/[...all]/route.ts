@@ -47,6 +47,7 @@ import { auth } from "@/server/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 import { toErrorResponse } from "@/server/lib/errors";
 import { enforceRateLimit, RATE_LIMITS } from "@/server/lib/ratelimit";
+import { db } from "@/server/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -91,6 +92,39 @@ function carriesCredential(url: string): boolean {
   );
 }
 
+function isSignInAttempt(url: string): boolean {
+  return new URL(url).pathname.includes("/api/auth/sign-in/");
+}
+
+async function inactiveAccountResponse(request: Request): Promise<Response | null> {
+  if (!isSignInAttempt(request.url)) return null;
+
+  const clone = request.clone();
+  const contentType = clone.headers.get("content-type") ?? "";
+  let email: string | null = null;
+  if (contentType.includes("application/json")) {
+    const body = await clone.json().catch(() => null) as { email?: unknown } | null;
+    email = typeof body?.email === "string" ? body.email : null;
+  } else {
+    const body = await clone.text().catch(() => "");
+    email = new URLSearchParams(body).get("email");
+  }
+  if (!email) return null;
+
+  const user = await db.user.findUnique({
+    where: { email: email.trim().toLowerCase() },
+    select: { status: true },
+  });
+  if (!user || user.status === "ACTIVE") return null;
+
+  // Same shape and wording as a bad credential. Registration status must not become an
+  // account-enumeration endpoint, and no session may be minted for a pending account.
+  return NextResponse.json(
+    { code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password" },
+    { status: 401, headers: { "cache-control": "no-store" } },
+  );
+}
+
 const handlers = toNextJsHandler(auth.handler);
 
 /**
@@ -114,6 +148,9 @@ function guarded(handler: (request: Request) => Promise<Response>) {
         });
       }
     }
+
+    const inactive = await inactiveAccountResponse(request);
+    if (inactive) return inactive;
 
     return handler(request);
   };

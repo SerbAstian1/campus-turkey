@@ -12,15 +12,12 @@
  *      currency they are paid in. Currency especially: it is on the composite foreign
  *      key that makes a commission in the wrong currency unrepresentable, so guessing it
  *      here would be guessing at an integrity constraint.
- *   2. A `User` and a `Partner` are created in one transaction with **no password and no
- *      credential row**. There is no moment where an account exists with a password
- *      somebody else chose.
- *   3. A welcome email goes out with a link. The partner sets their own password there,
- *      confirms a code, and only then can sign in.
+ *   2. A self-registered PENDING user is activated, or a legacy application receives a
+ *      passwordless account. In either case staff never choose the password.
+ *   3. A welcome email says either "sign in" or links to legacy password setup.
  *
- * Step 2 leaving the account passwordless is the load-bearing decision. Staff never know
- * and never transmit a partner's password, so there is no credential to leak in a chat
- * message, and "reset it before first sign-in" stops being a policy nobody follows.
+ * The password remains entirely between the applicant and Better Auth's hashing helper;
+ * staff never know or transmit it.
  */
 
 import { randomUUID } from "node:crypto";
@@ -29,6 +26,7 @@ import { ConflictError, NotFoundError, UnprocessableError } from "@/server/lib/e
 import type { RequestLogger } from "@/server/lib/logger";
 import { sendMail, welcomeEmail } from "@/server/lib/mail";
 import { env } from "@/server/lib/config";
+import { isPendingRegistration } from "@/server/modules/onboarding/pending-account";
 
 export interface ApprovePartnerInput {
   leadId: string;
@@ -143,20 +141,29 @@ export async function approvePartnerApplication(
     // Turkey. Creating a second one would split their students across two logins.
     const existing = await tx.user.findUnique({
       where: { email: applicant.email },
-      select: { id: true },
+      select: {
+        id: true, email: true, status: true, role: true,
+        accounts: { select: { providerId: true, password: true } },
+      },
     });
-    if (existing) {
+    if (existing && !isPendingRegistration(existing, "PARTNER")) {
       throw new ConflictError(
         "email_in_use",
         "Somebody already has an account with that email address.",
       );
     }
 
-    const user = await tx.user.create({
-      data: {
-        id: randomUUID(),
-        email: applicant.email,
-        name: applicant.name,
+    const user = existing
+      ? await tx.user.update({
+          where: { id: existing.id },
+          data: { status: "ACTIVE", emailVerified: true, name: applicant.name },
+          select: { id: true, email: true },
+        })
+      : await tx.user.create({
+          data: {
+            id: randomUUID(),
+            email: applicant.email,
+            name: applicant.name,
         // Not verified, and no credential row: the partner proves the address and
         // chooses the password in the same flow, and cannot sign in until both are done.
         emailVerified: false,
@@ -175,10 +182,10 @@ export async function approvePartnerApplication(
            The account is not reachable anyway — it has no credential row until the
            partner creates one. INVITED starts being used when the admin invitation flow
            in §49 lands and brings the transition with it. */
-        status: "ACTIVE",
-      },
-      select: { id: true, email: true },
-    });
+            status: "ACTIVE",
+          },
+          select: { id: true, email: true },
+        });
 
     const partner = await tx.partner.create({
       data: {
@@ -205,7 +212,7 @@ export async function approvePartnerApplication(
       data: { status: "CONVERTED", convertedUserId: user.id },
     });
 
-    return { user, partner, applicant };
+    return { user, partner, applicant, passwordAlreadySet: Boolean(existing) };
   });
 
   log.audit("partner.approved", {
@@ -225,6 +232,8 @@ export async function approvePartnerApplication(
     person: created.partner.person,
     org: created.partner.org,
     setPasswordUrl: setPasswordUrl(),
+    passwordAlreadySet: created.passwordAlreadySet,
+    signInUrl: `${env.SITE_ORIGIN}/portal`,
   }));
 
   if (!mail.ok) {
