@@ -19,6 +19,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
+    "staff:reset-password": "node scripts/reset-staff-password.mjs",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "i18n:extract": "node scripts/i18n-extract.mjs",
     "i18n:check": "node scripts/i18n-check.mjs",

@@ -86,6 +86,18 @@ job.
 The script prints a generated password once and stores it nowhere. Hand it over through a
 password manager and have the holder change it.
 
+To reset an existing staff or administrator password without the public email-code flow,
+run this from `web/` in an interactive terminal:
+
+```bash
+npm run staff:reset-password -- apply@campusturkey.org
+```
+
+The command accepts the email only. It prompts twice for the password with terminal echo
+disabled, verifies that the account has a staff/admin role, hashes the password through
+Better Auth, and signs out all existing sessions. Never add the password to the command or
+to a source file.
+
 ### What each account type needs to exist at all
 
 Worth stating together, because the dependency runs one way and a missing link looks like
