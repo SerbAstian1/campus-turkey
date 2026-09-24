@@ -3,16 +3,14 @@
 /**
  * Setting a password for the first time.
  *
- * **One page, two steps, no navigation.** The password is typed first, then a code
- * confirms it. Both live in the same component and the same form state, so asking for a
- * code never discards what has already been entered — which is the whole reason this is
- * a code and not an emailed link. A link would open a new tab, and the password typed in
- * the old one would be gone.
+ * **One page, two steps, no navigation.** The code is requested first, so the email is
+ * already travelling while the applicant chooses a password. Both steps live in the
+ * same component and form state; there is no emailed link that opens a new tab midway
+ * through setup or discards what the applicant has entered.
  *
- * The step is a reveal rather than a route: `step` moves from `"password"` to `"code"`
- * and the code field appears beneath the fields already filled in, which stay visible
- * and stay editable. Someone who realises they mistyped their email can fix it and ask
- * again without starting over.
+ * The step is a reveal rather than a route: `step` moves from `"email"` to `"code"`,
+ * locks the address that received the code, and reveals the password and code fields.
+ * Back returns to the address without navigating away or losing the chosen password.
  *
  * Where the code is auto-filled, it is a development affordance and it says so on
  * screen — see `server/lib/dev-codes.ts` for why it cannot happen in production. It is
@@ -31,11 +29,11 @@ import { PasswordInput } from "@/components/PasswordInput";
  *  say so before the server refuses, rather than after. */
 const MIN_PASSWORD = 12;
 
-type Step = "password" | "code" | "done";
+type Step = "email" | "code" | "done";
 
 export default function SetPassword() {
   const t = useT();
-  const [step, setStep] = useState<Step>("password");
+  const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -50,14 +48,7 @@ export default function SetPassword() {
     return null;
   };
 
-  const askForCode = async (e: FormEvent) => {
-    e.preventDefault();
-    const problem = passwordProblem();
-    if (problem) {
-      setError(problem);
-      return;
-    }
-
+  const sendCode = async () => {
     setBusy(true);
     setError(null);
     const result = await requestSetupCode(email.trim());
@@ -71,12 +62,26 @@ export default function SetPassword() {
     if (result.code) {
       setCode(result.code);
       setAutofilled(true);
+    } else {
+      setCode("");
+      setAutofilled(false);
     }
     setStep("code");
   };
 
+  const askForCode = (e: FormEvent) => {
+    e.preventDefault();
+    void sendCode();
+  };
+
   const confirmCode = async (e: FormEvent) => {
     e.preventDefault();
+    const problem = passwordProblem();
+    if (problem) {
+      setError(problem);
+      return;
+    }
+
     setBusy(true);
     setError(null);
 
@@ -121,32 +126,35 @@ export default function SetPassword() {
             <>
               <h1 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{t("Set your password")}</h1>
               <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
-                {t("Campus Turkey has approved your account. Choose a password, then confirm the code we email you. You will not leave this page.")}
+                {step === "email"
+                  ? t("Send the code first. While the email is arriving, you can choose your password.")
+                  : t("Campus Turkey has approved your account. Choose a password, then confirm the code we email you. You will not leave this page.")}
               </p>
 
               <form
-                onSubmit={step === "password" ? askForCode : confirmCode}
+                onSubmit={step === "email" ? askForCode : confirmCode}
                 style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}
               >
                 <Input
                   id="sp-email" label={t("Email address")} type="email" icon="mail"
                   placeholder="you@agency.com" required autoComplete="username"
+                  disabled={step === "code"}
                   value={email} onChange={(e) => setEmail(e.target.value)}
-                />
-                <PasswordInput
-                  id="sp-pass" label={t("New password")} icon="lock"
-                  hint={t("At least {count} characters.", { count: MIN_PASSWORD })}
-                  placeholder="••••••••••••" required autoComplete="new-password"
-                  value={password} onChange={(e) => setPassword(e.target.value)}
-                />
-                <PasswordInput
-                  id="sp-confirm" label={t("Confirm password")} icon="lock"
-                  placeholder="••••••••••••" required autoComplete="new-password"
-                  value={confirm} onChange={(e) => setConfirm(e.target.value)}
                 />
 
                 {step === "code" ? (
                   <>
+                    <PasswordInput
+                      id="sp-pass" label={t("New password")} icon="lock"
+                      hint={t("At least {count} characters.", { count: MIN_PASSWORD })}
+                      placeholder="••••••••••••" required autoComplete="new-password"
+                      value={password} onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <PasswordInput
+                      id="sp-confirm" label={t("Confirm password")} icon="lock"
+                      placeholder="••••••••••••" required autoComplete="new-password"
+                      value={confirm} onChange={(e) => setConfirm(e.target.value)}
+                    />
                     <BrandDivider style={{ maxWidth: 160 }} />
                     <Input
                       id="sp-code" label={t("Confirmation code")} icon="shield"
@@ -182,18 +190,26 @@ export default function SetPassword() {
                 <Button variant="primary" size="lg" fullWidth type="submit" disabled={busy}>
                   {busy
                     ? t("Working…")
-                    : step === "password"
+                    : step === "email"
                       ? t("Send my code")
                       : t("Confirm and sign in")}
                 </Button>
 
                 {step === "code" ? (
-                  <Button
-                    variant="ghost" type="button" disabled={busy}
-                    onClick={(e) => { setStep("password"); void askForCode(e as unknown as FormEvent); }}
-                  >
-                    {t("Send another code")}
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost" type="button" disabled={busy}
+                      onClick={() => void sendCode()}
+                    >
+                      {t("Send another code")}
+                    </Button>
+                    <Button
+                      variant="ghost" type="button" disabled={busy}
+                      onClick={() => { setStep("email"); setCode(""); setError(null); }}
+                    >
+                      {t("Back")}
+                    </Button>
+                  </>
                 ) : null}
               </form>
             </>

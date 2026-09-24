@@ -172,6 +172,11 @@ export const auth = betterAuth({
       otpLength: 6,
       expiresIn: OTP_MINUTES * 60,
       allowedAttempts: OTP_ATTEMPTS,
+      // A delayed first email must not become useless when the applicant clicks
+      // "Send another code". Reusing the still-valid code sends another copy and
+      // extends its expiry instead of rotating to a different value while two emails
+      // are in flight. Better Auth generates a fresh code after expiry or exhaustion.
+      resendStrategy: "reuse",
 
       /**
        * Sign-up via OTP stays closed.
