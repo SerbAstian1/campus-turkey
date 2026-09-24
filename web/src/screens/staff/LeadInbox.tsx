@@ -132,7 +132,7 @@ function LeadRow({
 
   const deleteLead = async () => {
     const accountNote = lead.status === "CONVERTED"
-      ? " The student's active account will not be deleted."
+      ? " The associated login will also be permanently closed so this email can register again."
       : "";
     const confirmed = window.confirm(
       `Delete this ${itemName} and all of its messages?${accountNote} This cannot be undone.`,

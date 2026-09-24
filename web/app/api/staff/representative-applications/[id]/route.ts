@@ -3,7 +3,8 @@
  *
  * The locked registration credential is removed when no other live application needs
  * it, allowing the address to apply again cleanly. If the application was approved,
- * deleting the intake record does not delete or disable the active account it created.
+ * its login is retired and its historical profile is closed, freeing the original
+ * address without breaking records that refer to that profile.
  */
 
 import { z } from "zod";
@@ -13,6 +14,7 @@ import { RATE_LIMITS } from "@/server/lib/ratelimit";
 import { ConflictError, NotFoundError, ValidationError } from "@/server/lib/errors";
 import { db } from "@/server/lib/db";
 import { recordAudit } from "@/server/modules/audit/audit.service";
+import { retirePublicAccount } from "@/server/modules/onboarding/account-retirement";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,6 +75,7 @@ export const DELETE = route({
       }
 
       let pendingAccountRemoved = false;
+      let activeAccountRetired = false;
       if (pendingUser && removablePendingUser) {
         const deletedUser = await tx.user.deleteMany({
           where: {
@@ -83,6 +86,13 @@ export const DELETE = route({
           },
         });
         pendingAccountRemoved = deletedUser.count === 1;
+      } else if (
+        pendingUser &&
+        application.status === "APPROVED" &&
+        pendingUser.role === "REPRESENTATIVE"
+      ) {
+        await retirePublicAccount(tx, pendingUser.id);
+        activeAccountRetired = true;
       }
 
       await recordAudit({
@@ -92,18 +102,19 @@ export const DELETE = route({
         actorUserId: actor.id,
         metadata: {
           previousStatus: application.status,
-          activeAccountPreserved: application.status === "APPROVED",
+          activeAccountRetired,
           pendingAccountRemoved,
         },
       }, tx);
 
-      return { id: application.id, pendingAccountRemoved };
+      return { id: application.id, pendingAccountRemoved, activeAccountRetired };
     });
 
     log.audit("representative_application.deleted", {
       applicationId: result.id,
       actorUserId: actor.id,
       pendingAccountRemoved: result.pendingAccountRemoved,
+      activeAccountRetired: result.activeAccountRetired,
     });
     return { deleted: true };
   },

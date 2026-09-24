@@ -36,11 +36,24 @@ declare global {
 }
 
 const SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY;
-const SCRIPT_SRC = "https://js.hcaptcha.com/1/api.js?render=explicit";
+const SCRIPT_BASE = "https://js.hcaptcha.com/1/api.js";
 
 /** hCaptcha supports every site locale; Simplified Chinese uses its provider code. */
 export function hCaptchaLanguage(locale: Locale): string {
   return locale === "zh" ? "zh-CN" : locale;
+}
+
+/**
+ * Force the page locale while the SDK is booting as well as when the widget renders.
+ *
+ * hCaptcha documents both forms of `hl`, but its challenge dialog is created by the
+ * SDK in a separate iframe. Supplying the locale only to `render()` localized the
+ * checkbox while some dynamically selected challenge instructions still used the
+ * browser/default language. The script-level value is therefore intentional, even
+ * though the same value is also passed to `render()` below.
+ */
+export function hCaptchaScriptSource(locale: Locale): string {
+  return `${SCRIPT_BASE}?render=explicit&hl=${encodeURIComponent(hCaptchaLanguage(locale))}`;
 }
 
 /**
@@ -56,12 +69,14 @@ let activeWidget: string | null = null;
 let loading: Promise<void> | null = null;
 
 /** Load the hCaptcha script once, however many times a form mounts. */
-function loadScript(): Promise<void> {
+function loadScript(locale: Locale): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
   if (window.hcaptcha) return Promise.resolve();
 
+  const scriptSource = hCaptchaScriptSource(locale);
+
   loading ??= new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${SCRIPT_SRC}"]`);
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${scriptSource}"]`);
     if (existing) {
       existing.addEventListener("load", () => resolve());
       existing.addEventListener("error", () => reject(new Error("hCaptcha failed to load")));
@@ -69,7 +84,7 @@ function loadScript(): Promise<void> {
     }
 
     const script = document.createElement("script");
-    script.src = SCRIPT_SRC;
+    script.src = scriptSource;
     script.async = true;
     script.defer = true;
     script.onload = () => resolve();
@@ -127,7 +142,7 @@ export function CaptchaField() {
     let cancelled = false;
     let widgetId: string | null = null;
 
-    void loadScript()
+    void loadScript(locale)
       .then(() => {
         // The effect can outlive the mount under StrictMode's double-invoke, and
         // rendering into a detached node throws inside hCaptcha rather than here.

@@ -175,7 +175,7 @@ describe("deleting", () => {
     expect(confirm).toHaveBeenCalledOnce();
   });
 
-  it("offers deletion after approval and explains that the account remains", () => {
+  it("offers deletion after approval and explains that the login is closed", () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     useRepresentativeApplications.mockReturnValue(feed([{
       ...application,
@@ -186,7 +186,7 @@ describe("deleting", () => {
 
     fireEvent.click(screen.getByRole("button", { name: `Actions for ${application.fullName}` }));
     fireEvent.click(screen.getByRole("menuitem", { name: /delete application/i }));
-    expect(confirm).toHaveBeenCalledWith(expect.stringMatching(/active account will not be deleted/i));
+    expect(confirm).toHaveBeenCalledWith(expect.stringMatching(/login will also be permanently closed/i));
     expect(act).not.toHaveBeenCalled();
   });
 });

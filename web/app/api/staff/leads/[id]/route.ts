@@ -31,6 +31,7 @@ import { ConflictError, NotFoundError, UnprocessableError, ValidationError } fro
 import { db } from "@/server/lib/db";
 import { updateLeadBody } from "@/server/modules/staff/staff.schema";
 import { recordAudit } from "@/server/modules/audit/audit.service";
+import { retirePublicAccount } from "@/server/modules/onboarding/account-retirement";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -113,8 +114,8 @@ export const PATCH = route({
  * Inquiries and attribution cascade with the lead. A registration-time PENDING user is
  * removed in the same transaction; leaving it behind would reserve the email address
  * and strand a credential for an application that no longer exists. If the lead has
- * already become an account, only this intake record is deleted; the active account is
- * deliberately preserved.
+ * already become an account, its login is retired so the address can register again,
+ * while historical admissions and financial relations keep their referential record.
  */
 export const DELETE = route({
   access: { kind: "permission", require: ["DELETE_LEADS"] },
@@ -134,8 +135,8 @@ export const DELETE = route({
         },
       });
       if (!lead) throw new NotFoundError("We could not find that enquiry.");
-      const pendingUser = await tx.user.findUnique({
-        where: { email: lead.email },
+      const attachedUser = await tx.user.findUnique({
+        where: lead.convertedUserId ? { id: lead.convertedUserId } : { email: lead.email },
         select: {
           id: true, status: true, role: true,
           accounts: { select: { providerId: true, password: true } },
@@ -146,11 +147,11 @@ export const DELETE = route({
       });
 
       const removablePendingUser = Boolean(
-        pendingUser &&
-        pendingUser.status === "PENDING" &&
-        (pendingUser.role === "STUDENT" || pendingUser.role === "PARTNER") &&
-        pendingUser.accounts.some((account) => account.providerId === "credential" && Boolean(account.password)) &&
-        !pendingUser.partner && !pendingUser.representative && !pendingUser.studentProfile,
+        attachedUser &&
+        attachedUser.status === "PENDING" &&
+        (attachedUser.role === "STUDENT" || attachedUser.role === "PARTNER") &&
+        attachedUser.accounts.some((account) => account.providerId === "credential" && Boolean(account.password)) &&
+        !attachedUser.partner && !attachedUser.representative && !attachedUser.studentProfile,
       );
 
       const deletedLead = await tx.lead.deleteMany({
@@ -164,10 +165,11 @@ export const DELETE = route({
       }
 
       let pendingAccountRemoved = false;
-      if (pendingUser && removablePendingUser) {
+      let activeAccountRetired = false;
+      if (attachedUser && removablePendingUser) {
         const deletedUser = await tx.user.deleteMany({
           where: {
-            id: pendingUser.id,
+            id: attachedUser.id,
             status: "PENDING",
             role: { in: ["STUDENT", "PARTNER"] },
             partner: null,
@@ -176,6 +178,13 @@ export const DELETE = route({
           },
         });
         pendingAccountRemoved = deletedUser.count === 1;
+      } else if (
+        attachedUser &&
+        lead.convertedUserId === attachedUser.id &&
+        (attachedUser.role === "STUDENT" || attachedUser.role === "PARTNER")
+      ) {
+        await retirePublicAccount(tx, attachedUser.id);
+        activeAccountRetired = true;
       }
 
       await recordAudit({
@@ -186,18 +195,19 @@ export const DELETE = route({
         metadata: {
           kind: lead.kind,
           previousStatus: lead.status,
-          activeAccountPreserved: Boolean(lead.convertedUserId),
+          activeAccountRetired,
           pendingAccountRemoved,
         },
       }, tx);
 
-      return { id: lead.id, pendingAccountRemoved };
+      return { id: lead.id, pendingAccountRemoved, activeAccountRetired };
     });
 
     log.audit("lead.deleted", {
       leadId: result.id,
       actorUserId: actor.id,
       pendingAccountRemoved: result.pendingAccountRemoved,
+      activeAccountRetired: result.activeAccountRetired,
     });
     return { deleted: true };
   },

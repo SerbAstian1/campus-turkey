@@ -77,7 +77,7 @@ describe("deleting an enquiry", () => {
     await waitFor(() => expect(reload).toHaveBeenCalledOnce());
   });
 
-  it("offers deletion after conversion without implying the account is deleted", () => {
+  it("explains that deleting a converted application also closes its login", () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     useLeadInbox.mockReturnValue({
       status: "ready",
@@ -93,7 +93,7 @@ describe("deleting an enquiry", () => {
 
     fireEvent.click(screen.getByRole("button", { name: `Actions for ${lead.name}` }));
     fireEvent.click(screen.getByRole("menuitem", { name: /delete application/i }));
-    expect(confirm).toHaveBeenCalledWith(expect.stringMatching(/active account will not be deleted/i));
+    expect(confirm).toHaveBeenCalledWith(expect.stringMatching(/login will also be permanently closed/i));
     expect(act).not.toHaveBeenCalled();
   });
 });

@@ -115,7 +115,7 @@ function ApplicationRow({
 
   async function deleteApplication() {
     const accountNote = application.status === "APPROVED"
-      ? " The representative's active account will not be deleted."
+      ? " The representative's login will also be permanently closed so this email can register again."
       : "";
     const confirmed = window.confirm(
       `Delete this representative application?${accountNote} This cannot be undone.`,

@@ -13,7 +13,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { hCaptchaLanguage } from "@/features/leads/captcha";
+import { hCaptchaLanguage, hCaptchaScriptSource } from "@/features/leads/captcha";
 import {
   HCAPTCHA_CONNECT_HOSTS,
   HCAPTCHA_FRAME_HOSTS,
@@ -97,5 +97,15 @@ describe("challenge language", () => {
 
   it("uses hCaptcha's explicit Simplified Chinese code", () => {
     expect(hCaptchaLanguage("zh")).toBe("zh-CN");
+  });
+
+  it("forces French while loading the SDK so the challenge prompt is localized too", () => {
+    expect(hCaptchaScriptSource("fr")).toBe(
+      "https://js.hcaptcha.com/1/api.js?render=explicit&hl=fr",
+    );
+  });
+
+  it("uses the provider's Chinese code in the SDK URL", () => {
+    expect(hCaptchaScriptSource("zh")).toContain("hl=zh-CN");
   });
 });
