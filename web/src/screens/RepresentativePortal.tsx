@@ -23,6 +23,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { BrandDivider, Button, Card, Icon, Input, Logo, ASSETS } from "@/ds";
 import { go } from "@/app/router";
 import { useT } from "@/i18n/context";
+import { ReferralActions } from "@/components/ReferralActions";
 import {
   referStudent, useReferredStudents, useRepresentativeProfile, when,
   type ReferredStudent, type Stage,
@@ -276,12 +277,12 @@ function StudentList({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      {students.items.map((student) => <StudentRow key={student.id} student={student} />)}
+      {students.items.map((student) => <StudentRow key={student.id} student={student} onChanged={students.reload} />)}
     </div>
   );
 }
 
-function StudentRow({ student }: { student: ReferredStudent }) {
+function StudentRow({ student, onChanged }: { student: ReferredStudent; onChanged: () => void }) {
   const stageLabels = useStageLabels();
 
   return (
@@ -295,18 +296,25 @@ function StudentRow({ student }: { student: ReferredStudent }) {
             {student.program} · {student.universityName}
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-          <span style={{
-            fontFamily: "var(--font-ui)", fontSize: "var(--fs-caption)",
-            fontWeight: "var(--fw-medium)", color: "var(--green-800)",
-            background: "var(--green-050)", border: "1px solid var(--green-100)",
-            borderRadius: "var(--radius-pill)", padding: "3px 10px",
-          }}>
-            {stageLabels[student.stage]}
-          </span>
-          <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", fontFamily: "var(--font-ui)" }}>
-            {when(student.updatedAt)}
-          </span>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-2)" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+            <span style={{
+              fontFamily: "var(--font-ui)", fontSize: "var(--fs-caption)",
+              fontWeight: "var(--fw-medium)", color: "var(--green-800)",
+              background: "var(--green-050)", border: "1px solid var(--green-100)",
+              borderRadius: "var(--radius-pill)", padding: "3px 10px",
+            }}>
+              {stageLabels[student.stage]}
+            </span>
+            <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", fontFamily: "var(--font-ui)" }}>
+              {when(student.updatedAt)}
+            </span>
+          </div>
+          <ReferralActions
+            student={student}
+            endpoint={`/api/representative/students/${student.id}`}
+            onChanged={onChanged}
+          />
         </div>
       </div>
     </Card>

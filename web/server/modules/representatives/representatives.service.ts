@@ -109,6 +109,7 @@ export interface ApproveRepresentativeOutput {
   email: string;
   /** False when no mail provider is configured: the account exists, nobody was told. */
   welcomeSent: boolean;
+  passwordAlreadySet: boolean;
 }
 
 /**
@@ -252,6 +253,7 @@ export async function approveRepresentativeApplication(
     userId: created.user.id,
     email: created.user.email,
     welcomeSent: mail.ok && mail.delivered,
+    passwordAlreadySet: created.passwordAlreadySet,
   };
 }
 

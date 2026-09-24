@@ -18,6 +18,8 @@
 
 import { useState } from "react";
 import { Button, Card, Icon, Input, Select } from "@/ds";
+import { toast } from "@/app/toast";
+import { ItemOverflowMenu } from "@/components/ItemOverflowMenu";
 import { act, useLeadInbox, when, type LeadType, type QueueLead } from "@/features/staff/data";
 import { Filters, QueueState, StatusDot } from "./shared";
 
@@ -142,17 +144,37 @@ function LeadRow({
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-          <StatusDot status={lead.status} />
-          <span
-            style={{
-              color: daysLeft <= 14 ? "var(--status-danger)" : "var(--text-muted)",
-              fontSize: "var(--fs-caption)",
-              fontFamily: "var(--font-ui)",
-            }}
-          >
-            {daysLeft > 0 ? `Deleted in ${daysLeft}d` : "Due for deletion"}
-          </span>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-2)" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+            <StatusDot status={lead.status} />
+            <span
+              style={{
+                color: daysLeft <= 14 ? "var(--status-danger)" : "var(--text-muted)",
+                fontSize: "var(--fs-caption)",
+                fontFamily: "var(--font-ui)",
+              }}
+            >
+              {daysLeft > 0 ? `Deleted in ${daysLeft}d` : "Due for deletion"}
+            </span>
+          </div>
+          <ItemOverflowMenu
+            label={`Actions for ${name}`}
+            actions={[
+              ...(!withheld && latest ? [{
+                label: open ? "Hide details" : "Show details",
+                icon: open ? "chevron-up" : "eye",
+                onSelect: () => setOpen((value) => !value),
+              }] : []),
+              {
+                label: "Copy email", icon: "copy",
+                onSelect: () => { void navigator.clipboard.writeText(lead.email); toast("Email copied."); },
+              },
+              {
+                label: "Copy lead ID", icon: "clipboard",
+                onSelect: () => { void navigator.clipboard.writeText(lead.id); toast("Lead ID copied."); },
+              },
+            ]}
+          />
         </div>
       </div>
 
@@ -250,7 +272,8 @@ function Progress({ lead, onDone }: { lead: QueueLead; onDone: () => void }) {
         ];
 
   return (
-    <div style={{ marginTop: "var(--space-4)", display: "flex", flexWrap: "wrap", gap: "var(--space-3)", alignItems: "center" }}>
+    <div style={{ marginTop: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-2)", alignItems: "flex-start" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)", alignItems: "center" }}>
       {options.map((option) => (
         <Button
           key={option.status}
@@ -261,6 +284,13 @@ function Progress({ lead, onDone }: { lead: QueueLead; onDone: () => void }) {
           {pending === option.status ? "Saving…" : option.label}
         </Button>
       ))}
+      </div>
+
+      {lead.status === "NEW" ? (
+        <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)" }}>
+          Marking contacted records follow-up only. It does not approve the account or send an email.
+        </span>
+      ) : null}
 
       {error ? (
         <span role="alert" style={{ color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>
@@ -313,7 +343,7 @@ function ApprovePartner({ lead, onDone }: { lead: QueueLead; onDone: () => void 
     setPending(true);
     setError(null);
 
-    const result = await act(`/api/staff/leads/${lead.id}/approve`, {
+    const result = await act<{ welcomeSent: boolean; passwordAlreadySet: boolean; email: string }>(`/api/staff/leads/${lead.id}/approve`, {
       role: form.role.trim(),
       managerName: form.managerName.trim(),
       managerRole: form.managerRole.trim(),
@@ -323,7 +353,17 @@ function ApprovePartner({ lead, onDone }: { lead: QueueLead; onDone: () => void 
 
     setPending(false);
     if (result.ok) {
-      setDone("Account created. The partner has been emailed a link to set their password.");
+      const outcome = result.data;
+      const message =
+        outcome?.passwordAlreadySet
+          ? outcome.welcomeSent
+            ? "Account created. Their registration password is active and the approval email was sent."
+            : "Account created and their registration password is active, but no email was delivered. Ask them to sign in at /portal."
+          : outcome?.welcomeSent
+            ? "Account created. The partner was emailed the link to set a password."
+            : "Account created, but no email was delivered. Send them /portal/set-password so they can finish setup.";
+      setDone(message);
+      toast(message);
       onDone();
       return;
     }
@@ -354,7 +394,7 @@ function ApprovePartner({ lead, onDone }: { lead: QueueLead; onDone: () => void 
             Approve and create account
           </Button>
           <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", maxWidth: "40ch" }}>
-            Creates their login and emails them a link to set a password. No money moves.
+            Creates their login and activates the password they chose. Legacy applications receive a set-password link. No money moves.
           </span>
         </div>
       ) : (
@@ -434,7 +474,7 @@ function ApproveStudent({ lead, onDone }: { lead: QueueLead; onDone: () => void 
     setPending(true);
     setError(null);
 
-    const result = await act(`/api/staff/leads/${lead.id}/approve-student`, {
+    const result = await act<{ welcomeSent: boolean; passwordAlreadySet: boolean; email: string }>(`/api/staff/leads/${lead.id}/approve-student`, {
       universityName: form.universityName.trim(),
       ...(form.program.trim() ? { program: form.program.trim() } : {}),
       ...(form.country.trim() ? { country: form.country.trim() } : {}),
@@ -442,7 +482,17 @@ function ApproveStudent({ lead, onDone }: { lead: QueueLead; onDone: () => void 
 
     setPending(false);
     if (result.ok) {
-      setDone("Account created. They have been emailed a link to set their password.");
+      const outcome = result.data;
+      const message =
+        outcome?.passwordAlreadySet
+          ? outcome.welcomeSent
+            ? "Account created. Their registration password is active and the approval email was sent."
+            : "Account created and their registration password is active, but no email was delivered. Ask them to sign in at /portal."
+          : outcome?.welcomeSent
+            ? "Account created. They were emailed the link to set a password."
+            : "Account created, but no email was delivered. Send them /portal/set-password so they can finish setup.";
+      setDone(message);
+      toast(message);
       onDone();
       return;
     }
@@ -473,7 +523,7 @@ function ApproveStudent({ lead, onDone }: { lead: QueueLead; onDone: () => void 
             Approve and create account
           </Button>
           <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", maxWidth: "40ch" }}>
-            Creates their login and emails them a link to set a password. Attributed to
+            Creates their login and activates the password they chose. Legacy applications receive a set-password link. Attributed to
             Campus Turkey directly — no partner or representative referred them.
           </span>
         </div>

@@ -36,6 +36,8 @@
 
 import { useState } from "react";
 import { Button, Card, Icon } from "@/ds";
+import { toast } from "@/app/toast";
+import { ItemOverflowMenu } from "@/components/ItemOverflowMenu";
 import { useAuditLog, when, money, type AuditEvent } from "@/features/staff/data";
 import { QueueState } from "./shared";
 
@@ -204,16 +206,31 @@ function Entry({ event, first }: { event: AuditEvent; first: boolean }) {
         borderTop: first ? "none" : "1px solid var(--border-subtle)",
       }}
     >
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)", justifyContent: "space-between", alignItems: "baseline" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)", justifyContent: "space-between", alignItems: "flex-start" }}>
         <span style={{ fontFamily: "var(--font-ui)", fontWeight: "var(--fw-semibold)", color: "var(--text-heading)", fontSize: "var(--fs-body-sm)" }}>
           {SENTENCE[event.action] ?? humanise(event.action)}
         </span>
-        <time
-          dateTime={event.createdAt}
-          style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", whiteSpace: "nowrap" }}
-        >
-          {when(event.createdAt)}
-        </time>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+          <time
+            dateTime={event.createdAt}
+            style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", whiteSpace: "nowrap" }}
+          >
+            {when(event.createdAt)}
+          </time>
+          <ItemOverflowMenu
+            label="Audit entry actions"
+            actions={[
+              {
+                label: "Copy entry ID", icon: "copy",
+                onSelect: () => { void navigator.clipboard.writeText(event.id); toast("Audit entry ID copied."); },
+              },
+              ...(event.entityId ? [{
+                label: "Copy record ID", icon: "clipboard",
+                onSelect: () => { void navigator.clipboard.writeText(event.entityId ?? ""); toast("Record ID copied."); },
+              }] : []),
+            ]}
+          />
+        </div>
       </div>
 
       {line ? (

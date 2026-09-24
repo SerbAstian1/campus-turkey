@@ -17,6 +17,8 @@ import { useTranslatedOptions } from "@/i18n/options";
 import { CaptchaField } from "@/features/leads/captcha";
 import { ConsentPrivacyNote, FieldErrors } from "./shared";
 
+const MIN_PASSWORD = 12;
+
 /**
  * The step names, as a hook.
  *
@@ -96,8 +98,10 @@ export default function Apply() {
 
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
-    name: "", email: "", phone: "", country: "", level: "", field: "", city: "", intake: "", consent: true,
+    name: "", email: "", phone: "", country: "", password: "", confirm: "",
+    level: "", field: "", city: "", intake: "", consent: true,
   });
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const { state, submit } = useLeadSubmit("STUDY");
 
@@ -141,6 +145,18 @@ export default function Apply() {
             onSubmit={async (e: FormEvent) => {
               e.preventDefault();
 
+              if (step === 0) {
+                if (form.password.length < MIN_PASSWORD) {
+                  setPasswordError(t("Use at least {count} characters.", { count: MIN_PASSWORD }));
+                  return;
+                }
+                if (form.password !== form.confirm) {
+                  setPasswordError(t("The two passwords do not match."));
+                  return;
+                }
+                setPasswordError(null);
+              }
+
               if (step < 2) {
                 setStep(step + 1);
                 return;
@@ -158,6 +174,7 @@ export default function Apply() {
                   message: form.city ? `Preferred city: ${form.city}` : "",
                 },
                 form.consent,
+                form.password,
               );
 
               if (ok) setStep(3);
@@ -179,6 +196,18 @@ export default function Apply() {
                   value={countries.display(form.country)}
                   onChange={(e) => setForm((f) => ({ ...f, country: countries.toEnglish(e.target.value) }))}
                   required />
+                <Input id="a-password" label={t("Create password")} type="password" icon="lock"
+                  hint={t("At least {count} characters. It becomes active after Campus Turkey approves your registration.", { count: MIN_PASSWORD })}
+                  required autoComplete="new-password" value={form.password}
+                  onChange={(e) => { set("password")(e); setPasswordError(null); }} />
+                <Input id="a-confirm-password" label={t("Confirm password")} type="password" icon="lock"
+                  required autoComplete="new-password" value={form.confirm}
+                  onChange={(e) => { set("confirm")(e); setPasswordError(null); }} />
+                {passwordError ? (
+                  <span role="alert" style={{ gridColumn: "span 2", color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>
+                    {passwordError}
+                  </span>
+                ) : null}
               </div>
             ) : null}
 
@@ -243,7 +272,7 @@ export default function Apply() {
                 <h3 style={{ fontSize: "var(--fs-h2)" }}>{form.name ? t("Thank you, {name}.", { name: form.name.split(" ")[0] ?? "" }) : t("Thank you.")}</h3>
                 <BrandDivider style={{ maxWidth: 220 }} />
                 <p style={{ maxWidth: 460, color: "var(--text-body)" }}>
-                  {t("We are matching you with universities now. You will get a shortlist with real tuition and deadlines within one working day.")}
+                  {t("We are matching you with universities now. Your password becomes active only after staff approves and creates your account.")}
                 </p>
                 <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap", justifyContent: "center" }}>
                   <Button variant="secondary" onClick={() => go("home")}>{t("Back to home")}</Button>

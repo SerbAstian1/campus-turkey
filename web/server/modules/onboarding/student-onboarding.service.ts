@@ -56,6 +56,7 @@ export interface ApproveStudentOutput {
   userId: string;
   email: string;
   welcomeSent: boolean;
+  passwordAlreadySet: boolean;
 }
 
 function slugify(name: string): string {
@@ -216,5 +217,6 @@ export async function approveStudentApplication(
     userId: created.user.id,
     email: created.user.email,
     welcomeSent: mail.ok && mail.delivered,
+    passwordAlreadySet: created.passwordAlreadySet,
   };
 }

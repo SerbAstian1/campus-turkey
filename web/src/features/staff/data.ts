@@ -152,11 +152,11 @@ async function get<T>(path: string): Promise<T> {
  * function to surface, so the failure read as the generic fallback below with no way to
  * tell it apart from an actual server refusal.
  */
-export async function act(
+export async function act<T = unknown>(
   path: string,
   body: unknown,
   method: "POST" | "PATCH" = "POST",
-): Promise<{ ok: true } | { ok: false; message: string }> {
+): Promise<{ ok: true; data?: T } | { ok: false; message: string }> {
   try {
     const response = await fetch(path, {
       method,
@@ -165,7 +165,10 @@ export async function act(
       body: JSON.stringify(body),
     });
 
-    if (response.ok) return { ok: true };
+    if (response.ok) {
+      const data = (await response.json().catch(() => undefined)) as T | undefined;
+      return { ok: true, ...(data === undefined ? {} : { data }) };
+    }
 
     const parsed = (await response.json().catch(() => ({}))) as {
       error?: { message?: string };

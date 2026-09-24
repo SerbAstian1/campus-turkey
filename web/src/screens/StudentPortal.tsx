@@ -22,6 +22,8 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { BrandDivider, Button, Card, Icon, Input, Logo, ASSETS } from "@/ds";
 import { go } from "@/app/router";
+import { toast } from "@/app/toast";
+import { ItemOverflowMenu } from "@/components/ItemOverflowMenu";
 import { useT } from "@/i18n/context";
 import {
   NEEDS_STUDENT, STATUS_COPY, claimRecord, useStudentDashboard, when,
@@ -128,8 +130,8 @@ export default function StudentPortal() {
 
         {dashboard.status === "ready" ? (
           <>
-            {view === "dashboard" ? <Dashboard applications={dashboard.applications} name={dashboard.profile?.firstName ?? null} /> : null}
-            {view === "application" ? <Applications applications={dashboard.applications} /> : null}
+            {view === "dashboard" ? <Dashboard applications={dashboard.applications} name={dashboard.profile?.firstName ?? null} onChanged={dashboard.reload} /> : null}
+            {view === "application" ? <Applications applications={dashboard.applications} onChanged={dashboard.reload} /> : null}
             {view === "profile" ? <Profile profile={dashboard.profile} /> : null}
           </>
         ) : null}
@@ -147,7 +149,7 @@ function Heading({ title, lead }: { title: string; lead: string }) {
   );
 }
 
-function Dashboard({ applications, name }: { applications: StudentApplication[]; name: string | null }) {
+function Dashboard({ applications, name, onChanged }: { applications: StudentApplication[]; name: string | null; onChanged: () => void }) {
   const t = useT();
   // The one the applicant is most likely asking about: the most recently touched.
   const current = applications[0];
@@ -237,14 +239,14 @@ function Dashboard({ applications, name }: { applications: StudentApplication[];
           <h3 style={{ fontSize: "var(--fs-h3)", color: "var(--text-heading)", marginBottom: "var(--space-4)" }}>
             {t("Your other applications")}
           </h3>
-          <ApplicationList applications={applications.slice(1)} />
+          <ApplicationList applications={applications.slice(1)} onChanged={onChanged} />
         </div>
       ) : null}
     </>
   );
 }
 
-function Applications({ applications }: { applications: StudentApplication[] }) {
+function Applications({ applications, onChanged }: { applications: StudentApplication[]; onChanged: () => void }) {
   const t = useT();
 
   return (
@@ -255,14 +257,30 @@ function Applications({ applications }: { applications: StudentApplication[] }) 
           <p style={{ margin: 0, color: "var(--text-body)" }}>{t("No application yet.")}</p>
         </Card>
       ) : (
-        <ApplicationList applications={applications} />
+        <ApplicationList applications={applications} onChanged={onChanged} />
       )}
     </>
   );
 }
 
-function ApplicationList({ applications }: { applications: StudentApplication[] }) {
+function ApplicationList({ applications, onChanged }: { applications: StudentApplication[]; onChanged: () => void }) {
   const t = useT();
+
+  const deleteDraft = async (application: StudentApplication) => {
+    if (!window.confirm(t("Delete this draft application? This cannot be undone."))) return;
+    try {
+      const response = await fetch(`/api/student/applications/${application.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+        toast(body.error?.message ?? t("We could not delete that application."));
+        return;
+      }
+      toast(t("Draft application deleted."));
+      onChanged();
+    } catch {
+      toast(t("We could not reach the server."));
+    }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -283,12 +301,34 @@ function ApplicationList({ applications }: { applications: StudentApplication[] 
                   {t("{number} · updated {when}", { number: a.applicationNumber, when: when(a.updatedAt) })}
                 </div>
               </div>
-              {waitingOnYou ? (
-                <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: "var(--fs-caption)", color: "var(--text-heading)", background: "var(--green-050)", border: "1px solid var(--green-100)", borderRadius: "var(--radius-pill)", padding: "4px 10px" }}>
-                  <Icon name="alert-circle" size={13} color="var(--status-warning)" />
-                  {t("Waiting on you")}
-                </span>
-              ) : null}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-2)" }}>
+                {waitingOnYou ? (
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: "var(--fs-caption)", color: "var(--text-heading)", background: "var(--green-050)", border: "1px solid var(--green-100)", borderRadius: "var(--radius-pill)", padding: "4px 10px" }}>
+                    <Icon name="alert-circle" size={13} color="var(--status-warning)" />
+                    {t("Waiting on you")}
+                  </span>
+                ) : null}
+                <ItemOverflowMenu
+                  label={t("Actions for application {number}", { number: a.applicationNumber })}
+                  actions={[
+                    {
+                      label: t("View status details"), icon: "eye",
+                      onSelect: () => toast(`${copy.meaning} ${copy.next}`),
+                    },
+                    {
+                      label: t("Copy application number"), icon: "copy",
+                      onSelect: () => {
+                        void navigator.clipboard.writeText(a.applicationNumber);
+                        toast(t("Application number copied."));
+                      },
+                    },
+                    ...(a.status === "DRAFT" ? [{
+                      label: t("Delete draft"), icon: "trash", danger: true,
+                      onSelect: () => void deleteDraft(a),
+                    }] : []),
+                  ]}
+                />
+              </div>
             </div>
             <p style={{ margin: "var(--space-4) 0 0", color: "var(--text-body)", fontSize: "var(--fs-body-sm)", maxWidth: "60ch" }}>
               {copy.next}

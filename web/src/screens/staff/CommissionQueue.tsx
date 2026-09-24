@@ -16,6 +16,8 @@
 
 import { useState } from "react";
 import { Button, Card, Icon, Input } from "@/ds";
+import { toast } from "@/app/toast";
+import { ItemOverflowMenu } from "@/components/ItemOverflowMenu";
 import {
   act, money, when,
   useCommissionQueue, type CommissionState, type QueueCommission,
@@ -123,11 +125,26 @@ function CommissionRow({
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-          <StatusDot status={item.state} />
-          <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", fontFamily: "var(--font-ui)" }}>
-            {item.confirmedAt ? `Confirmed ${when(item.confirmedAt)}` : when(item.createdAt)}
-          </span>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-2)" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+            <StatusDot status={item.state} />
+            <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", fontFamily: "var(--font-ui)" }}>
+              {item.confirmedAt ? `Confirmed ${when(item.confirmedAt)}` : when(item.createdAt)}
+            </span>
+          </div>
+          <ItemOverflowMenu
+            label={`Actions for ${item.student.name}`}
+            actions={[
+              {
+                label: "Copy student name", icon: "copy",
+                onSelect: () => { void navigator.clipboard.writeText(item.student.name); toast("Student name copied."); },
+              },
+              {
+                label: "Copy commission ID", icon: "clipboard",
+                onSelect: () => { void navigator.clipboard.writeText(item.id); toast("Commission ID copied."); },
+              },
+            ]}
+          />
         </div>
       </div>
 

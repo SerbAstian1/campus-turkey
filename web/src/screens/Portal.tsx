@@ -24,6 +24,7 @@ import { useTranslatedOptions } from "@/i18n/options";
 import { go, useHref } from "@/app/router";
 import { toast } from "@/app/toast";
 import { CardGrid } from "@/components/CardGrid";
+import { ReferralActions } from "@/components/ReferralActions";
 import { ErrorScreen } from "./Errors";
 
 const STAGE_TONE: Record<PortalStudent["stage"], "brand" | "neutral" | "warning"> = {
@@ -370,7 +371,7 @@ function AddPayoutMethodForm({ onAdd, onClose }: { onAdd: (m: PayoutMethod, d: b
 
 /* -------------------------------------------------------------------- views */
 
-function StudentTable({ students, compact }: { students: PortalStudent[]; compact?: boolean }) {
+function StudentTable({ students, onChanged, compact }: { students: PortalStudent[]; onChanged: () => void; compact?: boolean }) {
   const t = useT();
   const [stage, setStage] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -404,7 +405,10 @@ function StudentTable({ students, compact }: { students: PortalStudent[]; compac
       <div className="ct-table-scroll" style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)" }}>
           <thead>
-            <tr>{[t("Student"), t("Program"), t("University"), t("Stage"), t("Commission")].map((h) => <th key={h} scope="col" style={th}>{h}</th>)}</tr>
+            <tr>
+              {[t("Student"), t("Program"), t("University"), t("Stage"), t("Commission")].map((h) => <th key={h} scope="col" style={th}>{h}</th>)}
+              <th scope="col" style={{ ...th, width: 44 }}><span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden" }}>{t("Actions")}</span></th>
+            </tr>
           </thead>
           <tbody>
             {rows.map((s) => (
@@ -420,6 +424,13 @@ function StudentTable({ students, compact }: { students: PortalStudent[]; compac
                 <td style={td}><Badge tone={STAGE_TONE[s.stage]}>{s.stage}</Badge></td>
                 <td style={{ ...td, fontWeight: "var(--fw-semibold)", color: "var(--green-700)", whiteSpace: "nowrap" }}>
                   {s.commissionMinor > 0 ? money(s.commissionMinor) : t("Pending")}
+                </td>
+                <td style={{ ...td, paddingInlineEnd: 0 }}>
+                  <ReferralActions
+                    student={{ id: s.id, name: s.name, universityName: s.university, program: s.program }}
+                    endpoint={`/api/partner/students/${s.id}`}
+                    onChanged={onChanged}
+                  />
                 </td>
               </tr>
             ))}
@@ -492,6 +503,8 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
   const availableMinor = data.wallet.availableMinor;
   const [methods, setMethods] = useState<PayoutMethod[]>(data.wallet.methods);
   const [lang, setLanguage] = useLocaleSwitch();
+
+  useEffect(() => setStudents(data.students), [data.students]);
 
   const account = data.account;
   const wallet = { ...data.wallet, availableMinor, methods };
@@ -664,11 +677,11 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
               </Card>
             </div>
 
-            <StudentTable students={students.slice(0, 4)} compact />
+            <StudentTable students={students.slice(0, 4)} onChanged={onReload} compact />
           </>
         ) : null}
 
-        {view === "students" ? <StudentTable students={students} /> : null}
+        {view === "students" ? <StudentTable students={students} onChanged={onReload} /> : null}
 
         {view === "commissions" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>

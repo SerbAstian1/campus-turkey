@@ -44,6 +44,8 @@ export interface ApprovePartnerOutput {
   email: string;
   /** False when no mail provider is configured — the account exists, nobody was told. */
   welcomeSent: boolean;
+  /** True when approval activated the password supplied during registration. */
+  passwordAlreadySet: boolean;
 }
 
 /** Where the partner goes to set a password. One definition, used by the email and by
@@ -248,5 +250,6 @@ export async function approvePartnerApplication(
     userId: created.user.id,
     email: created.user.email,
     welcomeSent: mail.ok && mail.delivered,
+    passwordAlreadySet: created.passwordAlreadySet,
   };
 }

@@ -29,6 +29,8 @@
 
 import { useState } from "react";
 import { Button, Card, Icon, Input } from "@/ds";
+import { toast } from "@/app/toast";
+import { ItemOverflowMenu } from "@/components/ItemOverflowMenu";
 import {
   act, when, waiting,
   useRepresentativeApplications,
@@ -103,6 +105,7 @@ function ApplicationRow({
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const decidable = DECIDABLE.includes(application.status);
   // A rejection without a reason is refused by the API, so the button stays inert until
@@ -118,13 +121,26 @@ function ApplicationRow({
       ? { decision: "APPROVE", ...(territory.trim() ? { territory: territory.trim() } : {}) }
       : { decision: "REJECT", note: note.trim() };
 
-    const result = await act(
+    const result = await act<{ welcomeSent?: boolean; passwordAlreadySet?: boolean }>(
       `/api/staff/representative-applications/${application.id}/decision`,
       body,
     );
 
     setBusy(false);
     if (!result.ok) { setError(result.message); return; }
+    if (choice === "APPROVE") {
+      const outcome = result.data;
+      const message =
+        outcome?.passwordAlreadySet
+          ? outcome.welcomeSent
+            ? "Account created. Their registration password is active and the approval email was sent."
+            : "Account created and their registration password is active, but no email was delivered. Ask them to sign in at /portal."
+          : outcome?.welcomeSent
+            ? "Account created. The set-password link was emailed."
+            : "Account created, but no email was delivered. Send them /portal/set-password so they can finish setup.";
+      setNotice(message);
+      toast(message);
+    }
     setChoice(null);
     onDecided();
   }
@@ -146,6 +162,19 @@ function ApplicationRow({
           <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", whiteSpace: "nowrap" }}>
             {decidable ? waiting(application.createdAt) : when(application.createdAt)}
           </span>
+          <ItemOverflowMenu
+            label={`Actions for ${application.fullName}`}
+            actions={[
+              {
+                label: "Copy email", icon: "copy",
+                onSelect: () => { void navigator.clipboard.writeText(application.email); toast("Email copied."); },
+              },
+              {
+                label: "Copy application ID", icon: "clipboard",
+                onSelect: () => { void navigator.clipboard.writeText(application.id); toast("Application ID copied."); },
+              },
+            ]}
+          />
         </div>
       </div>
 
@@ -174,6 +203,12 @@ function ApplicationRow({
           {application.reviewedBy ? ` by ${application.reviewedBy.name ?? application.reviewedBy.email}` : ""}
           {application.reviewedAt ? ` on ${when(application.reviewedAt)}` : ""}
           {application.reviewNote ? `. ${application.reviewNote}` : ""}
+        </p>
+      ) : null}
+
+      {notice ? (
+        <p role="status" style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-body-sm)" }}>
+          {notice}
         </p>
       ) : null}
 

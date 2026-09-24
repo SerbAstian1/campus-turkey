@@ -21,6 +21,8 @@
 
 import { useState } from "react";
 import { Button, Card, Icon, Input } from "@/ds";
+import { toast } from "@/app/toast";
+import { ItemOverflowMenu } from "@/components/ItemOverflowMenu";
 import {
   act, money, waiting, when,
   useWithdrawalQueue, type QueueWithdrawal, type WithdrawalStatus,
@@ -158,11 +160,27 @@ function WithdrawalRow({
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-          <StatusDot status={item.status} />
-          <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", fontFamily: "var(--font-ui)" }}>
-            {item.status === "REQUESTED" ? waiting(item.requestedAt) : when(item.requestedAt)}
-          </span>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-2)" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+            <StatusDot status={item.status} />
+            <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", fontFamily: "var(--font-ui)" }}>
+              {item.status === "REQUESTED" ? waiting(item.requestedAt) : when(item.requestedAt)}
+            </span>
+          </div>
+          <ItemOverflowMenu
+            label={`Actions for ${item.reference}`}
+            actions={[
+              {
+                label: open ? "Hide history" : "Show history",
+                icon: open ? "chevron-up" : "history",
+                onSelect: () => setOpen((value) => !value),
+              },
+              {
+                label: "Copy payment reference", icon: "copy",
+                onSelect: () => { void navigator.clipboard.writeText(item.reference); toast("Payment reference copied."); },
+              },
+            ]}
+          />
         </div>
       </div>
 
