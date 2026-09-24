@@ -9,6 +9,7 @@
     "start": "npm run start --prefix web",
     "typecheck": "npm run typecheck --prefix web",
     "test": "npm test --prefix web",
+    "staff:reset-password": "npm run staff:reset-password --prefix web --",
     "setup": "node scripts/setup.mjs"
   },
   "devDependencies": {

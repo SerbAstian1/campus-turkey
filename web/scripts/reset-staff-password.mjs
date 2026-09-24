@@ -28,13 +28,13 @@ if (!email || !email.includes("@")) {
   process.exit(1);
 }
 
-/** Read a secret from a real terminal without echoing it or accepting it via argv. */
+/** Read a secret from a real terminal, showing masks rather than the real characters. */
 function readHidden(prompt) {
   if (!stdin.isTTY || !stdout.isTTY || typeof stdin.setRawMode !== "function") {
     throw new Error("Run this command in an interactive terminal so the password can be entered privately.");
   }
 
-  stdout.write(prompt);
+  stdout.write(`${prompt}(characters appear as *) `);
   emitKeypressEvents(stdin);
   stdin.setEncoding("utf8");
   stdin.resume();
@@ -65,13 +65,19 @@ function readHidden(prompt) {
       }
 
       if (key.name === "backspace") {
-        value = Array.from(value).slice(0, -1).join("");
+        if (value) {
+          value = Array.from(value).slice(0, -1).join("");
+          stdout.write("\b \b");
+        }
         return;
       }
 
       // Ignore navigation/function keys. Pasted text arrives as ordinary text and is
-      // accepted, but nothing is written back to stdout.
-      if (text && !key.ctrl && !key.meta && !key.name?.startsWith("arrow")) value += text;
+      // accepted. Only one mask per Unicode character is written back to stdout.
+      if (text && !key.ctrl && !key.meta && !key.name?.startsWith("arrow")) {
+        value += text;
+        stdout.write("*".repeat(Array.from(text).length));
+      }
     };
 
     stdin.on("keypress", onKeypress);
