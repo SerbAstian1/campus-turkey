@@ -11,6 +11,7 @@
 import { useState, type FormEvent } from "react";
 import { Badge, BrandDivider, Button, Card, Checkbox, Icon, Input, Select } from "@/ds";
 import { BrandMark } from "@/components/Common";
+import { PasswordInput } from "@/components/PasswordInput";
 import { go } from "@/app/router";
 import { useLeadSubmit } from "@/features/leads/submit";
 import { CaptchaField } from "@/features/leads/captcha";
@@ -117,11 +118,11 @@ export function PartnerForm({
             onChange={(e) => setForm((f) => ({ ...f, country: countries.toEnglish(e.target.value) }))} />
           <Input id="p-name" label={t("Contact person")} icon="user" placeholder={t("Full name")} required value={form.name} onChange={set("name")} />
           <Input id="p-email" label={t("Work email")} type="email" icon="mail" placeholder="you@agency.com" required value={form.email} onChange={set("email")} />
-          <Input id="p-password" label={t("Create password")} type="password" icon="lock"
+          <PasswordInput id="p-password" label={t("Create password")} icon="lock"
             hint={t("At least {count} characters. It becomes active after Campus Turkey approves your registration.", { count: MIN_PASSWORD })}
             required autoComplete="new-password"
             value={form.password} onChange={set("password")} />
-          <Input id="p-confirm-password" label={t("Confirm password")} type="password" icon="lock"
+          <PasswordInput id="p-confirm-password" label={t("Confirm password")} icon="lock"
             required autoComplete="new-password"
             value={form.confirm} onChange={set("confirm")} />
           <Input id="p-phone" label={t("WhatsApp number")} icon="phone" hint={t("Include your country code.")} value={form.phone} onChange={set("phone")} />

@@ -46,7 +46,7 @@ const SKIP_FILE = /\.(test|spec)\.[jt]sx?$/;
  */
 function namespaceFor(file) {
   const p = relative(web, file).split(sep).join("/");
-  if (/\/(Apply|Contact|PartnerForm|RepresentativeForm|SetPassword|PartnerLogin)\.tsx$/.test(p)) return "forms";
+  if (/\/(Apply|Contact|PartnerForm|RepresentativeForm|SetPassword|PartnerLogin|PasswordInput)\.tsx$/.test(p)) return "forms";
   if (/\/(Portal|StudentPortal|RepresentativePortal)\.tsx$/.test(p)) return "portal";
   if (/\/Errors\.tsx$/.test(p) || /error\.tsx$/.test(p)) return "errors";
   if (p.startsWith("app/")) return "seo";

@@ -10,6 +10,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { Badge, BrandDivider, Button, Card, Checkbox, Icon, Input, Select, StepIndicator, ScrollReveal } from "@/ds";
 import { BrandMark } from "@/components/Common";
+import { PasswordInput } from "@/components/PasswordInput";
 import { go } from "@/app/router";
 import { useLeadSubmit } from "@/features/leads/submit";
 import { useT } from "@/i18n/context";
@@ -191,11 +192,11 @@ export default function Apply() {
                   value={countries.display(form.country)}
                   onChange={(e) => setForm((f) => ({ ...f, country: countries.toEnglish(e.target.value) }))}
                   required />
-                <Input id="a-password" label={t("Create password")} type="password" icon="lock"
+                <PasswordInput id="a-password" label={t("Create password")} icon="lock"
                   hint={t("At least {count} characters. It becomes active after Campus Turkey approves your registration.", { count: MIN_PASSWORD })}
                   required autoComplete="new-password" value={form.password}
                   onChange={(e) => { set("password")(e); setPasswordError(null); }} />
-                <Input id="a-confirm-password" label={t("Confirm password")} type="password" icon="lock"
+                <PasswordInput id="a-confirm-password" label={t("Confirm password")} icon="lock"
                   required autoComplete="new-password" value={form.confirm}
                   onChange={(e) => { set("confirm")(e); setPasswordError(null); }} />
                 {passwordError ? (

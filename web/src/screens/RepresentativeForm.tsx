@@ -23,6 +23,7 @@
 import { useState, type FormEvent } from "react";
 import { Badge, BrandDivider, Button, Card, Checkbox, Icon, Input, Select } from "@/ds";
 import { BrandMark } from "@/components/Common";
+import { PasswordInput } from "@/components/PasswordInput";
 import { go } from "@/app/router";
 import { useRepresentativeApplication } from "@/features/representatives/submit";
 import { useT } from "@/i18n/context";
@@ -133,11 +134,11 @@ export function RepresentativeForm() {
             hint={t("Include your country code.")} autoComplete="tel"
             value={form.phone} onChange={set("phone")} />
 
-          <Input id="r-password" label={t("Create password")} type="password" icon="lock"
+          <PasswordInput id="r-password" label={t("Create password")} icon="lock"
             hint={t("At least {count} characters. It becomes active after Campus Turkey approves your registration.", { count: MIN_PASSWORD })}
             required autoComplete="new-password"
             value={form.password} onChange={set("password")} />
-          <Input id="r-confirm-password" label={t("Confirm password")} type="password" icon="lock"
+          <PasswordInput id="r-confirm-password" label={t("Confirm password")} icon="lock"
             required autoComplete="new-password"
             value={form.confirm} onChange={set("confirm")} />
 

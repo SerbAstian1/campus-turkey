@@ -38,6 +38,7 @@ import { useT } from "@/i18n/context";
 import { useTranslatedOptions } from "@/i18n/options";
 import { useCountryOptions } from "@/i18n/countries";
 import { ConsentPrivacyNote, FieldErrors } from "./shared";
+import { PasswordInput } from "@/components/PasswordInput";
 
 type Role = "STUDENT" | "PARTNER" | "REPRESENTATIVE" | "STAFF";
 const MIN_PASSWORD = 12;
@@ -258,7 +259,7 @@ export default function PartnerLogin() {
                 <Input id="p-email" label={t("Email address")} type="email" icon="mail" placeholder="you@example.com"
                   required autoComplete="username" value={email}
                   onChange={(e) => setEmail(e.target.value)} />
-                <Input id="p-pass" label={t("Password")} type="password" icon="lock" placeholder="••••••••"
+                <PasswordInput id="p-pass" label={t("Password")} icon="lock" placeholder="••••••••"
                   required autoComplete="current-password" value={password}
                   onChange={(e) => setPassword(e.target.value)} />
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-4)" }}>
@@ -337,11 +338,11 @@ export default function PartnerLogin() {
                     <Input id="r-email" label={t("Work email")} type="email" icon="mail"
                       placeholder="you@agency.com" required autoComplete="email"
                       value={reg.email} onChange={setReg("email")} />
-                    <Input id="r-password" label={t("Create password")} type="password" icon="lock"
+                    <PasswordInput id="r-password" label={t("Create password")} icon="lock"
                       hint={t("At least {count} characters. It becomes active after Campus Turkey approves your registration.", { count: MIN_PASSWORD })}
                       required autoComplete="new-password"
                       value={reg.password} onChange={setReg("password")} />
-                    <Input id="r-confirm-password" label={t("Confirm password")} type="password" icon="lock"
+                    <PasswordInput id="r-confirm-password" label={t("Confirm password")} icon="lock"
                       required autoComplete="new-password"
                       value={reg.confirm} onChange={setReg("confirm")} />
 
@@ -389,11 +390,11 @@ export default function PartnerLogin() {
                     <Input id="s-email" label={t("Email address")} type="email" icon="mail"
                       placeholder="you@example.com" required autoComplete="email"
                       value={study.email} onChange={setStudy("email")} />
-                    <Input id="s-password" label={t("Create password")} type="password" icon="lock"
+                    <PasswordInput id="s-password" label={t("Create password")} icon="lock"
                       hint={t("At least {count} characters. It becomes active after Campus Turkey approves your registration.", { count: MIN_PASSWORD })}
                       required autoComplete="new-password"
                       value={study.password} onChange={setStudy("password")} />
-                    <Input id="s-confirm-password" label={t("Confirm password")} type="password" icon="lock"
+                    <PasswordInput id="s-confirm-password" label={t("Confirm password")} icon="lock"
                       required autoComplete="new-password"
                       value={study.confirm} onChange={setStudy("confirm")} />
                     <Input id="s-phone" label={t("WhatsApp number (optional)")} icon="phone"

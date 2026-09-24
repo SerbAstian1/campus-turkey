@@ -25,6 +25,7 @@ import { BrandDivider, Button, Icon, Input, Logo, ASSETS } from "@/ds";
 import { go } from "@/app/router";
 import { requestSetupCode, setPasswordWithCode, signInWithPassword } from "@/features/auth/client";
 import { useT } from "@/i18n/context";
+import { PasswordInput } from "@/components/PasswordInput";
 
 /** Better Auth is configured with `minPasswordLength: 12`. Stated here so the field can
  *  say so before the server refuses, rather than after. */
@@ -132,14 +133,14 @@ export default function SetPassword() {
                   placeholder="you@agency.com" required autoComplete="username"
                   value={email} onChange={(e) => setEmail(e.target.value)}
                 />
-                <Input
-                  id="sp-pass" label={t("New password")} type="password" icon="lock"
+                <PasswordInput
+                  id="sp-pass" label={t("New password")} icon="lock"
                   hint={t("At least {count} characters.", { count: MIN_PASSWORD })}
                   placeholder="••••••••••••" required autoComplete="new-password"
                   value={password} onChange={(e) => setPassword(e.target.value)}
                 />
-                <Input
-                  id="sp-confirm" label={t("Confirm password")} type="password" icon="lock"
+                <PasswordInput
+                  id="sp-confirm" label={t("Confirm password")} icon="lock"
                   placeholder="••••••••••••" required autoComplete="new-password"
                   value={confirm} onChange={(e) => setConfirm(e.target.value)}
                 />
