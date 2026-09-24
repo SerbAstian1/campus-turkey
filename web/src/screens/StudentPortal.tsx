@@ -21,12 +21,11 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import { BrandDivider, Button, Card, Icon, Input, Logo, ASSETS } from "@/ds";
-import { go } from "@/app/router";
 import { toast } from "@/app/toast";
 import { ItemOverflowMenu } from "@/components/ItemOverflowMenu";
 import { useT } from "@/i18n/context";
 import {
-  NEEDS_STUDENT, STATUS_COPY, claimRecord, useStudentDashboard, when,
+  NEEDS_STUDENT, STATUS_COPY, claimRecord, startApplication, useStudentDashboard, when,
   type StudentApplication, type StudentProfile,
 } from "@/features/student/data";
 
@@ -151,6 +150,7 @@ function Heading({ title, lead }: { title: string; lead: string }) {
 
 function Dashboard({ applications, name, onChanged }: { applications: StudentApplication[]; name: string | null; onChanged: () => void }) {
   const t = useT();
+  const [starting, setStarting] = useState(false);
   // The one the applicant is most likely asking about: the most recently touched.
   const current = applications[0];
 
@@ -160,6 +160,18 @@ function Dashboard({ applications, name, onChanged }: { applications: StudentApp
   );
 
   if (!current) {
+    const start = async () => {
+      if (starting) return;
+      setStarting(true);
+      const result = await startApplication();
+      if (result.ok) {
+        onChanged();
+        return;
+      }
+      toast(result.message);
+      setStarting(false);
+    };
+
     return (
       <>
         <Heading title={name ? t("Welcome, {name}", { name }) : t("Welcome")} lead={t("Your application will appear here once it is started.")} />
@@ -169,7 +181,9 @@ function Dashboard({ applications, name, onChanged }: { applications: StudentApp
             <p style={{ margin: 0, color: "var(--text-body)" }}>
               {t("Start your application to begin your journey to Türkiye.")}
             </p>
-            <Button variant="primary" onClick={() => go("apply")}>{t("Apply Now")}</Button>
+            <Button variant="primary" disabled={starting} onClick={() => void start()}>
+              {t("Start your application")}
+            </Button>
           </div>
         </Card>
       </>

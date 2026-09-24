@@ -176,6 +176,26 @@ export function useStudentDashboard(): DashboardState {
   return state;
 }
 
+export type StartApplicationResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+/** Start a draft for the signed-in student without returning to public registration. */
+export async function startApplication(): Promise<StartApplicationResult> {
+  try {
+    const response = await fetch("/api/student/applications", { method: "POST" });
+    if (response.ok) return { ok: true };
+
+    const body = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+    return {
+      ok: false,
+      message: body.error?.message ?? "We could not start your application.",
+    };
+  } catch {
+    return { ok: false, message: "We could not reach the server. Check your connection." };
+  }
+}
+
 export type ClaimResult = { ok: true; studentName: string } | { ok: false; message: string };
 
 export async function claimRecord(input: {

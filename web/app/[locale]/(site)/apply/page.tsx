@@ -11,12 +11,17 @@
  */
 
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { pageMetadata } from "@/server/lib/seo";
-import { LOCALES, type Locale } from "@/i18n/locales";
+import { LOCALES, localePath, type Locale } from "@/i18n/locales";
 import { getTranslator } from "@/i18n/messages";
 import Apply from "@/screens/Apply";
 import { Hydrated } from "@/app/Hydrated";
 import { ApplySeo } from "@/components/seo/routes";
+import { auth } from "@/server/lib/auth";
+import { db } from "@/server/lib/db";
+import { portalPathForRole } from "@/features/auth/portal-route";
 
 /**
  * Prerendered in every language. 17 locales x this page.
@@ -40,6 +45,17 @@ export async function generateMetadata(
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+
+  // Registration is for new applicants. An existing account continues in its portal,
+  // so it cannot accidentally submit another registration for the same email address.
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (session?.user) {
+    const account = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    });
+    if (account) redirect(localePath(portalPathForRole(account.role), locale as Locale));
+  }
 
   /* Server-rendered text first, the design system over it once the bundle resolves.
      See src/app/Hydrated.tsx for why the fallback is the content and not a spinner. */

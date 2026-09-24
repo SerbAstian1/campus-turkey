@@ -23,6 +23,8 @@ import { MobileNav } from "./MobileNav";
 import { useMega } from "./mega";
 import { routeKey, useRoute, usePlaceholderLinks, useNavigationBridge, useLegacyHashRedirect, useHashTarget, useHref, go } from "./router";
 import { subscribeToToasts } from "./toast";
+import { useSession } from "@/features/auth/client";
+import { portalPathForRole } from "@/features/auth/portal-route";
 
 /**
  * Next.js signals `notFound()` and `redirect()` by throwing.
@@ -110,6 +112,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const [lang, setLanguage] = useLocaleSwitch();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [narrow, setNarrow] = useState(false);
+  const { data: authSession } = useSession();
 
   // Parks the router so the free `go()` the screens call can reach it.
   useNavigationBridge();
@@ -161,6 +164,12 @@ export function Shell({ children }: { children: ReactNode }) {
   };
 
   const mega = useMega();
+  // Better Auth returns additional user fields at runtime but its React client does not
+  // infer this server declaration. Keep the narrow cast at this boundary.
+  const accountRole = authSession?.user
+    ? (authSession.user as typeof authSession.user & { role?: string }).role
+    : null;
+  const accountRoute = authSession?.user ? portalPathForRole(accountRole) : null;
 
   const navItems = nav.map((n) => ({
     label: n.route ? (navLabels[n.route] ?? n.label) : (navLabels[n.label] ?? n.label),
@@ -208,7 +217,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <a className="ct-skip" href="#main">{t("Skip to content")}</a>
       <ScrollProgress />
 
-      <MobileNav lang={lang} onLangChange={setLanguage} route={key} />
+      <MobileNav lang={lang} onLangChange={setLanguage} route={key} accountRoute={accountRoute ?? undefined} />
       <div className="ct-desktop-nav">
         <Navbar
           items={navItems}
@@ -216,13 +225,13 @@ export function Shell({ children }: { children: ReactNode }) {
           lang={lang}
           onLangChange={setLanguage}
           assetBase={ASSETS}
-          ctaLabel={t("Apply Now")}
-          ctaHref={href("apply")}
+          ctaLabel={accountRoute ? t("Dashboard") : t("Apply Now")}
+          ctaHref={href(accountRoute ?? "apply")}
           /* The design system hardcodes this button's destination to
              `href="#consultation"` and exposes no prop to change it — only the label.
              `usePlaceholderLinks` resolves it to the portal when the click comes from
              inside the navbar. See the rule table in ./router. */
-          secondaryLabel={narrow ? "" : t("Login")}
+          secondaryLabel={narrow || accountRoute ? "" : t("Login")}
           onSelect={(item, e) => {
             /* A group trigger has no destination. Without this it falls through to the
                design system's placeholder href and navigates away, which is the only

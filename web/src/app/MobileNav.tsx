@@ -16,11 +16,12 @@ import { go, useHref } from "./router";
 type Group = { key: string; label: string; icon: string; links: [string, string, string][] };
 
 export function MobileNav({
-  lang, onLangChange, route,
+  lang, onLangChange, route, accountRoute,
 }: {
   lang: string;
   onLangChange: (code: string) => void;
   route: string;
+  accountRoute?: string;
 }) {
   const t = useT();
   const href = useHref();
@@ -63,7 +64,7 @@ export function MobileNav({
       [t("For universities"), "partnerships/universities", "landmark"],
       [t("For agencies"), "institutions/agencies", "users"],
       [t("For hospitals"), "institutions/hospitals", "stethoscope"],
-      [t("Login"), "portal", "log-in"]] },
+      [accountRoute ? t("Dashboard") : t("Login"), accountRoute ?? "portal", accountRoute ? "layout-dashboard" : "log-in"]] },
     { key: "company", label: t("Company"), icon: "info", links: [
       [t("About us"), "about", "info"],
       [t("Contact"), "contact", "phone"]] },
@@ -95,7 +96,9 @@ export function MobileNav({
           visibility: open ? "visible" : "hidden",
         }}
       >
-        <Button variant="primary" size="lg" fullWidth onClick={() => navigate("apply")}>{t("Apply Now")}</Button>
+        <Button variant="primary" size="lg" fullWidth onClick={() => navigate(accountRoute ?? "apply")}>
+          {accountRoute ? t("Dashboard") : t("Apply Now")}
+        </Button>
         <Button variant="secondary" size="lg" fullWidth icon="calendar-check" onClick={() => navigate("contact")}>{t("Book a Consultation")}</Button>
 
         <nav>
