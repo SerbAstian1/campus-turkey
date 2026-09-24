@@ -84,7 +84,10 @@ describe("§89 — staff do not automatically gain admin", () => {
   });
 
   it("but staff can do the operational work §30 grants them", () => {
-    expect(hasPermission(principal("STAFF"), ["READ_LEADS", "UPDATE_LEADS", "REVIEW_DOCUMENTS"]))
+    expect(hasPermission(principal("STAFF"), [
+      "READ_LEADS", "UPDATE_LEADS", "DELETE_LEADS",
+      "DELETE_REPRESENTATIVE_APPLICATIONS", "REVIEW_DOCUMENTS",
+    ]))
       .toBe(true);
   });
 

@@ -27,9 +27,10 @@ import { z } from "zod";
 import { route } from "@/server/http/handler";
 import { requireUser } from "@/server/http/session";
 import { RATE_LIMITS } from "@/server/lib/ratelimit";
-import { NotFoundError, UnprocessableError, ValidationError } from "@/server/lib/errors";
+import { ConflictError, NotFoundError, UnprocessableError, ValidationError } from "@/server/lib/errors";
 import { db } from "@/server/lib/db";
 import { updateLeadBody } from "@/server/modules/staff/staff.schema";
+import { recordAudit } from "@/server/modules/audit/audit.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -103,5 +104,109 @@ export const PATCH = route({
     });
 
     return lead;
+  },
+});
+
+/**
+ * Delete an intake record that has not become an account.
+ *
+ * Inquiries and attribution cascade with the lead. A registration-time PENDING user is
+ * removed in the same transaction; leaving it behind would reserve the email address
+ * and strand a credential for an application that no longer exists.
+ */
+export const DELETE = route({
+  access: { kind: "permission", require: ["DELETE_LEADS"] },
+  rateLimit: RATE_LIMITS.partnerWrite,
+  handler: async ({ params, session, log }) => {
+    const actor = requireUser(session);
+    const parsed = idParam.safeParse(params["id"]);
+    if (!parsed.success) {
+      throw new ValidationError({ id: ["That is not a valid enquiry."] });
+    }
+
+    const result = await db.$transaction(async (tx) => {
+      const lead = await tx.lead.findUnique({
+        where: { id: parsed.data },
+        select: {
+          id: true, email: true, kind: true, status: true, convertedUserId: true,
+        },
+      });
+      if (!lead) throw new NotFoundError("We could not find that enquiry.");
+      if (lead.status === "CONVERTED" || lead.convertedUserId) {
+        throw new ConflictError(
+          "lead_converted",
+          "This enquiry has already become an account and cannot be deleted here.",
+        );
+      }
+
+      const pendingUser = await tx.user.findUnique({
+        where: { email: lead.email },
+        select: {
+          id: true, status: true, role: true,
+          accounts: { select: { providerId: true, password: true } },
+          partner: { select: { id: true } },
+          representative: { select: { id: true } },
+          studentProfile: { select: { id: true } },
+        },
+      });
+
+      const removablePendingUser = Boolean(
+        pendingUser &&
+        pendingUser.status === "PENDING" &&
+        (pendingUser.role === "STUDENT" || pendingUser.role === "PARTNER") &&
+        pendingUser.accounts.some((account) => account.providerId === "credential" && Boolean(account.password)) &&
+        !pendingUser.partner && !pendingUser.representative && !pendingUser.studentProfile,
+      );
+
+      const deletedLead = await tx.lead.deleteMany({
+        where: {
+          id: lead.id,
+          status: { not: "CONVERTED" },
+          convertedUserId: null,
+        },
+      });
+      if (deletedLead.count !== 1) {
+        throw new ConflictError(
+          "lead_converted",
+          "This enquiry became an account while you were deleting it. The account was not changed.",
+        );
+      }
+
+      let pendingAccountRemoved = false;
+      if (pendingUser && removablePendingUser) {
+        const deletedUser = await tx.user.deleteMany({
+          where: {
+            id: pendingUser.id,
+            status: "PENDING",
+            role: { in: ["STUDENT", "PARTNER"] },
+            partner: null,
+            representative: null,
+            studentProfile: null,
+          },
+        });
+        pendingAccountRemoved = deletedUser.count === 1;
+      }
+
+      await recordAudit({
+        action: "lead.deleted",
+        entityType: "lead",
+        entityId: lead.id,
+        actorUserId: actor.id,
+        metadata: {
+          kind: lead.kind,
+          previousStatus: lead.status,
+          pendingAccountRemoved,
+        },
+      }, tx);
+
+      return { id: lead.id, pendingAccountRemoved };
+    });
+
+    log.audit("lead.deleted", {
+      leadId: result.id,
+      actorUserId: actor.id,
+      pendingAccountRemoved: result.pendingAccountRemoved,
+    });
+    return { deleted: true };
   },
 });

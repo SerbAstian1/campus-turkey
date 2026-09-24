@@ -104,6 +104,7 @@ function ApplicationRow({
   const [territory, setTerritory] = useState(application.territory ?? "");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -111,6 +112,30 @@ function ApplicationRow({
   // A rejection without a reason is refused by the API, so the button stays inert until
   // there is one rather than letting the reviewer discover it on submit.
   const ready = choice === "APPROVE" || (choice === "REJECT" && note.trim().length > 0);
+
+  async function deleteApplication() {
+    const confirmed = window.confirm(
+      "Delete this representative application? This cannot be undone.",
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setError(null);
+    const result = await act(
+      `/api/staff/representative-applications/${application.id}`,
+      undefined,
+      "DELETE",
+    );
+    setDeleting(false);
+
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+
+    toast("Representative application deleted.");
+    onDecided();
+  }
 
   async function submit() {
     if (!choice || !ready) return;
@@ -173,10 +198,23 @@ function ApplicationRow({
                 label: "Copy application ID", icon: "clipboard",
                 onSelect: () => { void navigator.clipboard.writeText(application.id); toast("Application ID copied."); },
               },
+              ...(application.status !== "APPROVED" ? [{
+                label: deleting ? "Deleting…" : "Delete application",
+                icon: "trash",
+                danger: true,
+                disabled: deleting,
+                onSelect: () => { void deleteApplication(); },
+              }] : []),
             ]}
           />
         </div>
       </div>
+
+      {error && !choice ? (
+        <p role="alert" style={{ margin: 0, color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>
+          {error}
+        </p>
+      ) : null}
 
       <dl style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: "var(--space-4)", margin: 0 }}>
         <Field label="Email" value={application.email} />

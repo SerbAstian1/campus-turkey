@@ -112,6 +112,8 @@ function LeadRow({
   onDone: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const latest = lead.latest;
   const withheld = latest ? "withheld" in latest.payload : false;
@@ -125,6 +127,26 @@ function LeadRow({
   const daysLeft = Math.ceil(
     (new Date(latest?.retentionUntil ?? lead.retentionUntil).getTime() - Date.now()) / 86_400_000,
   );
+
+  const deleteLead = async () => {
+    const confirmed = window.confirm(
+      "Delete this enquiry and all of its messages? This cannot be undone.",
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+    const result = await act(`/api/staff/leads/${lead.id}`, undefined, "DELETE");
+    setDeleting(false);
+
+    if (!result.ok) {
+      setDeleteError(result.message);
+      return;
+    }
+
+    toast("Enquiry deleted.");
+    onDone();
+  };
 
   return (
     <Card padding="var(--space-6)" radius="var(--radius-lg)" elevation="sm">
@@ -173,10 +195,23 @@ function LeadRow({
                 label: "Copy lead ID", icon: "clipboard",
                 onSelect: () => { void navigator.clipboard.writeText(lead.id); toast("Lead ID copied."); },
               },
+              ...(lead.status !== "CONVERTED" ? [{
+                label: deleting ? "Deleting…" : "Delete enquiry",
+                icon: "trash",
+                danger: true,
+                disabled: deleting,
+                onSelect: () => { void deleteLead(); },
+              }] : []),
             ]}
           />
         </div>
       </div>
+
+      {deleteError ? (
+        <p role="alert" style={{ margin: "var(--space-3) 0 0", color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>
+          {deleteError}
+        </p>
+      ) : null}
 
       {withheld || !latest ? (
         <p style={{ margin: "var(--space-4) 0 0", color: "var(--text-muted)", fontSize: "var(--fs-body-sm)" }}>

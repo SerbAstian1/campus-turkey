@@ -77,7 +77,10 @@ beforeEach(() => {
   act.mockReset().mockResolvedValue({ ok: true });
   useRepresentativeApplications.mockReset().mockReturnValue(feed([application]));
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("who may decide", () => {
   it("shows the applicant to a reader who cannot decide", () => {
@@ -153,6 +156,35 @@ describe("deciding", () => {
 
     // The API writes its refusals for a person to read; repeating one beats inventing one.
     await waitFor(() => expect(screen.getByText(/already decided/i)).toBeTruthy());
+  });
+});
+
+describe("deleting", () => {
+  it("confirms and deletes an unapproved application", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<RepresentativeQueue canDecide />);
+
+    fireEvent.click(screen.getByRole("button", { name: `Actions for ${application.fullName}` }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /delete application/i }));
+
+    await waitFor(() => expect(act).toHaveBeenCalledWith(
+      `/api/staff/representative-applications/${application.id}`,
+      undefined,
+      "DELETE",
+    ));
+    expect(confirm).toHaveBeenCalledOnce();
+  });
+
+  it("does not offer deletion after approval created an account", () => {
+    useRepresentativeApplications.mockReturnValue(feed([{
+      ...application,
+      status: "APPROVED" as const,
+      reviewedAt: new Date().toISOString(),
+    }]));
+    render(<RepresentativeQueue canDecide />);
+
+    fireEvent.click(screen.getByRole("button", { name: `Actions for ${application.fullName}` }));
+    expect(screen.queryByRole("menuitem", { name: /delete application/i })).toBeNull();
   });
 });
 

@@ -155,7 +155,7 @@ async function get<T>(path: string): Promise<T> {
 export async function act<T = unknown>(
   path: string,
   body: unknown,
-  method: "POST" | "PATCH" = "POST",
+  method: "POST" | "PATCH" | "DELETE" = "POST",
 ): Promise<{ ok: true; data?: T } | { ok: false; message: string }> {
   try {
     const response = await fetch(path, {
