@@ -39,6 +39,7 @@ vi.mock("@/features/leads/submit", () => ({
 }));
 vi.mock("@/features/leads/captcha", () => ({ CaptchaField: () => null }));
 vi.mock("@/i18n/context", () => ({
+  useLocale: () => "en",
   useT: () => (message: string, values?: Record<string, unknown>) =>
     values?.["count"] ? message.replace("{count}", String(values["count"])) : message,
 }));

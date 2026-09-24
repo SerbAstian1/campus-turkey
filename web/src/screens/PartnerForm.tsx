@@ -16,6 +16,7 @@ import { useLeadSubmit } from "@/features/leads/submit";
 import { CaptchaField } from "@/features/leads/captcha";
 import { useT } from "@/i18n/context";
 import { useTranslatedOptions } from "@/i18n/options";
+import { useCountryOptions } from "@/i18n/countries";
 import { FieldErrors } from "./shared";
 
 /**
@@ -42,6 +43,7 @@ export function PartnerForm({
   const t = useT();
   const kindOptions = useTranslatedOptions(kinds);
   const volumes = useTranslatedOptions(VOLUMES);
+  const countries = useCountryOptions();
   const [form, setForm] = useState({
     org: "", kind: "", country: "", name: "", email: "", phone: "", volume: "",
     password: "", confirm: "", terms: true,
@@ -109,7 +111,10 @@ export function PartnerForm({
           <Select id="p-kind" label={t("You are a")} required options={kindOptions.options}
             value={kindOptions.display(form.kind)}
             onChange={(e) => setForm((f) => ({ ...f, kind: kindOptions.toEnglish(e.target.value) }))} />
-          <Input id="p-country" label={t("Country you cover")} icon="globe" placeholder={t("Nigeria")} required value={form.country} onChange={set("country")} />
+          <Select id="p-country" label={t("Country you cover")} required
+            options={countries.options}
+            value={countries.display(form.country)}
+            onChange={(e) => setForm((f) => ({ ...f, country: countries.toEnglish(e.target.value) }))} />
           <Input id="p-name" label={t("Contact person")} icon="user" placeholder={t("Full name")} required value={form.name} onChange={set("name")} />
           <Input id="p-email" label={t("Work email")} type="email" icon="mail" placeholder="you@agency.com" required value={form.email} onChange={set("email")} />
           <Input id="p-password" label={t("Create password")} type="password" icon="lock"

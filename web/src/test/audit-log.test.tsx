@@ -28,8 +28,8 @@ const useAuditLog = vi.fn();
 vi.mock("@/ds", () => ({
   Button: ({ children, ...rest }: React.ComponentProps<"button">) =>
     React.createElement("button", { type: "button", ...rest }, children),
-  Card: ({ children }: { children?: React.ReactNode }) =>
-    React.createElement("div", null, children),
+  Card: ({ children, ...rest }: React.ComponentProps<"div">) =>
+    React.createElement("div", rest, children),
   Icon: () => null,
 }));
 
@@ -148,14 +148,21 @@ describe("paging", () => {
 });
 
 describe("read-only", () => {
-  it("offers nothing to act on", () => {
+  it("offers copy helpers but no action that changes or deletes a record", () => {
     useAuditLog.mockReturnValue(feed([entry(), entry({ action: "representative_application.approved" })]));
     render(<AuditLog />);
-    // The table is append-only in the database. A button here would describe a power
-    // that does not exist — including for an admin.
-    const buttons = screen.queryAllByRole("button");
-    // Only the four scope filters.
-    expect(buttons.every((b) => b.getAttribute("aria-pressed") !== null)).toBe(true);
+
+    fireEvent.click(screen.getAllByRole("button", { name: /actions for record/i })[0]!);
+    expect(screen.getByRole("menuitem", { name: /copy entry id/i })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: /copy record id/i })).toBeTruthy();
+    expect(screen.queryByRole("menuitem", { name: /delete|edit/i })).toBeNull();
+  });
+
+  it("does not clip an open overflow menu at the record card boundary", () => {
+    render(<AuditLog />);
+    const list = screen.getByRole("list");
+
+    expect(list.parentElement?.style.overflow).toBe("visible");
   });
 });
 

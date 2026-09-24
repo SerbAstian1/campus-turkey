@@ -36,6 +36,7 @@ import { useLeadSubmit } from "@/features/leads/submit";
 import { CaptchaField } from "@/features/leads/captcha";
 import { useT } from "@/i18n/context";
 import { useTranslatedOptions } from "@/i18n/options";
+import { useCountryOptions } from "@/i18n/countries";
 import { ConsentPrivacyNote, FieldErrors } from "./shared";
 
 type Role = "STUDENT" | "PARTNER" | "REPRESENTATIVE" | "STAFF";
@@ -46,8 +47,6 @@ const MIN_PASSWORD = 12;
  * Hoisted for `useTranslatedOptions`, which memoises on array identity.
  */
 export const PARTNER_KINDS = ["Education agency", "Consultant", "University", "Country representative"] as const;
-
-export const COUNTRIES = ["Nigeria", "Morocco", "Kenya", "Egypt", "Pakistan", "Indonesia", "Other"] as const;
 
 /**
  * Study levels, with the value the API accepts attached to the label that offers it.
@@ -114,7 +113,7 @@ export default function PartnerLogin() {
   const roles = useRoles();
   const destination = useDestination();
   const kinds = useTranslatedOptions(PARTNER_KINDS);
-  const countries = useTranslatedOptions(COUNTRIES);
+  const countries = useCountryOptions();
   const levels = useTranslatedOptions(LEVEL_LABELS);
 
   const [role, setRole] = useState<Role>("STUDENT");
@@ -134,7 +133,7 @@ export default function PartnerLogin() {
    * an applicant read that as success, and nothing was ever stored.
    */
   const [reg, setRegState] = useState({
-    org: "", name: "", email: "", volume: "", password: "", confirm: "", terms: true,
+    org: "", name: "", email: "", country: "", volume: "", password: "", confirm: "", terms: true,
   });
   const { state: registered, submit: submitRegistration } = useLeadSubmit("PARTNER");
 
@@ -168,7 +167,7 @@ export default function PartnerLogin() {
     if (problem) { setRegistrationError(problem); return; }
     setRegistrationError(null);
     await submitRegistration(
-      { org: reg.org, name: reg.name, email: reg.email, volume: reg.volume },
+      { org: reg.org, name: reg.name, email: reg.email, territory: reg.country, volume: reg.volume },
       reg.terms,
       reg.password,
     );
@@ -329,6 +328,11 @@ export default function PartnerLogin() {
                       options={kinds.options}
                       value={kinds.display(reg.volume)}
                       onChange={(e) => setRegState((f) => ({ ...f, volume: kinds.toEnglish(e.target.value) }))}
+                      required />
+                    <Select id="r-country" label={t("Country you cover")}
+                      options={countries.options}
+                      value={countries.display(reg.country)}
+                      onChange={(e) => setRegState((f) => ({ ...f, country: countries.toEnglish(e.target.value) }))}
                       required />
                     <Input id="r-email" label={t("Work email")} type="email" icon="mail"
                       placeholder="you@agency.com" required autoComplete="email"

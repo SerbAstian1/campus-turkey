@@ -84,7 +84,10 @@ vi.mock("@/screens/RepresentativeForm", () => ({
     React.createElement("div", { "data-testid": "representative-form" }, "representative application"),
 }));
 
-vi.mock("@/i18n/context", () => ({ useT: () => (s: string) => s }));
+vi.mock("@/i18n/context", () => ({
+  useLocale: () => "en",
+  useT: () => (s: string) => s,
+}));
 
 const PartnerLogin = (await import("@/screens/PartnerLogin")).default;
 
@@ -144,9 +147,24 @@ describe("registering, per role", () => {
     openRegister();
 
     expect(screen.getByLabelText(/Organisation name/)).toBeTruthy();
+    expect(screen.getByLabelText(/Country you cover/)).toBeTruthy();
     expect(screen.getByLabelText(/^Create password$/)).toBeTruthy();
     expect(screen.getByLabelText(/^Confirm password$/)).toBeTruthy();
     expect(screen.queryByLabelText(/What do you want to study/)).toBeNull();
+  });
+
+  it("submits a partner's selected country as their territory", async () => {
+    render(<PartnerLogin />);
+    pickRole(/^Partner$/);
+    openRegister();
+
+    fireEvent.change(screen.getByLabelText(/Country you cover/), { target: { value: "Benin" } });
+    fireEvent.change(screen.getByLabelText(/^Create password$/), { target: { value: "a-secure-password" } });
+    fireEvent.change(screen.getByLabelText(/^Confirm password$/), { target: { value: "a-secure-password" } });
+    fireEvent.submit(document.querySelector("form")!);
+
+    await waitFor(() => expect(submits.PARTNER).toHaveBeenCalledOnce());
+    expect(submits.PARTNER!.mock.calls[0]![0]).toMatchObject({ territory: "Benin" });
   });
 
   it("asks a student what they want to study", () => {

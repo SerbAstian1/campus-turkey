@@ -108,11 +108,13 @@ export const PATCH = route({
 });
 
 /**
- * Delete an intake record that has not become an account.
+ * Delete an intake record.
  *
  * Inquiries and attribution cascade with the lead. A registration-time PENDING user is
  * removed in the same transaction; leaving it behind would reserve the email address
- * and strand a credential for an application that no longer exists.
+ * and strand a credential for an application that no longer exists. If the lead has
+ * already become an account, only this intake record is deleted; the active account is
+ * deliberately preserved.
  */
 export const DELETE = route({
   access: { kind: "permission", require: ["DELETE_LEADS"] },
@@ -132,13 +134,6 @@ export const DELETE = route({
         },
       });
       if (!lead) throw new NotFoundError("We could not find that enquiry.");
-      if (lead.status === "CONVERTED" || lead.convertedUserId) {
-        throw new ConflictError(
-          "lead_converted",
-          "This enquiry has already become an account and cannot be deleted here.",
-        );
-      }
-
       const pendingUser = await tx.user.findUnique({
         where: { email: lead.email },
         select: {
@@ -159,16 +154,12 @@ export const DELETE = route({
       );
 
       const deletedLead = await tx.lead.deleteMany({
-        where: {
-          id: lead.id,
-          status: { not: "CONVERTED" },
-          convertedUserId: null,
-        },
+        where: { id: lead.id },
       });
       if (deletedLead.count !== 1) {
         throw new ConflictError(
-          "lead_converted",
-          "This enquiry became an account while you were deleting it. The account was not changed.",
+          "lead_changed",
+          "This enquiry changed while you were deleting it. Reload and try again.",
         );
       }
 
@@ -195,6 +186,7 @@ export const DELETE = route({
         metadata: {
           kind: lead.kind,
           previousStatus: lead.status,
+          activeAccountPreserved: Boolean(lead.convertedUserId),
           pendingAccountRemoved,
         },
       }, tx);

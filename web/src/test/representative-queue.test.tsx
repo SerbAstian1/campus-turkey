@@ -175,7 +175,8 @@ describe("deleting", () => {
     expect(confirm).toHaveBeenCalledOnce();
   });
 
-  it("does not offer deletion after approval created an account", () => {
+  it("offers deletion after approval and explains that the account remains", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     useRepresentativeApplications.mockReturnValue(feed([{
       ...application,
       status: "APPROVED" as const,
@@ -184,7 +185,9 @@ describe("deleting", () => {
     render(<RepresentativeQueue canDecide />);
 
     fireEvent.click(screen.getByRole("button", { name: `Actions for ${application.fullName}` }));
-    expect(screen.queryByRole("menuitem", { name: /delete application/i })).toBeNull();
+    fireEvent.click(screen.getByRole("menuitem", { name: /delete application/i }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringMatching(/active account will not be deleted/i));
+    expect(act).not.toHaveBeenCalled();
   });
 });
 

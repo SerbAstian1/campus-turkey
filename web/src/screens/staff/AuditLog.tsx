@@ -165,7 +165,7 @@ export function AuditLog() {
 
       {state.status === "ready" && state.items.length > 0 ? (
         <>
-          <Card padding="0" radius="var(--radius-lg)" style={{ overflow: "hidden" }}>
+          <Card padding="0" radius="var(--radius-lg)" style={{ overflow: "visible" }}>
             <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
               {state.items.map((event, index) => (
                 <Entry key={event.id} event={event} first={index === 0} />
@@ -218,7 +218,7 @@ function Entry({ event, first }: { event: AuditEvent; first: boolean }) {
             {when(event.createdAt)}
           </time>
           <ItemOverflowMenu
-            label="Audit entry actions"
+            label={`Actions for record ${event.id.slice(0, 8)}`}
             actions={[
               {
                 label: "Copy entry ID", icon: "copy",

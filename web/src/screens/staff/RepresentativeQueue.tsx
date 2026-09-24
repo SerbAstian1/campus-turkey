@@ -114,8 +114,11 @@ function ApplicationRow({
   const ready = choice === "APPROVE" || (choice === "REJECT" && note.trim().length > 0);
 
   async function deleteApplication() {
+    const accountNote = application.status === "APPROVED"
+      ? " The representative's active account will not be deleted."
+      : "";
     const confirmed = window.confirm(
-      "Delete this representative application? This cannot be undone.",
+      `Delete this representative application?${accountNote} This cannot be undone.`,
     );
     if (!confirmed) return;
 
@@ -198,13 +201,13 @@ function ApplicationRow({
                 label: "Copy application ID", icon: "clipboard",
                 onSelect: () => { void navigator.clipboard.writeText(application.id); toast("Application ID copied."); },
               },
-              ...(application.status !== "APPROVED" ? [{
+              {
                 label: deleting ? "Deleting…" : "Delete application",
                 icon: "trash",
                 danger: true,
                 disabled: deleting,
                 onSelect: () => { void deleteApplication(); },
-              }] : []),
+              },
             ]}
           />
         </div>

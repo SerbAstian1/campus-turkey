@@ -21,17 +21,19 @@
  */
 
 import { useState, type FormEvent } from "react";
-import { Badge, BrandDivider, Button, Card, Checkbox, Icon, Input } from "@/ds";
+import { Badge, BrandDivider, Button, Card, Checkbox, Icon, Input, Select } from "@/ds";
 import { BrandMark } from "@/components/Common";
 import { go } from "@/app/router";
 import { useRepresentativeApplication } from "@/features/representatives/submit";
 import { useT } from "@/i18n/context";
+import { useCountryOptions } from "@/i18n/countries";
 import { ConsentPrivacyNote, FieldErrors } from "./shared";
 
 const MIN_PASSWORD = 12;
 
 export function RepresentativeForm() {
   const t = useT();
+  const countries = useCountryOptions();
   const [form, setForm] = useState({
     fullName: "",
     organizationName: "",
@@ -114,8 +116,10 @@ export function RepresentativeForm() {
             required autoComplete="name" value={form.fullName} onChange={set("fullName")}
             style={{ gridColumn: "span 2" }} />
 
-          <Input id="r-country" label={t("Country you are in")} icon="globe" placeholder={t("Nigeria")}
-            required value={form.country} onChange={set("country")} />
+          <Select id="r-country" label={t("Country you are in")} required
+            options={countries.options}
+            value={countries.display(form.country)}
+            onChange={(e) => setForm((f) => ({ ...f, country: countries.toEnglish(e.target.value) }))} />
 
           <Input id="r-territory" label={t("Territory you want to cover")}
             hint={t("A country, a region, or a set of cities.")}

@@ -118,6 +118,8 @@ function LeadRow({
   const latest = lead.latest;
   const withheld = latest ? "withheld" in latest.payload : false;
   const name = lead.name ?? lead.email;
+  const isStudentApplication = (latest?.type ?? lead.kind) === "STUDY";
+  const itemName = isStudentApplication ? "application" : "enquiry";
 
   /**
    * The newest message's date, not the lead's. The lead's is the latest of all of them,
@@ -129,8 +131,11 @@ function LeadRow({
   );
 
   const deleteLead = async () => {
+    const accountNote = lead.status === "CONVERTED"
+      ? " The student's active account will not be deleted."
+      : "";
     const confirmed = window.confirm(
-      "Delete this enquiry and all of its messages? This cannot be undone.",
+      `Delete this ${itemName} and all of its messages?${accountNote} This cannot be undone.`,
     );
     if (!confirmed) return;
 
@@ -144,7 +149,7 @@ function LeadRow({
       return;
     }
 
-    toast("Enquiry deleted.");
+    toast(`${isStudentApplication ? "Application" : "Enquiry"} deleted.`);
     onDone();
   };
 
@@ -195,13 +200,13 @@ function LeadRow({
                 label: "Copy lead ID", icon: "clipboard",
                 onSelect: () => { void navigator.clipboard.writeText(lead.id); toast("Lead ID copied."); },
               },
-              ...(lead.status !== "CONVERTED" ? [{
-                label: deleting ? "Deleting…" : "Delete enquiry",
+              {
+                label: deleting ? "Deleting…" : `Delete ${itemName}`,
                 icon: "trash",
                 danger: true,
                 disabled: deleting,
                 onSelect: () => { void deleteLead(); },
-              }] : []),
+              },
             ]}
           />
         </div>

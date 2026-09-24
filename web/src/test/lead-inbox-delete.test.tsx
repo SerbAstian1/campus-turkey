@@ -77,15 +77,23 @@ describe("deleting an enquiry", () => {
     await waitFor(() => expect(reload).toHaveBeenCalledOnce());
   });
 
-  it("does not offer deletion after the enquiry became an account", () => {
+  it("offers deletion after conversion without implying the account is deleted", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     useLeadInbox.mockReturnValue({
       status: "ready",
-      items: [{ ...lead, status: "CONVERTED" as const }],
+      items: [{
+        ...lead,
+        kind: "STUDY" as const,
+        status: "CONVERTED" as const,
+        latest: { ...lead.latest, type: "STUDY" as const },
+      }],
       reload,
     });
     render(<LeadInbox canApprove={false} />);
 
     fireEvent.click(screen.getByRole("button", { name: `Actions for ${lead.name}` }));
-    expect(screen.queryByRole("menuitem", { name: /delete enquiry/i })).toBeNull();
+    fireEvent.click(screen.getByRole("menuitem", { name: /delete application/i }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringMatching(/active account will not be deleted/i));
+    expect(act).not.toHaveBeenCalled();
   });
 });

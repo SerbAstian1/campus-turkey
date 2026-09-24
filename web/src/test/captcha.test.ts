@@ -13,6 +13,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { hCaptchaLanguage } from "@/features/leads/captcha";
 import {
   HCAPTCHA_CONNECT_HOSTS,
   HCAPTCHA_FRAME_HOSTS,
@@ -86,5 +87,15 @@ describe("the token, with no site key configured", () => {
 
     // Called after every submission, including in development where nothing rendered.
     expect(() => resetCaptcha()).not.toThrow();
+  });
+});
+
+describe("challenge language", () => {
+  it("passes the active French locale to hCaptcha", () => {
+    expect(hCaptchaLanguage("fr")).toBe("fr");
+  });
+
+  it("uses hCaptcha's explicit Simplified Chinese code", () => {
+    expect(hCaptchaLanguage("zh")).toBe("zh-CN");
   });
 });

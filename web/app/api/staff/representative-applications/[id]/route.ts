@@ -1,10 +1,9 @@
 /**
- * DELETE /api/staff/representative-applications/:id — remove an unapproved intake item.
+ * DELETE /api/staff/representative-applications/:id — remove an intake item.
  *
- * Approved applications are the admission record behind a live account and remain
- * immutable here. Pending and rejected applications may be removed by staff; the
- * locked registration credential is also removed when no other live application needs
- * it, allowing the address to apply again cleanly.
+ * The locked registration credential is removed when no other live application needs
+ * it, allowing the address to apply again cleanly. If the application was approved,
+ * deleting the intake record does not delete or disable the active account it created.
  */
 
 import { z } from "zod";
@@ -36,13 +35,6 @@ export const DELETE = route({
         select: { id: true, email: true, status: true },
       });
       if (!application) throw new NotFoundError("We could not find that application.");
-      if (application.status === "APPROVED") {
-        throw new ConflictError(
-          "application_approved",
-          "This application created an account and cannot be deleted here.",
-        );
-      }
-
       const [pendingUser, otherLiveApplications] = await Promise.all([
         tx.user.findUnique({
           where: { email: application.email },
@@ -71,12 +63,12 @@ export const DELETE = route({
       );
 
       const deletedApplication = await tx.representativeApplication.deleteMany({
-        where: { id: application.id, status: { not: "APPROVED" } },
+        where: { id: application.id },
       });
       if (deletedApplication.count !== 1) {
         throw new ConflictError(
-          "application_approved",
-          "This application was approved while you were deleting it. The account was not changed.",
+          "application_changed",
+          "This application changed while you were deleting it. Reload and try again.",
         );
       }
 
@@ -100,6 +92,7 @@ export const DELETE = route({
         actorUserId: actor.id,
         metadata: {
           previousStatus: application.status,
+          activeAccountPreserved: application.status === "APPROVED",
           pendingAccountRemoved,
         },
       }, tx);

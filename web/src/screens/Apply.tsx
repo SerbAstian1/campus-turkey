@@ -14,6 +14,7 @@ import { go } from "@/app/router";
 import { useLeadSubmit } from "@/features/leads/submit";
 import { useT } from "@/i18n/context";
 import { useTranslatedOptions } from "@/i18n/options";
+import { useCountryOptions } from "@/i18n/countries";
 import { CaptchaField } from "@/features/leads/captcha";
 import { ConsentPrivacyNote, FieldErrors } from "./shared";
 
@@ -54,12 +55,6 @@ const LEVEL_FOR: Record<string, "foundation" | "bachelor" | "master" | "phd" | u
  * These are the values that reach the server and the staff inbox. Only the labels are
  * translated; see `useTranslatedOptions`.
  */
-export const COUNTRIES = [
-  "Nigeria", "Ghana", "Benin", "Togo", "Senegal", "Ivory Coast", "Cameroon",
-  "Morocco", "Algeria", "Tunisia", "Egypt",
-  "Kenya", "Tanzania", "Uganda", "Ethiopia", "Sudan",
-  "Pakistan", "Indonesia", "Other",
-] as const;
 /**
  * Cities beyond the four with a university partnership are listed anyway — the brief's
  * reasoning being that someone who does not see their own city just leaves rather than
@@ -91,7 +86,7 @@ export const LEVELS = [
 export default function Apply() {
   const t = useT();
   const steps = useSteps();
-  const countries = useTranslatedOptions(COUNTRIES);
+  const countries = useCountryOptions();
   const levels = useTranslatedOptions(LEVELS);
   const cities = useTranslatedOptions(CITIES);
   const intakes = useTranslatedOptions(INTAKES);

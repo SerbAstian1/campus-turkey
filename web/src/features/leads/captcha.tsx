@@ -19,12 +19,14 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useT } from "@/i18n/context";
+import { useLocale, useT } from "@/i18n/context";
+import type { Locale } from "@/i18n/locales";
 
 interface HCaptcha {
-  render: (container: HTMLElement, options: { sitekey: string; theme?: string }) => string;
+  render: (container: HTMLElement, options: { sitekey: string; theme?: string; hl?: string }) => string;
   getResponse: (widgetId: string) => string;
   reset: (widgetId: string) => void;
+  remove?: (widgetId: string) => void;
 }
 
 declare global {
@@ -35,6 +37,11 @@ declare global {
 
 const SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY;
 const SCRIPT_SRC = "https://js.hcaptcha.com/1/api.js?render=explicit";
+
+/** hCaptcha supports every site locale; Simplified Chinese uses its provider code. */
+export function hCaptchaLanguage(locale: Locale): string {
+  return locale === "zh" ? "zh-CN" : locale;
+}
 
 /**
  * The id of the widget currently on the page.
@@ -110,6 +117,7 @@ export function resetCaptcha(): void {
  */
 export function CaptchaField() {
   const t = useT();
+  const locale = useLocale();
   const host = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
 
@@ -117,6 +125,7 @@ export function CaptchaField() {
     if (!SITE_KEY || !host.current) return;
 
     let cancelled = false;
+    let widgetId: string | null = null;
 
     void loadScript()
       .then(() => {
@@ -125,7 +134,11 @@ export function CaptchaField() {
         if (cancelled || !host.current || !window.hcaptcha) return;
         if (host.current.childElementCount > 0) return;
 
-        activeWidget = window.hcaptcha.render(host.current, { sitekey: SITE_KEY });
+        widgetId = window.hcaptcha.render(host.current, {
+          sitekey: SITE_KEY,
+          hl: hCaptchaLanguage(locale),
+        });
+        activeWidget = widgetId;
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
@@ -133,9 +146,10 @@ export function CaptchaField() {
 
     return () => {
       cancelled = true;
-      activeWidget = null;
+      if (widgetId && window.hcaptcha?.remove) window.hcaptcha.remove(widgetId);
+      if (activeWidget === widgetId) activeWidget = null;
     };
-  }, []);
+  }, [locale]);
 
   if (!SITE_KEY) return null;
 
