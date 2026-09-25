@@ -15,7 +15,7 @@ import {
   Badge, BrandDivider, Button, Card, Checkbox, Icon, IconButton, Input, LanguageSwitcher,
   Logo, Select, Tag, ASSETS,
 } from "@/ds";
-import { portal as content, universities, type PayoutMethod, type PortalStudent, type Withdrawal } from "@/content";
+import { portal as content, universities, type PayoutMethod, type PortalStudent, type Wallet, type Withdrawal } from "@/content";
 import { formatMinor, newIdempotencyKey, requestWithdrawal } from "@/features/portal/withdrawals";
 import { usePortalData, type PortalData } from "@/features/portal/data";
 import { useLocaleSwitch } from "@/i18n/switch";
@@ -31,8 +31,19 @@ const STAGE_TONE: Record<PortalStudent["stage"], "brand" | "neutral" | "warning"
   Registered: "brand", Visa: "brand", Offer: "neutral", Submitted: "neutral", Documents: "warning", Enquiry: "neutral",
 };
 
-const CURRENCY = content.wallet.currency;
-const money = (minor: number) => formatMinor(minor, CURRENCY);
+function useStageLabels(): Record<PortalStudent["stage"], string> {
+  const t = useT();
+  return {
+    Enquiry: t("Enquiry"),
+    Documents: t("Documents"),
+    Submitted: t("Submitted"),
+    Offer: t("Offer"),
+    Visa: t("Visa"),
+    Registered: t("Registered"),
+  };
+}
+
+const money = (minor: number, currency: string) => formatMinor(minor, currency);
 
 /* ---------------------------------------------------------------------- sheet */
 
@@ -201,7 +212,7 @@ const KIND_ICON: Record<PayoutMethod["kind"], string> = {
 function WithdrawForm({
   wallet, onWithdraw, onClose,
 }: {
-  wallet: typeof content.wallet & { availableMinor: number; methods: PayoutMethod[] };
+  wallet: Wallet;
   onWithdraw: (minor: number, m: PayoutMethod) => Promise<string | null>;
   onClose: () => void;
 }) {
@@ -218,10 +229,10 @@ function WithdrawForm({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!picked) return;
-    if (amountMinor < wallet.minimumMinor) { setError(t("The minimum withdrawal is {amount}.", { amount: money(wallet.minimumMinor) })); return; }
+    if (amountMinor < wallet.minimumMinor) { setError(t("The minimum withdrawal is {amount}.", { amount: money(wallet.minimumMinor, wallet.currency) })); return; }
     /* A courtesy to the reader, not a control: the server re-checks the balance inside
        the transaction that creates the withdrawal. */
-    if (amountMinor > wallet.availableMinor) { setError(t("You have {amount} available right now.", { amount: money(wallet.availableMinor) })); return; }
+    if (amountMinor > wallet.availableMinor) { setError(t("You have {amount} available right now.", { amount: money(wallet.availableMinor, wallet.currency) })); return; }
     setBusy(true);
     const failure = await onWithdraw(amountMinor, picked);
     setBusy(false);
@@ -233,8 +244,8 @@ function WithdrawForm({
     <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
       <Card surface="tinted" padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <span className="ct-eyebrow">{t("Available now")}</span>
-        <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-h1)", lineHeight: 1, color: "var(--green-700)" }}>{money(wallet.availableMinor)}</span>
-        <span style={{ fontSize: "var(--fs-body-sm)", color: "var(--text-body)" }}>{t("{amount} is still clearing and cannot be withdrawn yet.", { amount: money(wallet.pendingMinor) })}</span>
+        <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-h1)", lineHeight: 1, color: "var(--green-700)" }}>{money(wallet.availableMinor, wallet.currency)}</span>
+        <span style={{ fontSize: "var(--fs-body-sm)", color: "var(--text-body)" }}>{t("{amount} is still clearing and cannot be withdrawn yet.", { amount: money(wallet.pendingMinor, wallet.currency) })}</span>
       </Card>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
@@ -263,13 +274,13 @@ function WithdrawForm({
       <Input id="w-amount" label={t("Amount to withdraw")} type="number" icon="banknote" value={amount} required
         min={wallet.minimumMinor / 100} max={wallet.availableMinor / 100} step="0.01" inputMode="decimal"
         onChange={(e) => { setAmount(e.target.value); setError(null); }}
-        hint={`${t("Minimum {amount}.", { amount: money(wallet.minimumMinor) })}${picked ? ` ${t("{speed} once approved.", { speed: picked.speed })}` : ""}`} />
+        hint={`${t("Minimum {amount}.", { amount: money(wallet.minimumMinor, wallet.currency) })}${picked ? ` ${t("{speed} once approved.", { speed: picked.speed })}` : ""}`} />
       <Button variant="ghost" icon="arrow-up" onClick={() => setAmount((wallet.availableMinor / 100).toFixed(2))} style={{ alignSelf: "flex-start" }}>{t("Withdraw everything available")}</Button>
 
       {error ? <FormError message={error} /> : null}
 
       <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
-        <Button variant="primary" size="lg" type="submit" disabled={busy}>{busy ? t("Requesting…") : t("Withdraw {amount}", { amount: money(amountMinor) })}</Button>
+        <Button variant="primary" size="lg" type="submit" disabled={busy}>{busy ? t("Requesting…") : t("Withdraw {amount}", { amount: money(amountMinor, wallet.currency) })}</Button>
         <Button variant="ghost" onClick={onClose} disabled={busy}>{t("Cancel")}</Button>
       </div>
       <p style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)", margin: 0 }}>
@@ -371,8 +382,9 @@ function AddPayoutMethodForm({ onAdd, onClose }: { onAdd: (m: PayoutMethod, d: b
 
 /* -------------------------------------------------------------------- views */
 
-function StudentTable({ students, onChanged, compact }: { students: PortalStudent[]; onChanged: () => void; compact?: boolean }) {
+function StudentTable({ students, currency, onChanged, compact }: { students: PortalStudent[]; currency: string; onChanged: () => void; compact?: boolean }) {
   const t = useT();
+  const stageLabels = useStageLabels();
   const [stage, setStage] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const stages = [...new Set(students.map((s) => s.stage))];
@@ -421,9 +433,9 @@ function StudentTable({ students, onChanged, compact }: { students: PortalStuden
                 </td>
                 <td style={td}>{s.program}</td>
                 <td style={td}>{s.university}</td>
-                <td style={td}><Badge tone={STAGE_TONE[s.stage]}>{s.stage}</Badge></td>
+                <td style={td}><Badge tone={STAGE_TONE[s.stage]}>{stageLabels[s.stage]}</Badge></td>
                 <td style={{ ...td, fontWeight: "var(--fw-semibold)", color: "var(--green-700)", whiteSpace: "nowrap" }}>
-                  {s.commissionMinor > 0 ? money(s.commissionMinor) : t("Pending")}
+                  {s.commissionMinor > 0 ? money(s.commissionMinor, currency) : t("Pending")}
                 </td>
                 <td style={{ ...td, paddingInlineEnd: 0 }}>
                   <ReferralActions
@@ -493,6 +505,7 @@ export default function PortalDashboard() {
  */
 function PortalView({ data, onReload }: { data: PortalData; onReload: () => void }) {
   const t = useT();
+  const stageLabels = useStageLabels();
   const href = useHref();
   const [view, setView] = useState<View>("overview");
   const [sheet, setSheet] = useState<"student" | "withdraw" | "method" | null>(null);
@@ -508,6 +521,7 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
 
   const account = data.account;
   const wallet = { ...data.wallet, availableMinor, methods };
+  const currency = wallet.currency;
 
   const addMethod = (m: PayoutMethod, makeDefault: boolean) =>
     setMethods((list) => {
@@ -531,7 +545,7 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
    */
   const withdraw = async (amountMinor: number, method: PayoutMethod): Promise<string | null> => {
     const result = await requestWithdrawal({
-      amountMinor, currency: CURRENCY, payoutMethodId: method.id, idempotencyKey: newIdempotencyKey(),
+      amountMinor, currency, payoutMethodId: method.id, idempotencyKey: newIdempotencyKey(),
     }).catch(() => null);
 
     if (!result) {
@@ -544,14 +558,20 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
     }
 
     setWithdrawals((list) => [result.withdrawal, ...list]);
-    toast(t("{amount} is on its way by {method}.", { amount: money(amountMinor), method: method.label.toLowerCase() }));
+    toast(t("{amount} is on its way by {method}.", { amount: money(amountMinor, currency), method: method.label.toLowerCase() }));
     onReload();
     return null;
   };
 
-  const kpis = content.kpis.map((k) =>
-    k.label === "Students referred" ? { ...k, value: String(students.length + 32) }
-      : k.label === "Available to withdraw" ? { ...k, value: money(availableMinor) } : k);
+  const totalStudents = data.pipeline.reduce((total, item) => total + item.count, 0);
+  const registeredStudents = data.pipeline.find((item) => item.stage === "Registered")?.count ?? 0;
+  const kpis = [
+    { value: String(totalStudents), label: t("Students referred"), description: t("This intake cycle.") },
+    { value: String(registeredStudents), label: t("Registered"), description: t("Confirmed by the university.") },
+    { value: money(availableMinor, currency), label: t("Available to withdraw"), description: t("Cleared and ready to move.") },
+    { value: money(wallet.pendingMinor, currency), label: t("Awaiting payment"), description: t("Clears within 30 days.") },
+  ];
+  const needsAttention = students.filter((student) => student.stage === "Enquiry" || student.stage === "Documents").slice(0, 3);
 
   /*
    * Built here rather than at module scope, and written out as literal `t()` calls.
@@ -646,14 +666,14 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
                   <h2 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{t("Where your students are")}</h2>
                   <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{t("Updated this morning")}</span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: `repeat(${content.pipeline.length},1fr)`, gap: "var(--space-4)", alignItems: "end", minHeight: 168 }}>
-                  {content.pipeline.map((p) => {
-                    const max = Math.max(...content.pipeline.map((x) => x.count));
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${data.pipeline.length},1fr)`, gap: "var(--space-4)", alignItems: "end", minHeight: 168 }}>
+                  {data.pipeline.map((p) => {
+                    const max = Math.max(1, ...data.pipeline.map((x) => x.count));
                     return (
                       <div key={p.stage} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-3)" }}>
                         <span style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-semibold)", color: "var(--green-800)" }}>{p.count}</span>
                         <span style={{ width: "100%", height: Math.max(8, (p.count / max) * 120), borderRadius: "var(--radius-xs)", background: p.stage === "Registered" ? "var(--action-primary)" : "var(--green-200)" }} />
-                        <span style={{ fontSize: "var(--fs-micro)", letterSpacing: ".06em", textTransform: "uppercase", color: "var(--neutral-500)", textAlign: "center" }}>{p.stage}</span>
+                        <span style={{ fontSize: "var(--fs-micro)", letterSpacing: ".06em", textTransform: "uppercase", color: "var(--neutral-500)", textAlign: "center" }}>{stageLabels[p.stage]}</span>
                       </div>
                     );
                   })}
@@ -662,38 +682,41 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
 
               <Card padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
                 <h2 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{t("Needs you this week")}</h2>
-                {content.actions.map((a, i) => (
-                  <div key={a.title} style={{ display: "flex", gap: "var(--space-4)", alignItems: "flex-start", paddingTop: i ? "var(--space-5)" : 0, borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
+                {needsAttention.map((student, i) => (
+                  <div key={student.id} style={{ display: "flex", gap: "var(--space-4)", alignItems: "flex-start", paddingTop: i ? "var(--space-5)" : 0, borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
                     <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, flex: "none", borderRadius: "var(--radius-sm)", background: "var(--green-050)" }}>
-                      <Icon name={a.icon} size={18} color="var(--green-600)" />
+                      <Icon name={student.stage === "Documents" ? "file-warning" : "user-round-search"} size={18} color="var(--green-600)" />
                     </span>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-                      <span style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-semibold)", color: "var(--green-800)" }}>{a.title}</span>
-                      <span style={{ fontSize: "var(--fs-body-sm)", color: "var(--text-body)" }}>{a.body}</span>
+                      <span style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-semibold)", color: "var(--green-800)" }}>{student.name}</span>
+                      <span style={{ fontSize: "var(--fs-body-sm)", color: "var(--text-body)" }}>{student.program} · {stageLabels[student.stage]}</span>
                     </div>
-                    <Button variant="ghost" icon="arrow-right" onClick={() => toast(t("Not wired yet: {action}.", { action: a.cta.toLowerCase() }))}>{a.cta}</Button>
+                    <Button variant="ghost" icon="arrow-right" onClick={() => setView("students")}>{t("My students")}</Button>
                   </div>
                 ))}
+                {needsAttention.length === 0 ? (
+                  <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "var(--fs-body-sm)" }}>{t("Nothing needed from you")}</p>
+                ) : null}
               </Card>
             </div>
 
-            <StudentTable students={students.slice(0, 4)} onChanged={onReload} compact />
+            <StudentTable students={students.slice(0, 4)} currency={currency} onChanged={onReload} compact />
           </>
         ) : null}
 
-        {view === "students" ? <StudentTable students={students} onChanged={onReload} /> : null}
+        {view === "students" ? <StudentTable students={students} currency={currency} onChanged={onReload} /> : null}
 
         {view === "commissions" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
             <div className="ct-split" style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: "var(--space-6)", alignItems: "stretch" }}>
               <Card surface="inverse" padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
                 <span className="ct-eyebrow" style={{ color: "var(--green-300)" }}>{t("Available to withdraw")}</span>
-                <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-display-2)", lineHeight: 1, color: "var(--white)" }}>{money(availableMinor)}</span>
+                <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-display-2)", lineHeight: 1, color: "var(--white)" }}>{money(availableMinor, currency)}</span>
                 <div style={{ display: "flex", gap: "var(--space-8)", flexWrap: "wrap" }}>
                   {([[t("Clearing"), wallet.pendingMinor], [t("Lifetime earned"), wallet.lifetimeMinor]] as const).map(([k, v]) => (
                     <span key={k} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                       <span style={{ fontSize: "var(--fs-micro)", letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.62)" }}>{k}</span>
-                      <span style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-lead)", color: "var(--white)" }}>{money(v)}</span>
+                      <span style={{ fontFamily: "var(--font-ui)", fontSize: "var(--fs-lead)", color: "var(--white)" }}>{money(v, currency)}</span>
                     </span>
                   ))}
                 </div>
@@ -731,7 +754,7 @@ function PortalView({ data, onReload }: { data: PortalData; onReload: () => void
                         <td style={td}>{w.reference}</td>
                         <td style={td}>{w.period}</td>
                         <td style={td}>{w.basis}</td>
-                        <td style={{ ...td, color: "var(--green-700)", fontWeight: "var(--fw-semibold)" }}>{money(w.amountMinor)}</td>
+                        <td style={{ ...td, color: "var(--green-700)", fontWeight: "var(--fw-semibold)" }}>{money(w.amountMinor, w.currency)}</td>
                         <td style={td}><Badge tone={w.status === "Paid" ? "brand" : "neutral"}>{w.status}</Badge></td>
                       </tr>
                     ))}

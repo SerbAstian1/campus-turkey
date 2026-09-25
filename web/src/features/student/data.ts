@@ -176,6 +176,16 @@ export function useStudentDashboard(): DashboardState {
   return state;
 }
 
+export type StudentProfileUpdate = Partial<{
+  firstName: string;
+  lastName: string;
+  nationality: string;
+  countryOfResidence: string;
+  phone: string | null;
+  address: string | null;
+  dateOfBirth: string | null;
+}>;
+
 export type StartApplicationResult =
   | { ok: true }
   | { ok: false; message: string };
@@ -191,6 +201,24 @@ export async function startApplication(): Promise<StartApplicationResult> {
       ok: false,
       message: body.error?.message ?? "We could not start your application.",
     };
+  } catch {
+    return { ok: false, message: "We could not reach the server. Check your connection." };
+  }
+}
+
+export type UpdateProfileResult = { ok: true } | { ok: false; message: string };
+
+export async function updateStudentProfile(input: StudentProfileUpdate): Promise<UpdateProfileResult> {
+  try {
+    const response = await fetch("/api/student/profile", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (response.ok) return { ok: true };
+
+    const body = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+    return { ok: false, message: body.error?.message ?? "We could not update your profile." };
   } catch {
     return { ok: false, message: "We could not reach the server. Check your connection." };
   }

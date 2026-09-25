@@ -20,9 +20,10 @@
  */
 
 import { useMemo, useState, type FormEvent } from "react";
-import { BrandDivider, Button, Card, Icon, Input, Logo, ASSETS } from "@/ds";
+import { BrandDivider, Button, Card, Icon, Input, LanguageSwitcher, Logo, ASSETS } from "@/ds";
 import { go } from "@/app/router";
 import { useT } from "@/i18n/context";
+import { useLocaleSwitch } from "@/i18n/switch";
 import { ReferralActions } from "@/components/ReferralActions";
 import {
   referStudent, useReferredStudents, useRepresentativeProfile, when,
@@ -58,6 +59,7 @@ function useStageLabels(): Record<Stage, string> {
 
 export default function RepresentativePortal() {
   const t = useT();
+  const [lang, setLanguage] = useLocaleSwitch();
   const [view, setView] = useState<View>("dashboard");
   const profile = useRepresentativeProfile();
   const students = useReferredStudents();
@@ -141,10 +143,17 @@ export default function RepresentativePortal() {
           })}
         </nav>
 
-        <a href="/portal" style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)", color: "rgba(255,255,255,.7)", fontSize: "var(--fs-body-sm)", fontFamily: "var(--font-ui)" }}>
-          <Icon name="log-out" size={16} />
-          {t("Sign out")}
-        </a>
+        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <BrandDivider theme="dark" />
+          <div data-ct-no-translate style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <span style={{ fontSize: "var(--fs-micro)", letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.62)" }}>{t("Language")}</span>
+            <LanguageSwitcher value={lang} onChange={setLanguage} theme="onDark" />
+          </div>
+          <a href="/portal" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", color: "rgba(255,255,255,.7)", fontSize: "var(--fs-body-sm)", fontFamily: "var(--font-ui)" }}>
+            <Icon name="log-out" size={16} />
+            {t("Sign out")}
+          </a>
+        </div>
       </aside>
 
       <main style={{ padding: "var(--space-10) var(--space-8)", minWidth: 0 }}>

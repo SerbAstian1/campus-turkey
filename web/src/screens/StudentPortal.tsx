@@ -20,19 +20,21 @@
  */
 
 import { useMemo, useState, type FormEvent } from "react";
-import { BrandDivider, Button, Card, Icon, Input, Logo, ASSETS } from "@/ds";
+import { BrandDivider, Button, Card, Icon, Input, LanguageSwitcher, Logo, ASSETS } from "@/ds";
 import { toast } from "@/app/toast";
 import { ItemOverflowMenu } from "@/components/ItemOverflowMenu";
 import { useT } from "@/i18n/context";
+import { useLocaleSwitch } from "@/i18n/switch";
 import {
-  NEEDS_STUDENT, STATUS_COPY, claimRecord, startApplication, useStudentDashboard, when,
-  type StudentApplication, type StudentProfile,
+  NEEDS_STUDENT, STATUS_COPY, claimRecord, startApplication, updateStudentProfile, useStudentDashboard, when,
+  type StudentApplication, type StudentProfile, type StudentProfileUpdate,
 } from "@/features/student/data";
 
 type View = "dashboard" | "application" | "profile";
 
 export default function StudentPortal() {
   const t = useT();
+  const [lang, setLanguage] = useLocaleSwitch();
   const [view, setView] = useState<View>("dashboard");
   const dashboard = useStudentDashboard();
 
@@ -107,10 +109,17 @@ export default function StudentPortal() {
           })}
         </nav>
 
-        <a href="/portal" style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: "var(--space-2)", color: "rgba(255,255,255,.7)", fontSize: "var(--fs-body-sm)", fontFamily: "var(--font-ui)" }}>
-          <Icon name="log-out" size={16} />
-          {t("Sign out")}
-        </a>
+        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <BrandDivider theme="dark" />
+          <div data-ct-no-translate style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <span style={{ fontSize: "var(--fs-micro)", letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.62)" }}>{t("Language")}</span>
+            <LanguageSwitcher value={lang} onChange={setLanguage} theme="onDark" />
+          </div>
+          <a href="/portal" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", color: "rgba(255,255,255,.7)", fontSize: "var(--fs-body-sm)", fontFamily: "var(--font-ui)" }}>
+            <Icon name="log-out" size={16} />
+            {t("Sign out")}
+          </a>
+        </div>
       </aside>
 
       <main style={{ padding: "var(--space-10) var(--space-8)", minWidth: 0 }}>
@@ -131,7 +140,7 @@ export default function StudentPortal() {
           <>
             {view === "dashboard" ? <Dashboard applications={dashboard.applications} name={dashboard.profile?.firstName ?? null} onChanged={dashboard.reload} /> : null}
             {view === "application" ? <Applications applications={dashboard.applications} onChanged={dashboard.reload} /> : null}
-            {view === "profile" ? <Profile profile={dashboard.profile} /> : null}
+            {view === "profile" ? <Profile profile={dashboard.profile} onChanged={dashboard.reload} /> : null}
           </>
         ) : null}
       </main>
@@ -354,31 +363,141 @@ function ApplicationList({ applications, onChanged }: { applications: StudentApp
   );
 }
 
-function Profile({ profile }: { profile: StudentProfile | null }) {
+type ProfileField = "name" | "nationality" | "countryOfResidence" | "phone" | "address" | "dateOfBirth";
+
+function Profile({ profile, onChanged }: { profile: StudentProfile | null; onChanged: () => void }) {
   const t = useT();
+  const [editing, setEditing] = useState<ProfileField | null>(null);
+  const [value, setValue] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!profile) return <p style={{ color: "var(--text-muted)" }}>{t("No profile yet.")}</p>;
 
-  const rows: [string, string][] = [
-    [t("Name"), `${profile.firstName} ${profile.lastName}`],
-    [t("Nationality"), profile.nationality],
-    [t("Country of residence"), profile.countryOfResidence],
-    [t("Phone"), profile.phone ?? t("Not given")],
-    [t("Address"), profile.address ?? t("Not given")],
+  const rows: Array<{ key: ProfileField; label: string; value: string; raw: string | null; clearable?: boolean }> = [
+    { key: "name", label: t("Name"), value: `${profile.firstName} ${profile.lastName}`.trim(), raw: `${profile.firstName} ${profile.lastName}`.trim() },
+    { key: "nationality", label: t("Nationality"), value: profile.nationality, raw: profile.nationality },
+    { key: "countryOfResidence", label: t("Country of residence"), value: profile.countryOfResidence, raw: profile.countryOfResidence },
+    { key: "phone", label: t("Phone"), value: profile.phone ?? t("Not given"), raw: profile.phone, clearable: true },
+    { key: "address", label: t("Address"), value: profile.address ?? t("Not given"), raw: profile.address, clearable: true },
+    {
+      key: "dateOfBirth", label: t("Date of birth"), raw: profile.dateOfBirth,
+      value: profile.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : t("Not given"),
+      clearable: true,
+    },
   ];
+
+  const beginEdit = (field: ProfileField) => {
+    setEditing(field);
+    setError(null);
+    if (field === "name") {
+      setFirstName(profile.firstName);
+      setLastName(profile.lastName);
+      setValue("");
+      return;
+    }
+    const current: Record<Exclude<ProfileField, "name">, string | null> = {
+      nationality: profile.nationality,
+      countryOfResidence: profile.countryOfResidence,
+      phone: profile.phone,
+      address: profile.address,
+      dateOfBirth: profile.dateOfBirth?.slice(0, 10) ?? null,
+    };
+    setValue(current[field] ?? "");
+  };
+
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editing) return;
+    setBusy(true);
+    setError(null);
+
+    const input: StudentProfileUpdate = editing === "name"
+      ? { firstName: firstName.trim(), lastName: lastName.trim() }
+      : editingRow?.clearable && !value.trim()
+        ? { [editing]: null }
+        : { [editing]: value.trim() };
+    const result = await updateStudentProfile(input);
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+
+    toast(t("Profile updated."));
+    setEditing(null);
+    onChanged();
+  };
+
+  const clear = async (row: (typeof rows)[number]) => {
+    if (!row.clearable || !row.raw) return;
+    if (!window.confirm(t("Delete {field} from your profile?", { field: row.label.toLowerCase() }))) return;
+
+    setBusy(true);
+    const input = { [row.key]: null } as StudentProfileUpdate;
+    const result = await updateStudentProfile(input);
+    setBusy(false);
+    if (!result.ok) {
+      toast(result.message);
+      return;
+    }
+    toast(t("Profile updated."));
+    if (editing === row.key) setEditing(null);
+    onChanged();
+  };
+
+  const editingRow = rows.find((row) => row.key === editing);
 
   return (
     <>
       <Heading title={t("Profile")} lead={t("Your details as Campus Turkey holds them.")} />
       <Card padding="var(--space-8)" radius="var(--radius-lg)" elevation="sm">
-        <dl style={{ display: "grid", gridTemplateColumns: "minmax(150px,auto) 1fr", gap: "var(--space-4) var(--space-6)", margin: 0 }}>
-          {rows.map(([label, value]) => (
-            <div key={label} style={{ display: "contents" }}>
-              <dt style={{ color: "var(--text-muted)", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)" }}>{label}</dt>
-              <dd style={{ margin: 0, color: "var(--text-heading)", fontSize: "var(--fs-body-sm)" }}>{value}</dd>
+        <dl style={{ display: "flex", flexDirection: "column", gap: 0, margin: 0 }}>
+          {rows.map((row, index) => (
+            <div key={row.key} style={{ display: "grid", gridTemplateColumns: "minmax(150px,auto) minmax(0,1fr) 40px", gap: "var(--space-6)", alignItems: "center", minHeight: 52, borderTop: index ? "1px solid var(--border-subtle)" : "none" }}>
+              <dt style={{ color: "var(--text-muted)", fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)" }}>{row.label}</dt>
+              <dd style={{ margin: 0, color: "var(--text-heading)", fontSize: "var(--fs-body-sm)", overflowWrap: "anywhere" }}>{row.value}</dd>
+              <ItemOverflowMenu
+                label={t("Actions for {field}", { field: row.label })}
+                actions={[
+                  { label: t("Edit"), icon: "pencil", onSelect: () => beginEdit(row.key) },
+                  ...(row.clearable && row.raw ? [{
+                    label: t("Delete value"), icon: "trash", danger: true,
+                    onSelect: () => void clear(row),
+                  }] : []),
+                ]}
+              />
             </div>
           ))}
         </dl>
+
+        {editing && editingRow ? (
+          <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", marginTop: "var(--space-6)", paddingTop: "var(--space-6)", borderTop: "1px solid var(--border-subtle)" }}>
+            <h3 style={{ margin: 0, fontSize: "var(--fs-h3)" }}>{t("Edit {field}", { field: editingRow.label.toLowerCase() })}</h3>
+            {editing === "name" ? (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
+                <Input id="profile-first-name" label={t("First name")} required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                <Input id="profile-last-name" label={t("Last name")} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              </div>
+            ) : (
+              <Input
+                id={`profile-${editing}`}
+                label={editingRow.label}
+                type={editing === "dateOfBirth" ? "date" : editing === "phone" ? "tel" : "text"}
+                required={!editingRow.clearable}
+                value={value}
+                onChange={(e) => { setValue(e.target.value); setError(null); }}
+              />
+            )}
+            {error ? <span role="alert" style={{ color: "var(--status-danger)", fontSize: "var(--fs-body-sm)" }}>{error}</span> : null}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)" }}>
+              <Button variant="primary" type="submit" disabled={busy}>{t("Save changes")}</Button>
+              <Button variant="ghost" type="button" disabled={busy} onClick={() => { setEditing(null); setError(null); }}>{t("Cancel")}</Button>
+            </div>
+          </form>
+        ) : null}
       </Card>
     </>
   );
@@ -392,6 +511,7 @@ function Profile({ profile }: { profile: StudentProfile | null }) {
  */
 function ClaimScreen({ message }: { message: string }) {
   const t = useT();
+  const [lang, setLanguage] = useLocaleSwitch();
   const [form, setForm] = useState({
     claimCode: "", firstName: "", lastName: "", nationality: "", countryOfResidence: "", phone: "",
   });
@@ -430,7 +550,10 @@ function ClaimScreen({ message }: { message: string }) {
   return (
     <div style={{ minHeight: "100dvh", background: "var(--surface-page)", display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--section-y) var(--gutter)" }}>
       <div style={{ width: "100%", maxWidth: 460, display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-        <Logo variant="lockup" theme="onLight" height={40} assetBase={ASSETS} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-4)" }}>
+          <Logo variant="lockup" theme="onLight" height={40} assetBase={ASSETS} />
+          <div data-ct-no-translate><LanguageSwitcher value={lang} onChange={setLanguage} theme="onLight" compact /></div>
+        </div>
         <h1 style={{ fontSize: "var(--fs-h2)", margin: 0 }}>{t("Connect your application")}</h1>
         <p style={{ margin: 0, color: "var(--text-body)" }}>{message}</p>
         <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "var(--fs-body-sm)" }}>
