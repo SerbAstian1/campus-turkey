@@ -7,9 +7,11 @@
  * than discovered in production.
  */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  articles, getArticle, getInstitution, getService, getUniversity,
+  articles, contact, getArticle, getInstitution, getService, getUniversity,
   institutions, journey, portal, scholarships, serviceCards, services, universities,
 } from "@/content";
 
@@ -134,5 +136,18 @@ describe("process content", () => {
 
   it("says plainly how competitive each scholarship is", () => {
     for (const s of scholarships) expect(s.competitive.length).toBeGreaterThan(0);
+  });
+});
+
+describe("company content", () => {
+  it("publishes the application email through the shared contact record", () => {
+    expect(contact.email).toBe("apply@campusturkey.org");
+  });
+
+  it("keeps the About screen text-led with no image container", () => {
+    const about = readFileSync(join(__dirname, "..", "screens", "About.tsx"), "utf8");
+    expect(about).not.toContain("ImagePlaceholder");
+    expect(about).not.toContain("data-slot=");
+    expect(about).not.toMatch(/<img\b/);
   });
 });

@@ -5,9 +5,8 @@
 import { Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, StatBlock, TestimonialCard, TimelineTrack, ASSETS } from "@/ds";
 import { useT } from "@/i18n/context";
 import { accreditations, leadership, milestones, offices, stats, testimonials } from "@/content";
-import { ImagePlaceholder } from "@/components/Common";
 import { go, useHref } from "@/app/router";
-import { IconCard, PageBody, PageHero, splitStyle } from "./shared";
+import { IconCard, PageBody, PageHero } from "./shared";
 import { CardGrid } from "@/components/CardGrid";
 import { translateContent } from "@/i18n/content";
 
@@ -50,16 +49,13 @@ export default function About() {
         } />
 
       <PageBody>
-        <ScrollReveal><ImagePlaceholder slot="about-hero" label={t("Team or office photography, 21:9 hero band")} ratio="21 / 9" /></ScrollReveal>
-
         <CardGrid min={200} gap="var(--space-10)">
           {statCards.map((s, i) => (
             <ScrollReveal key={s.label} delay={i * 70}><StatBlock {...s} theme="light" /></ScrollReveal>
           ))}
         </CardGrid>
 
-        <div className="ct-split" style={{ ...splitStyle, alignItems: "center" }}>
-          <ScrollReveal style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+        <ScrollReveal style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", maxWidth: "72ch" }}>
             <SectionHeading eyebrow={t("Why we exist")} title={t("Most families lose money to guesswork")} />
             <p style={{ fontSize: "var(--fs-lead)", lineHeight: "var(--lh-body)", color: "var(--text-body)", margin: 0 }}>
               {t("Before 2014 our founders watched students pay agents for a place that did not exist, or arrive in Istanbul with no dormitory and no residence appointment booked. Every part of this company was built to remove one of those failures.")}
@@ -71,9 +67,7 @@ export default function About() {
               <Button variant="primary" onClick={() => go("study")}>{t("See Study in Türkiye")}</Button>
               <Button variant="secondary" onClick={() => go("resources")}>{t("Read our guides")}</Button>
             </div>
-          </ScrollReveal>
-          <ScrollReveal delay={80}><ImagePlaceholder slot="about-founders" label={t("Founders or advising session, 4:3")} ratio="4 / 3" /></ScrollReveal>
-        </div>
+        </ScrollReveal>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal><SectionHeading eyebrow={t("How we work")} title={t("Three rules we do not bend")} /></ScrollReveal>
@@ -98,7 +92,6 @@ export default function About() {
             {team.map((p, i) => (
               <ScrollReveal key={p.name} delay={i * 60} style={{ display: "flex" }}>
                 <Card padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                  <ImagePlaceholder slot={`person-${p.name}`} label={t("Portrait, 1:1")} ratio="1 / 1" icon="user" />
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <h3 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>{p.name}</h3>
                     <span className="ct-eyebrow">{p.role}</span>
@@ -142,7 +135,6 @@ export default function About() {
             {officeCards.map((o, i) => (
               <ScrollReveal key={o.city} delay={i * 70} style={{ display: "flex" }}>
                 <Card padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                  <ImagePlaceholder slot={`office-${o.city}`} label={t("{city} office, 16:9", { city: o.city })} ratio="16 / 9" icon="building" />
                   <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                     <span className="ct-eyebrow">{o.role}</span>
                     <h3 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>{o.city}</h3>
