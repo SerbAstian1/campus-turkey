@@ -11,12 +11,15 @@ import { CardGrid } from "@/components/CardGrid";
 import { useHref } from "@/app/router";
 import { useT } from "@/i18n/context";
 import { translateContent } from "@/i18n/content";
+import { institutionPhoto } from "@/content/institution-photos";
+import { PhotoCredit } from "@/components/PhotoCredit";
 
 export default function Representative() {
   const href = useHref();
   const t = useT();
   const r = translateContent(representative, t, ["title", "body", "requirements", "question", "answer", "earnings"]);
   const steps = translateContent(representativeSteps, t, ["meta", "title", "description"]);
+  const officePhoto = institutionPhoto("agencies");
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
       <PageHero badge={t("Territories open in 9 countries")} eyebrow={t("Country representatives")} title={t("Become a Representative")}
@@ -45,7 +48,16 @@ export default function Representative() {
                 </span>
               ))}
             </Card>
-            <ImagePlaceholder slot="rep-office" label={t("Representative office or fair stand photography")} ratio="4 / 3" />
+            <div>
+              <ImagePlaceholder
+                slot="rep-office"
+                label={t("Representative office or fair stand photography")}
+                ratio="4 / 3"
+                src={officePhoto?.src}
+                alt={officePhoto?.alt}
+              />
+              <PhotoCredit photo={officePhoto} />
+            </div>
           </ScrollReveal>
 
           <ScrollReveal delay={80} style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>

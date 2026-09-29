@@ -10,7 +10,11 @@ import {
 import { generalFaq, journey, serviceCards, stats, testimonials, universities } from "@/content";
 import { universityLogo } from "@/content/university-logos";
 import { universityCardImage } from "@/content/university-photos";
+import { servicePhoto } from "@/content/service-photos";
+import { institutionPhoto } from "@/content/institution-photos";
+import { articlePhoto } from "@/content/article-photos";
 import { BrandMark, ImagePlaceholder } from "@/components/Common";
+import { PhotoCredit } from "@/components/PhotoCredit";
 import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { useT } from "@/i18n/context";
@@ -207,8 +211,8 @@ function AboutSection() {
   return (
     <section id="about" style={{ background: "var(--surface-subtle)", padding: "var(--section-y) 0" }}>
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
-        <ScrollReveal className="ct-split" style={{ display: "grid", gridTemplateColumns: "minmax(320px,1fr) minmax(280px,380px)", gap: "var(--space-12)", alignItems: "center" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+        <ScrollReveal>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", maxWidth: 900 }}>
             <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-h2)", lineHeight: 1.25, color: "var(--text-heading)", margin: 0 }}>
               {t("Campus Turkey helps students, patients, businesses, workers and partners worldwide reach opportunities in Türkiye.")}
             </p>
@@ -218,28 +222,6 @@ function AboutSection() {
               <Button variant="ghost" icon="message-circle" onClick={() => go("contact")}>{t("Contact us")}</Button>
             </div>
           </div>
-          {/*
-            The photograph, with the placeholder text kept as the fallback — the pattern
-            `UniversityDetail` already uses, so removing `src` reopens the reserved frame
-            rather than leaving a broken image.
-
-            `alt` describes the picture rather than its role: this is content, and
-            "Campus photography" tells a screen reader nothing the page has not said.
-            Not `priority` — the section sits below the hero, and the hero heading is the
-            LCP element here.
-
-            The source is 16:9 in a 4:3 frame, so it is centre-cropped by `objectFit:
-            cover`. The frame's ratio is deliberately not changed to suit one file: the
-            box is a layout agreement, and the whole point of a fixed frame is that
-            nothing shifts on the day a photograph is replaced.
-          */}
-          <ImagePlaceholder
-            slot="home-about"
-            label={t("Campus or student photography, 4:3")}
-            ratio="4 / 3"
-            src="/assets/homepage image 1.webp"
-            alt={t("Six students working together around a table with a laptop and notebooks")}
-          />
         </ScrollReveal>
         <ScrollReveal delay={80}><BrandDivider /></ScrollReveal>
         <ScrollReveal delay={160} style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-12)", alignItems: "center" }}>
@@ -273,15 +255,37 @@ function ServicesSection() {
             keeps its emphasis — the badge, the accent treatment and the numbered index
             all come from `emphasis`, not from its width. */}
         <CardGrid min={280} gap="var(--space-6)">
-          {cards.map((s, i) => (
-            <ScrollReveal key={s.title} delay={i * 80} style={{ display: "flex", minWidth: 0 }}>
-              <ServiceCard
-                icon={s.icon} title={s.title} description={s.description} points={s.points}
-                badge={s.badge} emphasis={s.emphasis} ctaLabel={s.ctaLabel}
-                href={href(s.route)} index={i + 1} style={{ width: "100%" }}
-              />
-            </ScrollReveal>
-          ))}
+          {cards.map((s, i) => {
+            const slug = s.route.startsWith("service/") ? s.route.slice("service/".length) : undefined;
+            const photo = slug
+              ? servicePhoto(slug)
+              : s.route === "partners"
+                ? institutionPhoto("agencies")
+                : undefined;
+            const ownedImage = s.route === "study" ? "/assets/campus-life.webp" : undefined;
+
+            return (
+              <ScrollReveal
+                key={s.title}
+                delay={i * 80}
+                style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", minWidth: 0 }}
+              >
+                <ImagePlaceholder
+                  slot={`home-service-${i + 1}`}
+                  ratio="16 / 10"
+                  src={photo?.src ?? ownedImage}
+                  alt={photo?.alt ?? (ownedImage ? t("Teaching, a full lecture hall") : "")}
+                  style={{ boxShadow: "var(--shadow-sm)" }}
+                />
+                <PhotoCredit photo={photo} />
+                <ServiceCard
+                  icon={s.icon} title={s.title} description={s.description} points={s.points}
+                  badge={s.badge} emphasis={s.emphasis} ctaLabel={s.ctaLabel}
+                  href={href(s.route)} index={i + 1} style={{ width: "100%", flex: 1 }}
+                />
+              </ScrollReveal>
+            );
+          })}
         </CardGrid>
       </div>
     </section>
@@ -449,6 +453,18 @@ function FeaturedUniversities() {
 
 function JourneySection() {
   const t = useT();
+  const applicationPhoto = articlePhoto("student-visa-documents");
+  const arrivalPhoto = articlePhoto("first-week-in-istanbul");
+  const visuals = [
+    {
+      src: "/assets/homepage image 1.webp",
+      alt: t("Six students working together around a table with a laptop and notebooks"),
+    },
+    { src: "/assets/campus-life.webp", alt: t("Teaching, a full lecture hall") },
+    { src: applicationPhoto?.src, alt: applicationPhoto?.alt ?? "", photo: applicationPhoto },
+    { src: "/assets/student housing.jpg", alt: t("Dormitory or student housing") },
+    { src: arrivalPhoto?.src, alt: arrivalPhoto?.alt ?? "", photo: arrivalPhoto },
+  ];
   return (
     <section style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>
       <div className="ct-container">
@@ -458,12 +474,24 @@ function JourneySection() {
             <SectionHeading eyebrow={t("How it works")} title={t("Five steps from question to campus")}
               lead={t("No jargon, no hidden stages. You always know what happens next.")} />
           }
-          items={translateContent(journey, t, ["meta", "title", "description"]).map((s) => ({
+          items={translateContent(journey, t, ["meta", "title", "description"]).map((s, index) => ({
             content: (
-              <div>
-                <span className="ct-eyebrow" style={{ display: "block", marginBottom: 6 }}>{s.meta}</span>
-                <h3 style={{ fontSize: "var(--fs-h3)", margin: "0 0 var(--space-2)" }}>{s.title}</h3>
-                <p style={{ fontSize: "var(--fs-body)", lineHeight: "var(--lh-body)", color: "var(--text-body)", maxWidth: 560 }}>{s.description}</p>
+              <div style={{ display: "grid", gap: "var(--space-5)" }}>
+                <div>
+                  <span className="ct-eyebrow" style={{ display: "block", marginBottom: 6 }}>{s.meta}</span>
+                  <h3 style={{ fontSize: "var(--fs-h3)", margin: "0 0 var(--space-2)" }}>{s.title}</h3>
+                  <p style={{ fontSize: "var(--fs-body)", lineHeight: "var(--lh-body)", color: "var(--text-body)", maxWidth: 560 }}>{s.description}</p>
+                </div>
+                <div>
+                  <ImagePlaceholder
+                    slot={`journey-${index + 1}`}
+                    ratio="16 / 9"
+                    src={visuals[index]?.src}
+                    alt={visuals[index]?.alt}
+                    style={{ maxHeight: 300 }}
+                  />
+                  <PhotoCredit photo={visuals[index]?.photo} />
+                </div>
               </div>
             ),
           }))}

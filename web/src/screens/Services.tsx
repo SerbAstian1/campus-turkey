@@ -25,6 +25,9 @@ import { CardGrid } from "@/components/CardGrid";
 import { PageBody, PageHero } from "./shared";
 import { useT } from "@/i18n/context";
 import { translateContent, SERVICE_KEYS } from "@/i18n/content";
+import { ImagePlaceholder } from "@/components/Common";
+import { PhotoCredit } from "@/components/PhotoCredit";
+import { servicePhoto } from "@/content/service-photos";
 
 export default function Services() {
   const t = useT();
@@ -58,13 +61,27 @@ export default function Services() {
         </ScrollReveal>
 
         <CardGrid min={320} gap="var(--space-6)">
-          {cards.map((service, index) => (
-            <ScrollReveal key={service.slug} delay={index * 60} style={{ display: "flex" }}>
+          {cards.map((service, index) => {
+            const photo = servicePhoto(service.slug);
+            return (
+            <ScrollReveal
+              key={service.slug}
+              delay={index * 60}
+              style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}
+            >
+              <ImagePlaceholder
+                slot={`services-${service.slug}`}
+                ratio="16 / 10"
+                src={photo?.src}
+                alt={photo?.alt}
+                style={{ boxShadow: "var(--shadow-sm)" }}
+              />
+              <PhotoCredit photo={photo} />
               <Card
                 interactive
                 href={href(`services/${service.slug}`)}
                 padding="var(--space-8)"
-                style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
+                style={{ width: "100%", display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-4)" }}
               >
                 <span
                   style={{
@@ -124,7 +141,8 @@ export default function Services() {
                 </span>
               </Card>
             </ScrollReveal>
-          ))}
+            );
+          })}
         </CardGrid>
 
         <ScrollReveal>

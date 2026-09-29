@@ -23,6 +23,9 @@ import { go, useHref } from "@/app/router";
 import { PageBody, PageHero } from "./shared";
 import { useT } from "@/i18n/context";
 import { translateContent } from "@/i18n/content";
+import { ImagePlaceholder } from "@/components/Common";
+import { PhotoCredit } from "@/components/PhotoCredit";
+import { institutionPhoto } from "@/content/institution-photos";
 
 interface Track {
   route: string;
@@ -115,31 +118,50 @@ export default function Partnerships() {
         </ScrollReveal>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          {tracks.map((track, index) => (
+          {tracks.map((track, index) => {
+            const photo = track.route === "partners"
+              ? institutionPhoto("agencies")
+              : track.route === "partnerships/universities"
+                ? institutionPhoto("universities")
+                : undefined;
+            const ownedImage = track.route === "representative" ? "/assets/homepage image 1.webp" : undefined;
+
+            return (
             <ScrollReveal key={track.route} delay={index * 80}>
               <Card padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", alignItems: "flex-start" }}>
-                  <span
-                    style={{
-                      display: "inline-flex", alignItems: "center", justifyContent: "center",
-                      width: 48, height: 48, borderRadius: "var(--radius-sm)",
-                      background: "var(--green-050)", flexShrink: 0,
-                    }}
-                  >
-                    <Icon name={track.icon} size={23} color="var(--green-600)" />
-                  </span>
-
-                  <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                    <span className="ct-eyebrow">{track.eyebrow}</span>
-                    <h3 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{track.title}</h3>
-                    <p style={{ color: "var(--text-body)", lineHeight: "var(--lh-body)", margin: 0, maxWidth: "62ch" }}>
-                      {track.body}
-                    </p>
+                <div className="ct-split" style={{ display: "grid", gridTemplateColumns: "minmax(240px,.8fr) minmax(320px,1.2fr)", gap: "var(--space-8)", alignItems: "center" }}>
+                  <div>
+                    <ImagePlaceholder
+                      slot={`partnership-${index + 1}`}
+                      ratio="16 / 10"
+                      src={photo?.src ?? ownedImage}
+                      alt={photo?.alt ?? (ownedImage ? t("Six students working together around a table with a laptop and notebooks") : "")}
+                    />
+                    <PhotoCredit photo={photo} />
                   </div>
-
-                  <Button size="lg" onClick={() => go(track.route)}>
-                    {track.cta}
-                  </Button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", alignItems: "flex-start" }}>
+                    <div style={{ display: "flex", gap: "var(--space-4)", alignItems: "center" }}>
+                      <span
+                        style={{
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          width: 48, height: 48, borderRadius: "var(--radius-sm)",
+                          background: "var(--green-050)", flexShrink: 0,
+                        }}
+                      >
+                        <Icon name={track.icon} size={23} color="var(--green-600)" />
+                      </span>
+                      <span className="ct-eyebrow">{track.eyebrow}</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                      <h3 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{track.title}</h3>
+                      <p style={{ color: "var(--text-body)", lineHeight: "var(--lh-body)", margin: 0, maxWidth: "62ch" }}>
+                        {track.body}
+                      </p>
+                    </div>
+                    <Button size="lg" onClick={() => go(track.route)}>
+                      {track.cta}
+                    </Button>
+                  </div>
                 </div>
 
                 <ul
@@ -172,7 +194,8 @@ export default function Partnerships() {
                 </p>
               </Card>
             </ScrollReveal>
-          ))}
+            );
+          })}
         </div>
 
         <ScrollReveal>
