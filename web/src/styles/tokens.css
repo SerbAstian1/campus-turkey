@@ -56,3 +56,53 @@
   --action-primary-hover: var(--green-300);
   --action-primary-active: var(--green-200);
 }
+
+/* ── Responsive type floors ───────────────────────────────────────────────────
+
+   The brief calls this out by name: "avoid giant desktop headings simply wrapping
+   into 5-8 lines on small devices." That is precisely what the display scale
+   produced on a 320px phone.
+
+       --fs-display-1  clamp(3.25rem, 7vw, 5.75rem)   3.25rem = 52px FLOOR
+       --fs-display-2  clamp(2.5rem,  5vw, 4rem)     2.5rem  = 40px floor
+       --fs-h1         clamp(2.25rem, 4vw, 3.25rem)  2.25rem = 36px floor
+       --fs-h2         clamp(1.75rem, 3vw, 2.5rem)   1.75rem = 28px floor
+
+   `clamp()` returns its middle term whenever that term sits between the two
+   bounds, so on a 375px phone `7vw` is 26px and the floor wins: the hero heading
+   rendered at 52px. In a 280px content column (320px viewport less two 20px
+   gutters) Playfair at 52px puts roughly eleven characters on a line, so
+   "Study in Türkiye" took four lines and every other display heading took five to
+   eight. The headings were not overflowing, which is why the overflow report did
+   not name them. They were simply enormous.
+
+   What changes is the FLOOR ONLY. The `vw` slope and the ceiling are untouched,
+   so every viewport wide enough for the middle term to apply renders exactly the
+   size it rendered before. A floor of 34px binds below 486px; below that the
+   heading is 34px instead of 52px. Above 486px nothing moves.
+
+   The values, and why each:
+
+       display-1  52px -> 34px   15 characters at 34px is about 255px, which
+                                 fits 280px. This is the hero heading and the one
+                                 that has to survive 320px.
+       display-2  40px -> 28px   Used with `max-width: 20ch` on the directory and
+                                 page heroes, so it is the second most common.
+       h1         36px -> 26px   SeoTitle and the university detail hero.
+       h2         28px -> 22px   Section headings inside stacked cards, where the
+                                 available column is narrower than the page.
+
+   `--fs-h3` and `--fs-h4` are deliberately NOT touched. They are 24px and 20px,
+   already body-scale, and a card heading at 24px inside a one-column card reads
+   as a heading rather than a banner. Lowering them would flatten the hierarchy on
+   the desktop layouts that are working.
+
+   Written here, after the imports above, for the same reason as the contrast
+   block: `public/ds/tokens/typography.css` stays byte-identical to its source so
+   the design system can be replaced wholesale without silently losing this. */
+:root {
+  --fs-display-1: clamp(2.125rem, 7vw, 5.75rem);
+  --fs-display-2: clamp(1.75rem, 5vw, 4rem);
+  --fs-h1: clamp(1.625rem, 4vw, 3.25rem);
+  --fs-h2: clamp(1.375rem, 3vw, 2.5rem);
+}

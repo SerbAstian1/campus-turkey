@@ -81,7 +81,7 @@ div[style*="transition: width"]{box-sizing:content-box!important}
   grid-template-columns:repeat(var(--cg-wide,3),minmax(0,1fr))}
 .ct-cardgrid>*{min-width:0}
 
-@media (max-width:1000px){.ct-split{grid-template-columns:1fr!important}.ct-portal{grid-template-columns:1fr!important}.ct-portal-aside{position:static!important;height:auto!important}.ct-portal-aside nav{flex-direction:row!important;flex-wrap:wrap}
+@media (max-width:1000px){.ct-split,.ct-sticky-scroll{grid-template-columns:minmax(0,1fr)!important}.ct-sticky-scroll{gap:var(--space-8)!important}.ct-sticky-scroll>div:first-child{position:static!important}.ct-portal{grid-template-columns:1fr!important}.ct-portal-aside{position:static!important;height:auto!important}.ct-portal-aside nav{flex-direction:row!important;flex-wrap:wrap}
   .ct-cardgrid{grid-template-columns:repeat(var(--cg-medium,2),minmax(0,1fr))}}
 @media (max-width:900px){.ct-faq-inner{grid-template-columns:1fr!important;gap:var(--space-8)!important}.ct-faq-inner>div[style*="sticky"],.ct-faq-inner>aside{position:static!important}.ct-detail-grid{grid-template-columns:1fr!important}.ct-detail-grid>div[style*="sticky"],.ct-detail-grid>aside{position:static!important}}
 /* The last rule collapses the portal sign-in split, and it had two things wrong with it,
@@ -96,7 +96,7 @@ div[style*="transition: width"]{box-sizing:content-box!important}
    Now unscoped and element-agnostic. The attribute selector is specific enough on its
    own, and not naming the tag means a future change from `div` to `section` cannot break
    it again the same way. */
-@media (max-width:760px){form{grid-template-columns:1fr!important}form>*{grid-column:span 1!important}[style*="grid-template-columns: 1.05fr"]{grid-template-columns:1fr!important}}
+@media (max-width:760px){form{grid-template-columns:1fr!important}form>*{grid-column:span 1!important}form [style*="grid-template-columns: 1fr 1fr"]{grid-template-columns:1fr!important}form [style*="grid-template-columns: 1fr 1fr"]>*{grid-column:span 1!important}[style*="grid-template-columns: 1.05fr"]{grid-template-columns:1fr!important}}
 
 /* Grid items default to min-width:auto, so a field's min-content width can push a
    two-column form past a narrow container. Every form cell is allowed to shrink.
@@ -252,3 +252,170 @@ form label,form label>*{min-width:0}
   footer div[style*="repeat(4, minmax(140px"]{
     grid-template-columns:minmax(0,1fr)!important;gap:var(--space-6)!important}
 }
+
+/* =============================================================================
+   RESPONSIVE FOUNDATION
+   =============================================================================
+
+   Everything above this line is the prototype transcribed rule for rule, plus the
+   corrections that were each written to fix one measured defect. What follows is
+   the layer that makes the whole site responsive by construction rather than by
+   the accumulation of per-page patches — which is what the brief asks for and
+   what the notes above could not become, because every one of them is scoped to a
+   single component it was written about.
+
+   The two rules that matter most are the first two. Read them in order.
+
+   ---- 1. The mask comes off --------------------------------------------------
+
+   The design system sets `body{overflow-x:clip}` in `tokens/base.css`. It is the
+   reason this defect was invisible.
+
+   `clip` does not remove overflow. It prevents the overflowing box from
+   contributing to the scrollable area, so the page stays 360px wide and the
+   content that did not fit is simply cut off at the edge — no scrollbar, no
+   warning, no layout warning, nothing in the build output. A reader on a phone
+   sees a heading, a paragraph and a button all sliced off mid-word and has no
+   way to reach the rest of them, because there is nothing to scroll. That is the
+   client report, and `base.css` above already says so in the footer comment.
+
+   It also defeats the acceptance criterion. The test the brief specifies
+   measures `document.documentElement.scrollWidth`, and with the body clipped
+   that value equals the viewport width whether or not the page is broken — so the
+   test would pass on a page whose right-hand third does not exist. A measurement
+   that cannot fail is not a measurement.
+
+   So it is turned off. Not replaced with `overflow-x:hidden`, which is the same
+   masking with a different keyword and is explicitly ruled out: hiding the
+   symptom is not fixing the layout. `visible` is the CSS initial value, so
+   anything still too wide after the fixes below will now show a horizontal
+   scrollbar — which is the point. It is the honest state, and the automated
+   check added in Phase 7 measures it and fails on it.
+
+   `position:sticky` is unaffected, which is worth checking rather than assuming:
+   `clip` does not establish a scroll container the way `hidden` does, so nothing
+   that was pinned by the sidebar, the FAQ headings or the directory toolbar
+   changes behaviour here. */
+body{overflow-x:visible}
+
+/* ---- 2. Two defaults, and why they are the whole ballgame ------------------
+
+   Both of these are CSS initial values being set back to what a responsive
+   layout actually needs, and between them they are the difference between a
+   layout that adapts to its container and one that is dragged around by its
+   contents.
+
+   `min-width: 0` on grid and flex children. The initial value for both is
+   `auto`, which means "never narrower than my min-content width." That single
+   word is why a card grid overflows: one card holding an unbreakable string —
+   an email address, a URL, "Çanakkale Onsekiz Mart University", a generated
+   reference — sets a min-content width larger than the viewport, and because
+   every sibling in the row is floored at *its* min-content too, the row cannot
+   shrink. The overflow is not caused by the long string being long. It is caused
+   by the long string being *forbidden from wrapping*, which is the default.
+
+   `overflow-wrap: break-word` on the text. `break-word` rather than `anywhere`
+   deliberately: it breaks a word only when that word genuinely cannot fit on a
+   line of its own, so ordinary prose is completely unaffected and no hyphen or
+   mid-syllable break appears in normal text. It is also the variant that does
+   not reduce intrinsic min-content size, so it composes with `min-width: 0`
+   rather than fighting it — the child is allowed to shrink first, and only then
+   does the string inside it break.
+
+   Scoped to `#root`, where the site chrome and screens live. The portal and
+   staff console render outside `#root` and already carry their own `min-width:0`
+   on their content columns; they are covered by rule 3 below, which is
+   unscoped on purpose. */
+#root :where(.ct-cardgrid,.ct-split,.ct-sticky-scroll,.ct-faq-inner,.ct-detail-grid,.ct-table-scroll,.ct-sheet,.ct-portal)>*{min-width:0}
+#root{overflow-wrap:break-word}
+
+/* ---- 3. Media stays inside its parent --------------------------------------
+
+   A photograph wider than its column is the most ordinary overflow there is, and
+   the most expensive to chase one page at a time — there are dozens of image
+   frames in the catalogue. This is the single rule that contains all of them.
+
+   `height: auto` is safe alongside the explicit heights the design system and
+   `ImagePlaceholder` set, because a stylesheet declaration does not outrank an
+   inline style without `!important`, and the brand lockups and circular logo
+   frames all size themselves by height inline. The two aspect-ratio rules at the
+   top of this file still reserve their boxes before decode. */
+#root :where(img,svg,video,canvas,iframe,embed,object){max-width:100%}
+#root :where(img,svg,video){height:auto}
+
+/* ---- 4. `PriceTable`, the one grid with no collapse path at any width -------
+
+   Every other multi-column layout in the app is either inside a `<form>` (the
+   760px rule above takes it) or already wears one of the classes the media
+   queries at the top of this file collapse. `PriceTable` in `screens/shared.tsx`
+   was the exception: `1.4fr 1fr 1fr` written as an inline style, with no class,
+   and therefore no rule anywhere that made it one column. Three fixed columns at
+   320px is 93px each, and each of those cells holds a sentence.
+
+   It gets a real class rather than another attribute-selector patch, because
+   unlike the footer this is a component this project owns and the correct fix is
+   in the component. The rule reads the class; the component wears it; the test
+   added in Phase 7 asserts both are present, which is the exact failure the
+   existing `responsive-selectors` test exists to catch.
+
+   Mobile is a single column rather than a scroll container. The brief allows
+   either for a data-dense component and asks for cards "when this improves
+   usability" — and for a four-row table of label/value pairs read on a phone, a
+   stacked list where each label sits above its own value is easier to scan than
+   four columns the reader has to scroll sideways through to correlate. The
+   header row is hidden at that width because "Scholarship / Covers / When to
+   apply / Your odds" as a column of labels with no values beside them is
+   noise. */
+.ct-datagrid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:0}
+.ct-datagrid>*{min-width:0}
+/* The cell padding, border and stacking live here rather than inline so the phone
+   breakpoint can reach them: an inline `borderTop` or `padding` outranks a
+   media-query rule, so a rule that needs to change at 760px has to not be inline.
+   `column` here is what puts the caption above its value once there is one
+   column; at four columns it just centres the name against the rest of the row. */
+.ct-datagrid>span{display:flex;flex-direction:column;justify-content:center;padding:var(--space-5) var(--space-6);font-family:var(--font-ui);font-size:var(--fs-body-sm);border-top:1px solid var(--border-subtle)}
+.ct-datagrid__head{font-size:var(--fs-caption);font-weight:var(--fw-semibold);letter-spacing:var(--ls-eyebrow);text-transform:uppercase;color:var(--green-700);background:var(--green-050);border-top:none!important}
+.ct-datagrid__name{font-weight:var(--fw-semibold);color:var(--green-800)}
+/* The per-cell caption that stands in for the header row on a phone. A separate
+   class rather than the header class with an inline override, because an inline
+   `display` outranks a media-query rule and the override would then be invisible
+   to the next reader. */
+.ct-datagrid__label{display:none;font-size:var(--fs-micro);font-weight:var(--fw-semibold);letter-spacing:var(--ls-eyebrow);text-transform:uppercase;color:var(--text-brand)}
+@media (max-width:760px){
+  .ct-datagrid{grid-template-columns:minmax(0,1fr)}
+  .ct-datagrid__head{display:none}
+  .ct-datagrid__label{display:block}
+  /* One column makes every cell its own row, and a rule above each caption/value
+     pair turns the table into a ruled form. Only the name keeps a divider, which
+     is what separates one institution from the next. */
+  .ct-datagrid>span{border-top:none;padding:var(--space-3) var(--space-5)}
+  .ct-datagrid__name:not(.ct-datagrid__name--first){border-top:1px solid var(--border-subtle);padding-top:var(--space-5)}
+}
+
+/* ---- 5. Long strings get a chance to break where they actually appear ------
+
+   Emails, phone numbers, addresses and URLs are the four places a single token
+   reliably exceeds a 280px column, and they appear in the footer, in the office
+   cards and inside the privacy notice. `anywhere` is used rather than
+   `break-word` here and only here: these are the strings that must break *even
+   when they would otherwise fit*, because a partially-wrapped email address
+   reads as two different addresses. A URL broken without a hyphen is a dead
+   link, so the visible one is allowed to break at its separators first. */
+#root :where(address,p) :where(a,code),#root address a,#root code{overflow-wrap:anywhere}
+
+/* ---- 6. Where horizontal scrolling is allowed, and only there ---------------
+
+   The brief is explicit that a table which genuinely needs more room must scroll
+   inside its own container rather than take the page with it. Three places earn
+   that, and all three already had it; they are collected here so the set is
+   auditable and so a fourth cannot be added without someone noticing this block
+   and saying so.
+
+   The affiliate marquee is the third. Its track is `width: max-content` by
+   design — that is what makes the -50% loop seamless — so it is the one element
+   on the site that is genuinely wider than its parent, and clipping it at the
+   marquee is the correct treatment rather than a workaround. The gradient edges
+   painted over it at `screens/Home.tsx` are what tell the reader it moves. */
+.ct-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ct-marquee{overflow-x:hidden}
+#root :where(.leaflet-container){overflow:hidden}

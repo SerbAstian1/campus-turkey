@@ -76,17 +76,42 @@ export function IconCard({
 export function PriceTable({ rows, columns }: { rows: (string | number)[][]; columns: string[] }) {
   return (
     <Card padding="0" style={{ overflow: "hidden" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr" }}>
+      {/*
+        `ct-datagrid`, and the class is the entire responsive story for this
+        component — it had none. Three fixed columns written straight into the
+        inline style, with no hook for a media query to reach, so at 320px each
+        column was 93px wide and held a full sentence.
+
+        One column below 760px, with the header row hidden: on a phone the table
+        reads as a stack of label-over-value pairs, which is what a reader
+        comparing four packages on their own phone actually wants. The label
+        above each value comes from the first cell of the row rather than from
+        the header, so nothing is lost when the header goes.
+      */}
+      <div className="ct-datagrid" role="table" aria-label={columns.join(", ")}>
         {columns.map((c) => (
-          <span key={c} className="ct-eyebrow" style={{ padding: "var(--space-5) var(--space-6)", background: "var(--green-050)", color: "var(--green-700)" }}>{c}</span>
+          <span key={c} className="ct-datagrid__head">{c}</span>
         ))}
         {rows.map((r, i) => r.map((cell, j) => (
-          <span key={`${i}-${j}`} style={{
-            padding: "var(--space-5) var(--space-6)", borderTop: "1px solid var(--border-subtle)",
-            fontFamily: "var(--font-ui)",
-            fontWeight: j === 0 ? "var(--fw-medium)" : "var(--fw-regular)",
-            fontSize: "var(--fs-body-sm)", color: j === 0 ? "var(--green-800)" : "var(--text-body)",
-          }}>{cell}</span>
+          <span
+            key={`${i}-${j}`}
+            className={j === 0 ? `ct-datagrid__name${i === 0 ? " ct-datagrid__name--first" : ""}` : undefined}
+            style={{ color: j === 0 ? undefined : "var(--text-body)" }}
+          >
+            {/*
+              The row's own first cell is the row's name — "Istanbul Technical
+              University" against its tuition and its dates — so it doubles as the
+              label for the two cells beside it. Rendering it once as a heading
+              and again as a caption would read as a duplicate to a screen reader,
+              which is why it is the only cell that carries the line.
+            */}
+            {j === 0 ? <strong>{cell}</strong> : (
+              <>
+                <span className="ct-datagrid__label">{columns[j]}</span>
+                <span>{cell}</span>
+              </>
+            )}
+          </span>
         )))}
       </div>
     </Card>

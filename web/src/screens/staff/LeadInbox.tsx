@@ -564,13 +564,13 @@ function ApproveStudent({ lead, onDone }: { lead: QueueLead; onDone: () => void 
           </Button>
           <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)", maxWidth: "40ch" }}>
             Creates their login and activates the password they chose. Legacy applications receive a set-password link. Attributed to
-            Campus Turkey directly — no partner or representative referred them.
+            Campus Turkey directly, with no partner or representative involved.
           </span>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <Input id={`uni-${lead.id}`} label="University"
-            hint="Not collected by the enquiry form — the match made here, not before."
+            hint="Not collected by the enquiry form, so the match is made here rather than before."
             placeholder="Istanbul University"
             value={form.universityName} onChange={set("universityName")} />
           <Input id={`prog-${lead.id}`} label="Program (optional)"

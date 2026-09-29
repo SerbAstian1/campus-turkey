@@ -38,13 +38,27 @@ export const LOCALES = [
  * catalogues are substantially complete; `i18n-advertised.test.ts` measures the real
  * files and fails if any entry here cannot back the claim.
  *
- * It is short right now because the catalogues are: five locales carry the reviewed
- * phrases imported from the prototype and sit near 16%, and eleven have almost
- * nothing. Fill them — `scripts/i18n-machine-translate.mjs` is the sweep, and a native
- * speaker's review is what makes it shippable — then add the locale here and let the
- * test confirm it earned the place. That was audit finding M4.
- */
-export const ADVERTISED_LOCALES = [DEFAULT_LOCALE] as const;
+ * **Thirteen of seventeen, as of the machine-translate sweep.** `scripts/i18n-machine-translate.mjs`
+ * has been run over the catalogue, and the twelve locales below now carry 95.6% to 98.5%
+ * of the 1,510 distinct English keys — past the 90% floor, and measured from the files
+ * rather than asserted here. The four still held back are real: Turkish, Urdu, Chinese
+ * and Yoruba sit between 0.7% and 54.8%, so each of them stays off the list until a
+ * native speaker's review has finished the job. Filling a gap with machine output and
+ * then advertising the result is the failure this list exists to prevent, and
+ * "past the coverage floor" is a necessary condition for advertising, not a sufficient
+ * one — the review is what makes a claim safe to make.
+ *
+ * **Turkish is the gap worth naming.** It is the primary language of the country this
+ * site sells study in, and it is one of the four still held back, at 54.5%. A
+ * search engine given `hreflang="tr"` for these pages would be right to distrust the
+ * whole set. Finishing the Turkish catalogue is the single highest-value translation
+ * task available, and it is a content decision for the client rather than a code one.
+ * That was audit finding M4. */
+export const ADVERTISED_LOCALES = [
+  DEFAULT_LOCALE,
+  "ar", "fr", "ru", "sw", "es", "pt",
+  "fa", "hi", "bn", "id", "ha", "ig",
+] as const;
 
 /** The share of the English catalogue a locale must carry before it may be advertised. */
 export const ADVERTISED_COVERAGE_FLOOR = 0.9;

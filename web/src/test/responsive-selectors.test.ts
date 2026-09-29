@@ -24,11 +24,25 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { cssBlock } from "./css-block";
 
 const web = join(__dirname, "..", "..");
 const css = readFileSync(join(web, "src", "styles", "base.css"), "utf8");
 const shell = readFileSync(join(web, "src", "app", "Shell.tsx"), "utf8");
 const mobileNav = readFileSync(join(web, "src", "app", "MobileNav.tsx"), "utf8");
+const home = readFileSync(join(web, "src", "screens", "Home.tsx"), "utf8");
+
+/**
+ * The two phone breakpoints, as the stylesheet spells them.
+ *
+ * They are 8px apart and that is deliberate rather than sloppy: 768px is the
+ * navigation switch and 760px is the form collapse, so the sign-in split stops
+ * being two columns slightly before the compact bar replaces the desktop pill.
+ * Both literals are named here so a test and the stylesheet cannot drift, and so
+ * a reader is not left wondering why two numbers this close both exist.
+ */
+const PHONE_NAV_BREAKPOINT = "@media (max-width:768px)";
+const PHONE_FORM_BREAKPOINT = "@media (max-width:760px)";
 
 /**
  * Comments blanked, newlines kept so line numbers survive.
@@ -65,7 +79,7 @@ describe("the element the prototype's rules are scoped to", () => {
 });
 
 describe("the mobile navigation switch has both halves", () => {
-  const phoneBreakpoint = /@media \(max-width:768px\)\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+  const phoneBreakpoint = cssBlock(css, PHONE_NAV_BREAKPOINT)?.body ?? "";
 
   it("hides the desktop header on a phone", () => {
     expect(phoneBreakpoint).toContain("#root>div>header{display:none!important}");
@@ -110,7 +124,7 @@ describe("rules that reach for a class a component must wear", () => {
      * it carries the id. A rule scoped to `#root` could never fire there, which is why
      * this one is deliberately unscoped.
      */
-    const narrow = /@media \(max-width:760px\)\{([^}]*\}?)*?\}\}/.exec(css)?.[0] ?? css;
+    const narrow = cssBlock(css, PHONE_FORM_BREAKPOINT)?.text ?? css;
     expect(narrow).toContain(String.raw`[style*="grid-template-columns: 1.05fr"]`);
     expect(narrow).not.toContain(String.raw`#root [style*="grid-template-columns: 1.05fr"]`);
 
@@ -121,6 +135,12 @@ describe("rules that reach for a class a component must wear", () => {
      * phone with the form pushed off the right edge.
      */
     expect(narrow).not.toMatch(/[a-z]+\[style\*="grid-template-columns: 1\.05fr"\]/);
+  });
+
+  it("collapses nested two-column field groups, not only the form itself", () => {
+    const narrow = cssBlock(css, PHONE_FORM_BREAKPOINT)?.text ?? css;
+    expect(narrow).toContain(String.raw`form [style*="grid-template-columns: 1fr 1fr"]{grid-template-columns:1fr!important}`);
+    expect(narrow).toContain(String.raw`form [style*="grid-template-columns: 1fr 1fr"]>*{grid-column:span 1!important}`);
   });
 
   it("gives the footer's fixed columns a way to collapse", () => {
@@ -134,5 +154,11 @@ describe("rules that reach for a class a component must wear", () => {
       String.raw`footer div[style*="repeat(4, minmax(140px"]`,
     );
     expect(css).toMatch(/footer div\[style\*="repeat\(4, minmax\(140px"\]\s*\{[^}]*!important/);
+  });
+
+  it("collapses the journey component's inline two-column grid", () => {
+    expect(home).toContain('className="ct-sticky-scroll"');
+    expect(css).toMatch(/@media \(max-width:1000px\)[\s\S]*?\.ct-sticky-scroll\{grid-template-columns:minmax\(0,1fr\)!important/);
+    expect(css).toContain(".ct-sticky-scroll>div:first-child{position:static!important}");
   });
 });

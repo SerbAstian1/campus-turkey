@@ -51,22 +51,37 @@ function englishKeys(): Set<string> {
  * Counts only keys that are present *and* differ from their English source. A catalogue
  * that has been filled with the English text to make a number go up has translated
  * nothing, and this is the measure that says so.
+ *
+ * **Deduplicated, and that matters more than it looks.** The counter is a `Set`, not a
+ * number. Keys are the English source strings themselves rather than identifiers, and
+ * the same string legitimately appears in more than one namespace file — "Submit" is in
+ * `common.json` and again in `forms.json`. Counting occurrences therefore counts some
+ * keys two or three times, and a locale can score above 100%, which is not a
+ * meaningful number for a coverage ratio.
+ *
+ * It was doing exactly that: the twelve advertised locales measured 101.6% to 104.3%
+ * against a denominator of 1,510 distinct keys. The verdicts happened to be unchanged
+ * (true figures are 95.6% to 98.5%, and the four held-back locales are still 0.7% to
+ * 54.8%), so nothing was wrong with the list this gate protects — but a metric that
+ * reads over 100% is not measuring what its own message claims, and it would have let
+ * a genuinely incomplete locale through. Deduping makes the gate stricter by about five
+ * percentage points, which is the direction a gate should err in.
  */
 function coverageOf(locale: string, source: Set<string>): number {
   const dir = join(MESSAGES, locale);
   if (!existsSync(dir)) return 0;
 
-  let translated = 0;
+  const translated = new Set<string>();
   for (const file of readdirSync(dir)) {
     if (!file.endsWith(".json") || file.startsWith(".")) continue;
     const contents = JSON.parse(readFileSync(join(dir, file), "utf8")) as Record<string, string>;
     for (const [key, value] of Object.entries(contents)) {
       if (source.has(key) && typeof value === "string" && value.trim() && value !== key) {
-        translated++;
+        translated.add(key);
       }
     }
   }
-  return translated / source.size;
+  return translated.size / source.size;
 }
 
 const source = englishKeys();

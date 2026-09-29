@@ -453,6 +453,7 @@ function JourneySection() {
     <section style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>
       <div className="ct-container">
         <StickyScrollSection
+          className="ct-sticky-scroll"
           aside={
             <SectionHeading eyebrow={t("How it works")} title={t("Five steps from question to campus")}
               lead={t("No jargon, no hidden stages. You always know what happens next.")} />

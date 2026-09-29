@@ -141,15 +141,15 @@ export function SeoFacts({ items }: { items: readonly (readonly [string, string 
       style={{
         ...prose,
         display: "grid",
-        gridTemplateColumns: "minmax(8rem, auto) 1fr",
+        gridTemplateColumns: "minmax(0, 8rem) minmax(0, 1fr)",
         gap: "var(--space-2) var(--space-5)",
         margin: 0,
       }}
     >
       {present.map(([label, value]) => (
         <div key={label} style={{ display: "contents" }}>
-          <dt style={{ fontWeight: "var(--fw-medium)", color: "var(--green-800)" }}>{label}</dt>
-          <dd style={{ margin: 0 }}>{String(value)}</dd>
+          <dt style={{ minWidth: 0, fontWeight: "var(--fw-medium)", color: "var(--green-800)" }}>{label}</dt>
+          <dd style={{ minWidth: 0, margin: 0, overflowWrap: "anywhere" }}>{String(value)}</dd>
         </div>
       ))}
     </dl>
