@@ -18,16 +18,14 @@
  * beside a dental quote would misdescribe both.
  */
 
-import { Button, CTABanner, Card, Icon, ScrollReveal, SectionHeading, ASSETS } from "@/ds";
+import { Button, CTABanner, Card, ScrollReveal, SectionHeading, ASSETS } from "@/ds";
 import { services } from "@/content";
 import { go, useHref } from "@/app/router";
-import { CardGrid } from "@/components/CardGrid";
 import { PageBody, PageHero } from "./shared";
 import { useT } from "@/i18n/context";
 import { translateContent, SERVICE_KEYS } from "@/i18n/content";
-import { ImagePlaceholder } from "@/components/Common";
-import { PhotoCredit } from "@/components/PhotoCredit";
 import { servicePhoto } from "@/content/service-photos";
+import { EditorialImage, EditorialIndex, EditorialSplit } from "@/components/Editorial";
 
 export default function Services() {
   const t = useT();
@@ -60,90 +58,58 @@ export default function Services() {
           />
         </ScrollReveal>
 
-        <CardGrid min={320} gap="var(--space-6)">
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
           {cards.map((service, index) => {
             const photo = servicePhoto(service.slug);
             return (
-            <ScrollReveal
-              key={service.slug}
-              delay={index * 60}
-              style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}
-            >
-              <ImagePlaceholder
-                slot={`services-${service.slug}`}
-                ratio="16 / 10"
-                src={photo?.src}
-                alt={photo?.alt}
-                style={{ boxShadow: "var(--shadow-sm)" }}
-              />
-              <PhotoCredit photo={photo} />
-              <Card
-                interactive
-                href={href(`services/${service.slug}`)}
-                padding="var(--space-8)"
-                style={{ width: "100%", display: "flex", flex: 1, flexDirection: "column", gap: "var(--space-4)" }}
-              >
-                <span
-                  style={{
-                    display: "inline-flex", alignItems: "center", justifyContent: "center",
-                    width: 48, height: 48, borderRadius: "var(--radius-sm)",
-                    background: "var(--green-050)",
-                  }}
+              <ScrollReveal key={service.slug} delay={index * 60}>
+                <EditorialSplit
+                  reverse={index % 2 === 1}
+                  tone={index % 2 === 0 ? "plain" : "tinted"}
+                  media={
+                    photo ? (
+                      <EditorialImage
+                        slot={`services-${service.slug}`}
+                        src={photo.src}
+                        alt={photo.alt}
+                        credit={photo}
+                        ratio="4 / 3"
+                      />
+                    ) : null
+                  }
                 >
-                  <Icon name={service.icon} size={23} color="var(--green-600)" />
-                </span>
-
-                <span className="ct-eyebrow">{service.eyebrow}</span>
-                <h3 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{service.title}</h3>
-                <p style={{ color: "var(--text-body)", lineHeight: "var(--lh-body)", margin: 0, flex: 1 }}>
-                  {service.lead}
-                </p>
-
-                {/* The first three tags only. A card carrying all eight becomes a list,
-                    and the page it links to is where the full list belongs. */}
-                {service.tags?.length ? (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-                    {service.tags.slice(0, 3).map((tag) => (
-                      <span
-                        key={tag}
-                        style={{
-                          padding: "4px 10px", borderRadius: 999,
-                          background: "var(--green-050)", color: "var(--green-700)",
-                          fontFamily: "var(--font-ui)", fontSize: "var(--fs-caption)",
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {service.tags.length > 3 ? (
-                      <span
-                        style={{
-                          padding: "4px 10px",
-                          color: "var(--text-muted)",
-                          fontFamily: "var(--font-ui)",
-                          fontSize: "var(--fs-caption)",
-                        }}
-                      >
-                        {t("+{count} more", { count: service.tags.length - 3 })}
-                      </span>
-                    ) : null}
+                  <EditorialIndex>{String(index + 1).padStart(2, "0")}</EditorialIndex>
+                  <div>
+                    <span className="ct-eyebrow">{service.eyebrow}</span>
+                    <h3 style={{ fontSize: "var(--fs-h2)", margin: "var(--space-2) 0 0" }}>{service.title}</h3>
                   </div>
-                ) : null}
-
-                <span
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 6,
-                    fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)",
-                    fontWeight: "var(--fw-semibold)", color: "var(--green-600)",
-                  }}
-                >
-                  {service.cta} <Icon name="arrow-right" size={15} />
-                </span>
-              </Card>
-            </ScrollReveal>
+                  <p style={{ color: "var(--text-body)", lineHeight: "var(--lh-body)", fontSize: "var(--fs-lead)", margin: 0 }}>
+                    {service.lead}
+                  </p>
+                  {service.tags?.length ? (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
+                      {service.tags.slice(0, 4).map((tag) => (
+                        <span
+                          key={tag}
+                          style={{
+                            padding: "6px 12px", borderRadius: 999,
+                            background: "var(--surface-page)", border: "1px solid var(--border-subtle)",
+                            color: "var(--green-700)", fontFamily: "var(--font-ui)", fontSize: "var(--fs-caption)",
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  <Button variant="secondary" icon="arrow-right" onClick={() => go(`service/${service.slug}`)}>
+                    {service.cta}
+                  </Button>
+                </EditorialSplit>
+              </ScrollReveal>
             );
           })}
-        </CardGrid>
+        </div>
 
         <ScrollReveal>
           <Card

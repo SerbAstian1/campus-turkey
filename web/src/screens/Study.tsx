@@ -6,9 +6,10 @@ import { Accordion, Badge, BrandDivider, Button, CTABanner, Card, Icon, SectionH
 import { useT } from "@/i18n/context";
 import { generalFaq, journey, scholarships, studentLife } from "@/content";
 import { go, useHref } from "@/app/router";
-import { IconCard, PageBody, PageHero, FaqLayout, StudentLifeFrames } from "./shared";
+import { PageBody, PageHero, FaqLayout, StudentLifeFrames } from "./shared";
 import { CardGrid } from "@/components/CardGrid";
 import { translateContent } from "@/i18n/content";
+import { EditorialImage, EditorialSplit } from "@/components/Editorial";
 
 /** A hook, not a module constant — see the note in About.tsx. */
 function useWhy() {
@@ -53,11 +54,33 @@ export default function Study() {
             <SectionHeading eyebrow={t("Why Türkiye")} title={t("Six reasons students choose it")}
               lead={t("Quality education at a cost that works, in a country that already hosts hundreds of thousands of international students.")} />
           </ScrollReveal>
-          <CardGrid min={260} gap="var(--space-6)">
-            {why.map((w, i) => (
-              <ScrollReveal key={w.title} delay={i * 60} style={{ display: "flex" }}><IconCard {...w} /></ScrollReveal>
-            ))}
-          </CardGrid>
+          <ScrollReveal delay={80}>
+            <EditorialSplit
+              tone="tinted"
+              media={
+                <EditorialImage
+                  slot="study-community"
+                  src="/assets/editorial/campus-community.webp"
+                  alt="International students walking together across a Turkish university campus"
+                  ratio="3 / 4"
+                />
+              }
+            >
+              <div style={{ display: "grid", gap: "var(--space-5)", width: "100%" }}>
+                {why.map((w) => (
+                  <div key={w.title} style={{ display: "grid", gridTemplateColumns: "36px minmax(0,1fr)", gap: "var(--space-3)", alignItems: "start" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-circle)", background: "var(--surface-page)" }}>
+                      <Icon name={w.icon} size={17} color="var(--green-600)" />
+                    </span>
+                    <div>
+                      <h3 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>{w.title}</h3>
+                      <p style={{ color: "var(--text-body)", fontSize: "var(--fs-body-sm)", lineHeight: "var(--lh-body)", margin: "4px 0 0" }}>{w.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </EditorialSplit>
+          </ScrollReveal>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>

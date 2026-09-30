@@ -6,11 +6,12 @@ import { BrandDivider, Button, CTABanner, Card, Icon, SectionHeading, ScrollReve
 import { institutions, partnerBenefits } from "@/content";
 import { scrollToId } from "@/components/Common";
 import { go, useHref } from "@/app/router";
-import { IconCard, PageBody, PageHero } from "./shared";
+import { PageBody, PageHero } from "./shared";
 import { PartnerForm } from "./PartnerForm";
 import { CardGrid } from "@/components/CardGrid";
 import { useT } from "@/i18n/context";
 import { translateContent, INSTITUTION_KEYS } from "@/i18n/content";
+import { EditorialImage, EditorialSplit } from "@/components/Editorial";
 
 /**
  * Canonical English, hoisted out of the JSX.
@@ -41,11 +42,34 @@ export default function Partners() {
         } />
 
       <PageBody>
-        <CardGrid min={260} gap="var(--space-6)">
-          {benefits.map((b, i) => (
-            <ScrollReveal key={b.title} delay={i * 70} style={{ display: "flex" }}><IconCard {...b} /></ScrollReveal>
-          ))}
-        </CardGrid>
+        <ScrollReveal>
+          <EditorialSplit
+            media={
+              <EditorialImage
+                slot="partner-collaboration"
+                src="/assets/editorial/partnership-meeting.webp"
+                alt="University and agency representatives discussing international admissions in Türkiye"
+                ratio="4 / 3"
+              />
+            }
+          >
+            <div>
+              <span className="ct-eyebrow">{t("For agencies and institutions")}</span>
+              <h2 style={{ fontSize: "var(--fs-h2)", margin: "var(--space-2) 0 0" }}>{t("Send us students, we handle the rest")}</h2>
+            </div>
+            <div style={{ display: "grid", gap: "var(--space-5)", width: "100%" }}>
+              {benefits.map((benefit) => (
+                <div key={benefit.title} style={{ display: "grid", gridTemplateColumns: "32px minmax(0,1fr)", gap: "var(--space-3)" }}>
+                  <Icon name={benefit.icon} size={20} color="var(--green-600)" />
+                  <div>
+                    <h3 style={{ fontSize: "var(--fs-h4)", margin: 0 }}>{benefit.title}</h3>
+                    <p style={{ color: "var(--text-body)", fontSize: "var(--fs-body-sm)", lineHeight: "var(--lh-body)", margin: "4px 0 0" }}>{benefit.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </EditorialSplit>
+        </ScrollReveal>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
           <ScrollReveal>

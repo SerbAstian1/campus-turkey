@@ -5,16 +5,16 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Accordion, Badge, BrandDivider, Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal,
-  ServiceCard, StatBlock, StickyScrollSection, TestimonialCard, UniversityCard, ASSETS,
+  StatBlock, StickyScrollSection, TestimonialCard, UniversityCard, ASSETS,
 } from "@/ds";
 import { generalFaq, journey, serviceCards, stats, testimonials, universities } from "@/content";
 import { universityLogo } from "@/content/university-logos";
 import { universityCardImage } from "@/content/university-photos";
 import { servicePhoto } from "@/content/service-photos";
-import { institutionPhoto } from "@/content/institution-photos";
 import { articlePhoto } from "@/content/article-photos";
 import { BrandMark, ImagePlaceholder } from "@/components/Common";
 import { PhotoCredit } from "@/components/PhotoCredit";
+import { EditorialImage, EditorialIndex, EditorialSplit } from "@/components/Editorial";
 import { go, useHref } from "@/app/router";
 import { CardGrid } from "@/components/CardGrid";
 import { useT } from "@/i18n/context";
@@ -254,39 +254,85 @@ function ServicesSection() {
             lay out as 2 + 3 + 1 no matter how the column count is chosen. The card
             keeps its emphasis — the badge, the accent treatment and the numbered index
             all come from `emphasis`, not from its width. */}
-        <CardGrid min={280} gap="var(--space-6)">
-          {cards.map((s, i) => {
-            const slug = s.route.startsWith("service/") ? s.route.slice("service/".length) : undefined;
-            const photo = slug
-              ? servicePhoto(slug)
-              : s.route === "partners"
-                ? institutionPhoto("agencies")
-                : undefined;
-            const ownedImage = s.route === "study" ? "/assets/campus-life.webp" : undefined;
+        <ScrollReveal>
+          <EditorialSplit
+            tone="tinted"
+            media={
+              <EditorialImage
+                slot="home-study-story"
+                src="/assets/editorial/campus-community.webp"
+                alt="International students walking together across a Turkish university campus"
+                ratio="4 / 3"
+              />
+            }
+          >
+            <EditorialIndex>01</EditorialIndex>
+            <div>
+              <span className="ct-eyebrow">{cards[0]?.badge}</span>
+              <h3 style={{ margin: "var(--space-2) 0 0", fontSize: "var(--fs-h2)" }}>{cards[0]?.title}</h3>
+            </div>
+            <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-lead)", lineHeight: "var(--lh-body)" }}>
+              {cards[0]?.description}
+            </p>
+            {cards[0]?.points?.length ? (
+              <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: "var(--space-3)" }}>
+                {cards[0].points.map((point) => (
+                  <li key={point} style={{ display: "flex", gap: "var(--space-3)", color: "var(--text-body)" }}>
+                    <Icon name="check" size={18} color="var(--green-600)" /> {point}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <Button variant="primary" icon="arrow-right" onClick={() => go(cards[0]?.route ?? "study")}>
+              {cards[0]?.ctaLabel}
+            </Button>
+          </EditorialSplit>
+        </ScrollReveal>
 
+        <div className="ct-visual-service-grid">
+          {cards.slice(1, 5).map((s, i) => {
+            const photo = servicePhoto(s.route.slice("service/".length));
             return (
-              <ScrollReveal
-                key={s.title}
-                delay={i * 80}
-                style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", minWidth: 0 }}
-              >
-                <ImagePlaceholder
-                  slot={`home-service-${i + 1}`}
-                  ratio="16 / 10"
-                  src={photo?.src ?? ownedImage}
-                  alt={photo?.alt ?? (ownedImage ? t("Teaching, a full lecture hall") : "")}
-                  style={{ boxShadow: "var(--shadow-sm)" }}
-                />
+              <ScrollReveal key={s.title} delay={i * 70}>
+                <article className="ct-visual-service-card">
+                  <img src={photo?.src} alt={photo?.alt ?? ""} loading="lazy" decoding="async" />
+                  <div className="ct-visual-service-card__body">
+                    <EditorialIndex>{String(i + 2).padStart(2, "0")}</EditorialIndex>
+                    <h3 style={{ margin: 0, fontSize: "var(--fs-h2)" }}>{s.title}</h3>
+                    <p style={{ margin: 0, lineHeight: "var(--lh-body)", maxWidth: "48ch" }}>{s.description}</p>
+                    <a className="ct-visual-service-card__link" href={href(s.route)}>
+                      {s.ctaLabel} <Icon name="arrow-right" size={15} />
+                    </a>
+                  </div>
+                </article>
                 <PhotoCredit photo={photo} />
-                <ServiceCard
-                  icon={s.icon} title={s.title} description={s.description} points={s.points}
-                  badge={s.badge} emphasis={s.emphasis} ctaLabel={s.ctaLabel}
-                  href={href(s.route)} index={i + 1} style={{ width: "100%", flex: 1 }}
-                />
               </ScrollReveal>
             );
           })}
-        </CardGrid>
+        </div>
+
+        <ScrollReveal>
+          <EditorialSplit
+            reverse
+            media={
+              <EditorialImage
+                slot="home-partnership-story"
+                src="/assets/editorial/partnership-meeting.webp"
+                alt="University and agency representatives discussing international admissions in Türkiye"
+                ratio="4 / 3"
+              />
+            }
+          >
+            <EditorialIndex>06</EditorialIndex>
+            <h3 style={{ margin: 0, fontSize: "var(--fs-h2)" }}>{cards[5]?.title}</h3>
+            <p style={{ margin: 0, color: "var(--text-body)", fontSize: "var(--fs-lead)", lineHeight: "var(--lh-body)" }}>
+              {cards[5]?.description}
+            </p>
+            <Button variant="secondary" icon="arrow-right" onClick={() => go(cards[5]?.route ?? "partners")}>
+              {cards[5]?.ctaLabel}
+            </Button>
+          </EditorialSplit>
+        </ScrollReveal>
       </div>
     </section>
   );
@@ -296,14 +342,37 @@ function StatsBand() {
   const t = useT();
   const items = translateContent(stats, t, ["label", "description"]);
   return (
-    <section style={{ background: "var(--gradient-brand-deep)", padding: "var(--section-y) 0" }}>
-      <CardGrid min={200} gap="var(--space-10)" className="ct-container">
-        {items.map((s, i) => (
-          <ScrollReveal key={s.label} delay={i * 80}>
-            <StatBlock label={s.label} description={s.description} value={<Counter value={s.value} />} />
-          </ScrollReveal>
-        ))}
-      </CardGrid>
+    <section style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>
+      <div className="ct-container">
+        <ScrollReveal>
+          <div className="ct-destination-story">
+            <div className="ct-destination-story__image">
+              <img
+                src="/assets/street-life.webp"
+                alt={t("City street, everyday costs")}
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <div className="ct-destination-story__content">
+              <div>
+                <span className="ct-eyebrow" style={{ color: "var(--green-300)" }}>{t("Why Türkiye")}</span>
+                <h2 style={{ color: "var(--white)", fontSize: "var(--fs-h2)", margin: "var(--space-3) 0" }}>
+                  {t("See what your year actually looks like")}
+                </h2>
+                <p style={{ color: "rgba(255,255,255,.82)", margin: 0, lineHeight: "var(--lh-body)" }}>
+                  {t("Campus, city and student life in one short reel.")}
+                </p>
+              </div>
+              <div className="ct-destination-story__stats">
+                {items.map((s) => (
+                  <StatBlock key={s.label} label={s.label} description={s.description} value={<Counter value={s.value} />} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </ScrollReveal>
+      </div>
     </section>
   );
 }
@@ -457,8 +526,8 @@ function JourneySection() {
   const arrivalPhoto = articlePhoto("first-week-in-istanbul");
   const visuals = [
     {
-      src: "/assets/homepage image 1.webp",
-      alt: t("Six students working together around a table with a laptop and notebooks"),
+      src: "/assets/editorial/student-advising.webp",
+      alt: "International students reviewing university options with an education adviser in Istanbul",
     },
     { src: "/assets/campus-life.webp", alt: t("Teaching, a full lecture hall") },
     { src: applicationPhoto?.src, alt: applicationPhoto?.alt ?? "", photo: applicationPhoto },

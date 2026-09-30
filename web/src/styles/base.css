@@ -187,8 +187,8 @@ form label,form label>*{min-width:0}
 /* ---- Not in the prototype ----------------------------------------------------
    A skip link, which the prototype has no equivalent of. It is off-screen until it
    takes focus, so it changes nothing visually for a mouse user. */
-.ct-skip{position:absolute;left:-9999px;top:0;z-index:400;padding:12px 20px;background:var(--white);color:var(--green-900);border-radius:0 0 var(--radius-md) 0}
-.ct-skip:focus{left:0}
+.ct-skip{position:fixed;inset-inline-start:var(--gutter);top:0;z-index:400;padding:12px 20px;background:var(--white);color:var(--green-900);border-radius:0 0 var(--radius-md) var(--radius-md);transform:translateY(-150%)}
+.ct-skip:focus{transform:translateY(0)}
 
 /* ---- The server-rendered error pages -----------------------------------------
    `not-found.tsx`, `error.tsx` and `global-error.tsx` use these classes and nothing
@@ -342,6 +342,58 @@ body{overflow-x:visible}
    top of this file still reserve their boxes before decode. */
 #root :where(img,svg,video,canvas,iframe,embed,object){max-width:100%}
 #root :where(img,svg,video){height:auto}
+
+/* ---- Editorial visual storytelling ----------------------------------------
+   Shared presentation primitives for the public-site redesign. The structure is
+   intentionally small: one media figure and one split composition. Individual pages
+   can vary rhythm without duplicating the responsive and overflow behavior. */
+.ct-editorial-image{min-width:0;width:100%}
+.ct-editorial-image__frame{position:relative;overflow:hidden;width:100%;min-height:220px;border-radius:var(--radius-xl);background:var(--neutral-100);box-shadow:var(--shadow-sm)}
+.ct-editorial-image__frame img{display:block;width:100%;height:100%!important;object-fit:cover;transition:transform var(--dur-slow) var(--ease-out)}
+.ct-editorial-image:hover .ct-editorial-image__frame img{transform:scale(1.018)}
+.ct-editorial-split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);align-items:stretch;gap:clamp(var(--space-8),5vw,var(--space-16));padding:clamp(var(--space-6),4vw,var(--space-10));border-radius:var(--radius-xl);background:var(--surface-page)}
+.ct-editorial-split[data-reverse="true"]{grid-template-columns:minmax(300px,.85fr) minmax(0,1.15fr)}
+.ct-editorial-split[data-reverse="true"] .ct-editorial-split__media{order:2}
+.ct-editorial-split[data-reverse="true"] .ct-editorial-split__content{order:1}
+.ct-editorial-split[data-tone="tinted"]{background:var(--green-050)}
+.ct-editorial-split[data-tone="dark"]{background:var(--gradient-brand-deep);color:var(--white)}
+.ct-editorial-split__media{min-width:0;align-self:stretch}
+.ct-editorial-split__media>.ct-editorial-image,.ct-editorial-split__media>.ct-editorial-image>.ct-editorial-image__frame{height:100%}
+.ct-editorial-split__content{min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:var(--space-5)}
+.ct-editorial-index{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:var(--radius-circle);background:var(--green-100);color:var(--green-800);font-family:var(--font-ui);font-size:var(--fs-caption);font-weight:var(--fw-semibold);letter-spacing:.08em}
+.ct-visual-service-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-6)}
+.ct-visual-service-card{position:relative;isolation:isolate;overflow:hidden;min-height:430px;border-radius:var(--radius-xl);background:var(--green-900);box-shadow:var(--shadow-md)}
+.ct-visual-service-card>img{position:absolute;inset:0;width:100%;height:100%!important;object-fit:cover;transition:transform var(--dur-slow) var(--ease-out)}
+.ct-visual-service-card:hover>img{transform:scale(1.025)}
+.ct-visual-service-card::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(5,30,20,.04) 20%,rgba(5,30,20,.9) 100%)}
+.ct-visual-service-card__body{position:absolute;inset:auto 0 0;z-index:2;display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-3);padding:clamp(var(--space-6),4vw,var(--space-10));color:var(--white)}
+.ct-visual-service-card__body h3,.ct-visual-service-card__body p{color:inherit}
+.ct-visual-service-card__link{color:var(--white);font-family:var(--font-ui);font-size:var(--fs-body-sm);font-weight:var(--fw-semibold);text-underline-offset:4px}
+.ct-destination-story{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);overflow:hidden;border-radius:var(--radius-xl);background:var(--gradient-brand-deep);color:var(--white)}
+.ct-destination-story__image{position:relative;min-height:560px}
+.ct-destination-story__image img{position:absolute;inset:0;width:100%;height:100%!important;object-fit:cover}
+.ct-destination-story__image::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 55%,rgba(7,44,31,.72) 100%)}
+.ct-destination-story__content{display:flex;flex-direction:column;justify-content:center;gap:var(--space-8);padding:clamp(var(--space-8),5vw,var(--space-16))}
+.ct-destination-story__stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-6)}
+
+@media (max-width:900px){
+  .ct-editorial-split,.ct-editorial-split[data-reverse="true"]{grid-template-columns:minmax(0,1fr)}
+  .ct-editorial-split[data-reverse="true"] .ct-editorial-split__media,.ct-editorial-split[data-reverse="true"] .ct-editorial-split__content{order:initial}
+  .ct-editorial-split__media>.ct-editorial-image,.ct-editorial-split__media>.ct-editorial-image>.ct-editorial-image__frame{height:auto}
+  .ct-destination-story{grid-template-columns:minmax(0,1fr)}
+  .ct-destination-story__image{min-height:clamp(320px,58vw,520px)}
+  .ct-destination-story__image::after{background:linear-gradient(180deg,transparent 60%,rgba(7,44,31,.82) 100%)}
+}
+@media (max-width:680px){
+  .ct-visual-service-grid{grid-template-columns:minmax(0,1fr)}
+  .ct-visual-service-card{min-height:360px}
+  .ct-editorial-split{padding:var(--space-4);gap:var(--space-6)}
+  .ct-editorial-image__frame{min-height:190px;border-radius:var(--radius-lg)}
+  .ct-destination-story__stats{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){
+  .ct-editorial-image__frame img,.ct-visual-service-card>img{transform:none!important}
+}
 
 /* ---- 4. `PriceTable`, the one grid with no collapse path at any width -------
 
