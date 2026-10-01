@@ -228,11 +228,11 @@ function AboutSection() {
     <section id="about" style={{ background: "var(--surface-subtle)", padding: "var(--section-y) 0" }}>
       <div className="ct-container" style={{ display: "flex", flexDirection: "column", gap: "var(--space-10)" }}>
         <ScrollReveal>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", maxWidth: 900 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-6)", width: "100%", maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
             <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-h2)", lineHeight: 1.25, color: "var(--text-heading)", margin: 0 }}>
               {t("Campus Turkey helps students, patients, businesses, workers and partners worldwide reach opportunities in Türkiye.")}
             </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "var(--space-3)" }}>
               <Button variant="primary" onClick={() => go("apply")}>{t("Apply Now")}</Button>
               <Button variant="secondary" onClick={() => go("partners#partner-form")}>{t("Become a Partner")}</Button>
               <Button variant="ghost" icon="message-circle" onClick={() => go("contact")}>{t("Contact us")}</Button>
@@ -459,7 +459,7 @@ function CampusReel() {
   }, [reduceMotion]);
 
   return (
-    <div style={{ position: "relative", display: "grid", placeItems: "center", padding: "clamp(var(--space-4),4vw,var(--space-8))", borderRadius: "var(--radius-xl)", overflow: "hidden", background: "var(--gradient-brand-deep)" }}>
+    <div style={{ position: "relative", borderRadius: "var(--radius-xl)", overflow: "hidden" }}>
       <video
         ref={ref}
         data-slot="home-reel"
@@ -468,7 +468,7 @@ function CampusReel() {
          * photograph is: relative resolves against the current directory, and every page
          * here is under a locale segment.
          */
-        data-src="/assets/client-owned/student-journey.mp4"
+        data-src="/assets/campus-reel.mp4"
         loop
         muted
         playsInline
@@ -481,7 +481,7 @@ function CampusReel() {
            unlabelled media element and no new string enters the phrase book to describe
            the same twelve seconds twice. */
         aria-label={t("Campus, city and student life in one short reel.")}
-        style={{ display: "block", width: "min(100%,360px)", aspectRatio: "9 / 16", objectFit: "cover", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)" }}
+        style={{ display: "block", width: "100%", aspectRatio: "16 / 9", objectFit: "cover" }}
       />
     </div>
   );
