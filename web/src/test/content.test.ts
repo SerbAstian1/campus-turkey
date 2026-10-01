@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   articles, contact, getArticle, getInstitution, getService, getUniversity,
-  institutions, journey, portal, scholarships, serviceCards, services, universities,
+  institutions, journey, portal, scholarships, serviceCards, services, socials, universities,
 } from "@/content";
 
 const slugsOf = (items: { slug: string }[]) => items.map((i) => i.slug);
@@ -149,5 +149,20 @@ describe("company content", () => {
     expect(about).not.toContain("ImagePlaceholder");
     expect(about).not.toContain("data-slot=");
     expect(about).not.toMatch(/<img\b/);
+  });
+
+  it("publishes only the client's verified social profiles", () => {
+    expect(socials).toEqual([
+      {
+        icon: "instagram",
+        label: "Instagram",
+        href: "https://www.instagram.com/campusturkeyofficial/",
+      },
+      {
+        icon: "facebook",
+        label: "Facebook",
+        href: "https://www.facebook.com/campusturkeyofficial",
+      },
+    ]);
   });
 });

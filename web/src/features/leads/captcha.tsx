@@ -130,14 +130,14 @@ export function resetCaptcha(): void {
  * Renders nothing at all without a site key, so the development forms are unchanged and
  * no empty box appears where a challenge would be.
  */
-export function CaptchaField() {
+export function CaptchaField({ active = true }: { active?: boolean }) {
   const t = useT();
   const locale = useLocale();
   const host = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!SITE_KEY || !host.current) return;
+    if (!SITE_KEY || !active || !host.current) return;
 
     let cancelled = false;
     let widgetId: string | null = null;
@@ -164,7 +164,7 @@ export function CaptchaField() {
       if (widgetId && window.hcaptcha?.remove) window.hcaptcha.remove(widgetId);
       if (activeWidget === widgetId) activeWidget = null;
     };
-  }, [locale]);
+  }, [active, locale]);
 
   if (!SITE_KEY) return null;
 

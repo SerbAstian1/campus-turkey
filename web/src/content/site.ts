@@ -69,8 +69,6 @@ export const footerColumns: FooterColumn[] = [
 ];
 
 export const socials = [
-  { icon: "instagram", label: "Instagram" },
-  { icon: "facebook", label: "Facebook" },
-  { icon: "linkedin", label: "LinkedIn" },
-  { icon: "youtube", label: "YouTube" },
+  { icon: "instagram", label: "Instagram", href: "https://www.instagram.com/campusturkeyofficial/" },
+  { icon: "facebook", label: "Facebook", href: "https://www.facebook.com/campusturkeyofficial" },
 ];

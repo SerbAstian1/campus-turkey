@@ -299,7 +299,7 @@ export interface FooterProps extends CommonProps {
   contact?: { address?: string; phone?: string; email?: string; whatsapp?: string };
   lang?: string;
   onLangChange?: (code: string) => void;
-  socials?: { icon: string; label: string }[];
+  socials?: { icon: string; label: string; href?: string }[];
   legal?: string;
   assetBase?: string;
 }

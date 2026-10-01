@@ -5,18 +5,17 @@
  * degree costs, a stamped passport beside one on visa documents. Nothing here claims to
  * be a particular place, which is what separates these from the campus photographs.
  *
- * Two of the six articles have no entry. The only free lecture halls on Commons are in
- * Hungary and Bolivia and the only reading rooms in Chile and Mexico — accurate images
- * of the wrong country to put on a page about studying in Türkiye. The frames stay
- * reserved until something of the right place exists.
+ * The two topics that had no accurate licensed photograph now use original editorial
+ * scenes made for Campus Turkey. They illustrate the subject without claiming to show a
+ * named university, student or scholarship recipient.
  */
 export interface ArticlePhoto {
   readonly src: string;
   readonly alt: string;
-  readonly author: string;
-  readonly licence: string;
-  readonly licenceUrl: string;
-  readonly source: string;
+  readonly author?: string;
+  readonly licence?: string;
+  readonly licenceUrl?: string;
+  readonly source?: string;
 }
 
 export const articlePhotos: Readonly<Record<string, ArticlePhoto>> = {
@@ -36,6 +35,14 @@ export const articlePhotos: Readonly<Record<string, ArticlePhoto>> = {
     licenceUrl: "https://creativecommons.org/licenses/by-sa/3.0",
     source: "https://commons.wikimedia.org/wiki/File:Turkish_passport_page.jpg",
   },
+  "turkiye-burslari-who-gets-it": {
+    src: "/assets/editorial/scholarship-planning.webp",
+    alt: "An international student reviewing university application notes with an adviser in a library",
+  },
+  "english-or-turkish-taught": {
+    src: "/assets/editorial/language-classroom.webp",
+    alt: "International students taking part in a Turkish language class",
+  },
   "first-week-in-istanbul": {
     src: "/assets/article-photos/first-week-in-istanbul.webp",
     alt: "A nostalgic red tram on İstiklal Avenue, Istanbul",
@@ -54,5 +61,5 @@ export const articlePhotos: Readonly<Record<string, ArticlePhoto>> = {
   },
 };
 
-/** The photograph for this record, or `undefined` where none has been sourced. */
+/** The editorial photograph for this record. */
 export const articlePhoto = (slug: string): ArticlePhoto | undefined => articlePhotos[slug];

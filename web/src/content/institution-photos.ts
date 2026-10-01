@@ -5,17 +5,16 @@
  * so a Turkish university building on "For universities" is illustration and not a
  * claim about anyone's affiliation.
  *
- * Hospitals and chambers of commerce have no entry. Commons offers chambers in Greece,
- * Wisconsin and Colombia, and its Turkish hospital categories returned an ethnography
- * museum and a carved facade. Neither frame is worth filling with those.
+ * The hospital and chamber pages use original editorial scenes rather than an unrelated
+ * building. They communicate the work without claiming a named partner or location.
  */
 export interface InstitutionPhoto {
   readonly src: string;
   readonly alt: string;
-  readonly author: string;
-  readonly licence: string;
-  readonly licenceUrl: string;
-  readonly source: string;
+  readonly author?: string;
+  readonly licence?: string;
+  readonly licenceUrl?: string;
+  readonly source?: string;
 }
 
 export const institutionPhotos: Readonly<Record<string, InstitutionPhoto>> = {
@@ -35,7 +34,15 @@ export const institutionPhotos: Readonly<Record<string, InstitutionPhoto>> = {
     licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0",
     source: "https://commons.wikimedia.org/wiki/File:Rectorate_Building_of_Dokuz_Eylul_University.jpg",
   },
+  "hospitals": {
+    src: "/assets/editorial/patient-consultation.webp",
+    alt: "An international patient speaking with a physician and care coordinator in a consultation room",
+  },
+  "chambers": {
+    src: "/assets/editorial/trade-delegation.webp",
+    alt: "An international business delegation in a working meeting overlooking Istanbul",
+  },
 };
 
-/** The photograph for this record, or `undefined` where none has been sourced. */
+/** The editorial photograph for this institution audience. */
 export const institutionPhoto = (slug: string): InstitutionPhoto | undefined => institutionPhotos[slug];

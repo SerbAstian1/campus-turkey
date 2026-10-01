@@ -53,7 +53,7 @@ describe("public pages render content on the server", () => {
     expect(files.length).toBeGreaterThan(15);
   });
 
-  it("wraps every screen in Hydrated with a server-rendered fallback", () => {
+  it("renders every screen directly or supplies Hydrated with a server fallback", () => {
     const missing: string[] = [];
 
     for (const file of files) {
@@ -69,8 +69,12 @@ describe("public pages render content on the server", () => {
        * them, which is the right kind of wrong to find here rather than in review.
        */
       const wrapped = source.includes("<Hydrated") && source.includes("server={");
+      // Lightweight screens that do not depend on the late-loaded design system can
+      // render directly. Contact deliberately takes this path so the booking form is
+      // usable in the first HTML response, even on a slow or blocked script request.
+      const direct = /return\s*\(?\s*<[A-Z][A-Za-z0-9]*/.test(source) && !source.includes("<Hydrated");
 
-      if (!wrapped) missing.push(route);
+      if (!wrapped && !direct) missing.push(route);
     }
 
     expect(
@@ -79,7 +83,19 @@ describe("public pages render content on the server", () => {
     ).toEqual([]);
   });
 
-  it("imports the fallback from the shared seo module rather than inventing one", () => {
+  it("keeps the appointment form outside the design-system loading gate", () => {
+    const contactPage = readFileSync(join(SITE, "contact", "page.tsx"), "utf8");
+    const contactScreen = readFileSync(
+      join(__dirname, "..", "screens", "Contact.tsx"),
+      "utf8",
+    );
+
+    expect(contactPage).toContain("return <Contact />");
+    expect(contactPage).not.toContain("<Hydrated");
+    expect(contactScreen).not.toContain('from "@/ds"');
+  });
+
+  it("imports every Hydrated fallback from the shared seo module rather than inventing one", () => {
     const strays: string[] = [];
 
     for (const file of files) {
@@ -87,6 +103,7 @@ describe("public pages render content on the server", () => {
       if (CLIENT_ONLY_ALLOWLIST.has(route)) continue;
 
       const source = readFileSync(file, "utf8");
+      if (!source.includes("<Hydrated")) continue;
       if (!source.includes("@/components/seo/routes")) strays.push(route);
     }
 

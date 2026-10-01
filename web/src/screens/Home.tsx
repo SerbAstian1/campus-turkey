@@ -66,11 +66,12 @@ function Hero({ onApply, onExplore }: { onApply: () => void; onExplore: () => vo
    *
    * Resolved in an effect rather than during render because `matchMedia` does not exist
    * on the server: reading it during render would make the markup differ between the
-   * server and the first client pass and produce a hydration mismatch. Starting at
-   * `false` means the video mounts and is then swapped for its poster, which is the
-   * right way round — the still is what a reduced-motion visitor should be left with.
-   */
+   * server and the first client pass and produce a hydration mismatch. The video also
+   * waits for an idle browser window so its large decorative download cannot delay the
+   * first interactive paint.
+  */
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [loadVideo, setLoadVideo] = useState(false);
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduceMotion(query.matches);
@@ -80,6 +81,21 @@ function Hero({ onApply, onExplore }: { onApply: () => void; onExplore: () => vo
     const onChange = (event: MediaQueryListEvent) => setReduceMotion(event.matches);
     query.addEventListener("change", onChange);
     return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    if (connection?.saveData || connection?.effectiveType === "slow-2g" || connection?.effectiveType === "2g") return;
+
+    // The heading and actions paint first. The 6.7 MB decorative reel starts only when
+    // the browser has an idle window, so it no longer competes with the interactive page
+    // bundle on a cold mobile visit.
+    const idle = window.requestIdleCallback?.(() => setLoadVideo(true), { timeout: 1800 });
+    const timer = idle === undefined ? window.setTimeout(() => setLoadVideo(true), 1200) : undefined;
+    return () => {
+      if (idle !== undefined) window.cancelIdleCallback?.(idle);
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
   }, []);
 
   return (
@@ -101,7 +117,7 @@ function Hero({ onApply, onExplore }: { onApply: () => void; onExplore: () => vo
         Decorative: `aria-hidden`, no controls, out of the tab order. The heading carries
         the message for anyone who cannot see this.
       */}
-      {!reduceMotion && (
+      {!reduceMotion && loadVideo && (
         <video
           src={`${ASSETS}/hero-video.mp4`}
           autoPlay
@@ -348,8 +364,8 @@ function StatsBand() {
           <div className="ct-destination-story">
             <div className="ct-destination-story__image">
               <img
-                src="/assets/street-life.webp"
-                alt={t("City street, everyday costs")}
+                src="/assets/client-owned/student-community.webp"
+                alt="International students sharing a meal together in TÃ¼rkiye"
                 loading="lazy"
                 decoding="async"
               />
@@ -430,6 +446,10 @@ function CampusReel() {
        * unmuted autoplay. `play()` rejects when it is refused anyway, caught because an
        * unhandled rejection in the console is not a useful way to find that out.
        */
+      if (!el.src && el.dataset.src) {
+        el.src = el.dataset.src;
+        el.load();
+      }
       el.muted = true;
       void el.play().catch(() => {});
     }, { rootMargin: "200px 0px", threshold: 0.2 });
@@ -439,7 +459,7 @@ function CampusReel() {
   }, [reduceMotion]);
 
   return (
-    <div style={{ position: "relative", borderRadius: "var(--radius-xl)", overflow: "hidden" }}>
+    <div style={{ position: "relative", display: "grid", placeItems: "center", padding: "clamp(var(--space-4),4vw,var(--space-8))", borderRadius: "var(--radius-xl)", overflow: "hidden", background: "var(--gradient-brand-deep)" }}>
       <video
         ref={ref}
         data-slot="home-reel"
@@ -448,11 +468,11 @@ function CampusReel() {
          * photograph is: relative resolves against the current directory, and every page
          * here is under a locale segment.
          */
-        src="/assets/campus-reel.mp4"
+        data-src="/assets/client-owned/student-journey.mp4"
         loop
         muted
         playsInline
-        preload="metadata"
+        preload="none"
         /* Reduced motion gets the reel as something to start rather than something
            already running. It stays reachable — this is content the section promises,
            not decoration, so the answer there is controls, not removal. */
@@ -461,7 +481,7 @@ function CampusReel() {
            unlabelled media element and no new string enters the phrase book to describe
            the same twelve seconds twice. */
         aria-label={t("Campus, city and student life in one short reel.")}
-        style={{ display: "block", width: "100%", aspectRatio: "16 / 9", objectFit: "cover" }}
+        style={{ display: "block", width: "min(100%,360px)", aspectRatio: "9 / 16", objectFit: "cover", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)" }}
       />
     </div>
   );
@@ -523,16 +543,15 @@ function FeaturedUniversities() {
 function JourneySection() {
   const t = useT();
   const applicationPhoto = articlePhoto("student-visa-documents");
-  const arrivalPhoto = articlePhoto("first-week-in-istanbul");
   const visuals = [
     {
       src: "/assets/editorial/student-advising.webp",
       alt: "International students reviewing university options with an education adviser in Istanbul",
     },
-    { src: "/assets/campus-life.webp", alt: t("Teaching, a full lecture hall") },
+    { src: "/assets/client-owned/lecture-room.webp", alt: "Students attending a lecture in a full university classroom" },
     { src: applicationPhoto?.src, alt: applicationPhoto?.alt ?? "", photo: applicationPhoto },
     { src: "/assets/student housing.jpg", alt: t("Dormitory or student housing") },
-    { src: arrivalPhoto?.src, alt: arrivalPhoto?.alt ?? "", photo: arrivalPhoto },
+    { src: "/assets/client-owned/student-arrival.webp", alt: "Two students embracing on arrival at the airport" },
   ];
   return (
     <section style={{ background: "var(--surface-page)", padding: "var(--section-y) 0" }}>

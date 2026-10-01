@@ -10,11 +10,10 @@
 
 import { Button, CTABanner, Card, Icon, SectionHeading, ScrollReveal, StatBlock, ASSETS } from "@/ds";
 import { getInstitution } from "@/content";
-import { ImagePlaceholder } from "@/components/Common";
 import { institutionPhoto } from "@/content/institution-photos";
-import { PhotoCredit } from "@/components/PhotoCredit";
+import { EditorialImage, EditorialSplit } from "@/components/Editorial";
 import { go, useHref } from "@/app/router";
-import { IconCard, PageBody, PageHero, splitStyle } from "./shared";
+import { IconCard, PageBody, PageHero } from "./shared";
 import { useT } from "@/i18n/context";
 import { translateContent, INSTITUTION_KEYS } from "@/i18n/content";
 import { ErrorScreen } from "./Errors";
@@ -26,6 +25,7 @@ export default function Institution({ slug }: { slug: string }) {
   const raw = getInstitution(slug);
   if (!raw) return <ErrorScreen state="notFound" />;
   const inst = translateContent(raw, t, INSTITUTION_KEYS);
+  const photo = institutionPhoto(inst.slug)!;
 
   return (
     <div style={{ background: "var(--surface-subtle)" }}>
@@ -44,14 +44,20 @@ export default function Institution({ slug }: { slug: string }) {
           ))}
         </CardGrid>
 
-        <CardGrid min={280} gap="var(--space-6)">
-          {inst.points.map((p, i) => (
-            <ScrollReveal key={p.title} delay={i * 70} style={{ display: "flex" }}><IconCard {...p} /></ScrollReveal>
-          ))}
-        </CardGrid>
-
-        <div className="ct-split" style={splitStyle}>
-          <ScrollReveal style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+        <ScrollReveal>
+          <EditorialSplit
+            tone="tinted"
+            reverse
+            media={
+              <EditorialImage
+                slot={`inst-${inst.slug}`}
+                src={photo.src}
+                alt={photo.alt}
+                ratio="16 / 11"
+                credit={photo}
+              />
+            }
+          >
             <SectionHeading eyebrow={t("Scope of work")} title={t("What we deliver")} />
             <Card padding="var(--space-8)" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               {inst.list.map((l) => (
@@ -60,13 +66,14 @@ export default function Institution({ slug }: { slug: string }) {
                 </span>
               ))}
             </Card>
-          </ScrollReveal>
-          <ScrollReveal delay={80}>
-            <ImagePlaceholder slot={`inst-${inst.title}`} label={`${inst.title} photography, 4:3`} ratio="4 / 3"
-              {...(institutionPhoto(inst.slug) ? { src: institutionPhoto(inst.slug)!.src, alt: institutionPhoto(inst.slug)!.alt } : {})} />
-            <PhotoCredit photo={institutionPhoto(inst.slug)} />
-          </ScrollReveal>
-        </div>
+          </EditorialSplit>
+        </ScrollReveal>
+
+        <CardGrid min={280} gap="var(--space-6)">
+          {inst.points.map((p, i) => (
+            <ScrollReveal key={p.title} delay={i * 70} style={{ display: "flex" }}><IconCard {...p} /></ScrollReveal>
+          ))}
+        </CardGrid>
 
         <ScrollReveal>
           <CTABanner eyebrow={t("Work with us")} title={inst.cta}

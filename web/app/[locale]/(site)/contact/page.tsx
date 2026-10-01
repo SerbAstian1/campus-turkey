@@ -1,9 +1,9 @@
 /**
  * /contact
  *
- * A server component whose only job is metadata. The screen itself is EDSAI's and is a
- * client component, because every design system component it renders needs the browser
- * global that `_ds_bundle.js` installs — see app/providers.tsx.
+ * The appointment screen uses native token-styled controls so its usable form is present
+ * in the server response. It does not wait for the optional browser-only design-system
+ * bundle before visitors can choose a time or enter their details.
  *
  * The metadata below is emitted in the server's HTML, which is what makes this
  * migration worth doing: title, description and canonical are readable without running
@@ -15,8 +15,6 @@ import { pageMetadata } from "@/server/lib/seo";
 import { LOCALES, type Locale } from "@/i18n/locales";
 import { getTranslator } from "@/i18n/messages";
 import Contact from "@/screens/Contact";
-import { Hydrated } from "@/app/Hydrated";
-import { ContactSeo } from "@/components/seo/routes";
 
 /**
  * Prerendered in every language. 17 locales x this page.
@@ -39,13 +37,10 @@ export async function generateMetadata(
 }
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
+  await params;
 
-  /* Server-rendered text first, the design system over it once the bundle resolves.
-     See src/app/Hydrated.tsx for why the fallback is the content and not a spinner. */
-  return (
-    <Hydrated server={<ContactSeo locale={locale as Locale} />}>
-      <Contact />
-    </Hydrated>
-  );
+  /* The appointment form is native React and renders in the first HTML response. It no
+     longer waits for the optional browser-only design-system bundle before becoming
+     visible and usable. */
+  return <Contact />;
 }

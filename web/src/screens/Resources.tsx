@@ -35,25 +35,29 @@ export default function Resources() {
         </div>
 
         <CardGrid min={280} gap="var(--space-6)">
-          {list.map((r, i) => (
+          {list.map((r, i) => {
+            const photo = articlePhoto(r.slug)!;
+            return (
             <ScrollReveal key={r.slug} delay={i * 60} style={{ display: "flex" }}>
-              <Card interactive href={href(`blog/${r.slug}`)} padding="var(--space-6)" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              <Card interactive href={href(`blog/${r.slug}`)} padding="0" style={{ width: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
                 {/* No credit line on the index: the card is a link, and the licence is
                     stated on the article itself where the image is shown at size. */}
-                <ImagePlaceholder slot={`article-${r.slug}`} label={t("Article image, 16:9")} ratio="16 / 9"
-                  {...(articlePhoto(r.slug) ? { src: articlePhoto(r.slug)!.src, alt: "" } : {})} />
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-3)" }}>
-                  <Badge tone="neutral">{r.tag}</Badge>
-                  <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{t("{duration} read", { duration: r.read })}</span>
+                <ImagePlaceholder slot={`article-${r.slug}`} ratio="16 / 9" src={photo.src} alt=""
+                  style={{ borderRadius: 0 }} />
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", padding: "var(--space-6)", flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-3)" }}>
+                    <Badge tone="neutral">{r.tag}</Badge>
+                    <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{t("{duration} read", { duration: r.read })}</span>
+                  </div>
+                  <h3 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{r.title}</h3>
+                  <p style={{ color: "var(--text-body)", lineHeight: "var(--lh-body)", margin: 0, flex: 1 }}>{r.body}</p>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-semibold)", color: "var(--green-600)" }}>
+                    {t("Read the guide")} <Icon name="arrow-right" size={15} />
+                  </span>
                 </div>
-                <h3 style={{ fontSize: "var(--fs-h3)", margin: 0 }}>{r.title}</h3>
-                <p style={{ color: "var(--text-body)", lineHeight: "var(--lh-body)", margin: 0, flex: 1 }}>{r.body}</p>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: "var(--fs-body-sm)", fontWeight: "var(--fw-semibold)", color: "var(--green-600)" }}>
-                  {t("Read the guide")} <Icon name="arrow-right" size={15} />
-                </span>
               </Card>
             </ScrollReveal>
-          ))}
+          )})}
         </CardGrid>
 
         <ScrollReveal>
